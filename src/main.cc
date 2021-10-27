@@ -1,13 +1,12 @@
 #include <iostream>
+#include "hello_interface.h"
 #include "meta_command.h"
 #include "sql_statement.h"
 
 int main() {
+    HelloInterface();
     MetaCommand meta_command;
-    std::cout << "wxdb version 1.0" << std::endl;
-    std::cout << "Enter \".help\" for usage hints." << std::endl;
-    std::cout << "Connected to a transient in-memory database." << std::endl;
-    std::cout << "Use \".open FILENAME\" to reopen on a persistent database." << std::endl;
+    SQLStatement sql_statement;
     bool main_loop_flag = true;
     while (main_loop_flag)
     {
@@ -22,24 +21,7 @@ int main() {
             }
         } else {
             // SQL statements
-            StatementType statement_type = OTHER_TYPE;
-            if (user_input.substr(0, 6) == "insert") {
-                statement_type = INSERT_TYPE;
-            } else if (user_input.substr(0, 6) == "select") {
-                statement_type = SELECT_TYPE;
-            }
-            switch (statement_type) {
-                case INSERT_TYPE:
-                    std::cout << "do insert" << std::endl;
-                    break;
-                case SELECT_TYPE:
-                    std::cout << "do select" << std::endl;
-                    break;
-                default:
-                    std::cout << "unknown command" << std::endl;
-                    break;
-            }
-            
+            sql_statement.parse(user_input);       
         }
     }
     
