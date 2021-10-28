@@ -88,7 +88,7 @@ private:
         Table *table = database.tables_[str];
         step_reader >> str;
         step_reader >> str;
-        Row row;
+        Row *row = new Row; 
         for (const auto &c : table->columns_type_) {
             step_reader >> str;
             if (str.back() == ',') {
@@ -105,22 +105,22 @@ private:
                 default:
                     break;
             }
-            row.item.push_back(p);
+            row->items_.push_back(p);
         }
-        table->row_.push_back(row);
+        table->rows_.push_back(row);
         // print
         for (const auto &c : table->columns_name_) {
             std::cout << c << "\t";
         }
         std::cout << std::endl;
-        for (const auto &c: table->row_) {
-            for (size_t k = 0; k < c.item.size(); ++k) {
+        for (const auto &c: table->rows_) {
+            for (size_t k = 0; k < c->items_.size(); ++k) {
                 switch (types[table->columns_type_[k]]) {
                     case 0:
-                        std::cout << *reinterpret_cast<int *>(c.item[k]) << "\t";
+                        std::cout << *reinterpret_cast<int *>(c->items_[k]) << "\t";
                         break;
                     case 1:
-                        std::cout << *reinterpret_cast<double *>(c.item[k]) << "\t";
+                        std::cout << *reinterpret_cast<double *>(c->items_[k]) << "\t";
                         break;
                     default:
                         break;

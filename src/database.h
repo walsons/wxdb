@@ -6,7 +6,7 @@
 #include <unordered_map>
 
 struct Row {
-    std::vector<void *> item;
+    std::vector<void *> items_;
 };
 
 class Table {
@@ -17,7 +17,7 @@ public:
     std::string table_name_;
     std::vector<std::string> columns_name_;
     std::vector<std::string> columns_type_;
-    std::vector<Row> row_;
+    std::vector<Row *> rows_;
 };
 
 class Database {
