@@ -7,6 +7,7 @@ int main() {
     HelloInterface();
     MetaCommand meta_command;
     SQLStatement sql_statement;
+    Database database;
     bool main_loop_flag = true;
     while (main_loop_flag)
     {
@@ -21,7 +22,7 @@ int main() {
             }
         } else {
             // SQL statements
-            sql_statement.parse(user_input);       
+            sql_statement.parse(database, user_input);       
         }
     }
     
