@@ -9,6 +9,13 @@ struct Row {
     std::vector<void *> items_;
 };
 
+class Page {
+public:
+    Page() = default;
+    ~Page() = default;
+    char content_[4096];
+};
+
 class Table {
 public:
     Table() = default;

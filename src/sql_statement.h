@@ -129,6 +129,14 @@ private:
             std::cout << std::endl;
         }
     }
+
+    void do_select(Database &database, std::string user_input) {
+        std::istringstream step_reader(user_input);
+        std::string str;
+        step_reader >> str;
+        step_reader >> str;
+        step_reader >> str;
+    }
 };
 
 #endif
