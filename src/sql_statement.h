@@ -37,7 +37,7 @@ public:
                 do_insert(database, user_input);
                 break;
             case SELECT_TYPE:
-                std::cout << "do select" << std::endl;
+                do_select(database, user_input);
                 break;
             default:
                 std::cout << "unknown command" << std::endl;
@@ -61,15 +61,15 @@ private:
         table->table_name_ = str;
         step_reader >> str;
         while (step_reader >> str) {
-            if (str == ")") {
+            if (str[0] == ')') {
                 break;
-                }
-            table->columns_name_.emplace_back(str);
+            }
+            table->column_names_.emplace_back(str);
             step_reader >> str;
             if (str.back() == ',') {
                 str.pop_back();
             }
-            table->columns_type_.emplace_back(str);
+            table->column_types_.emplace_back(str);
         }
         if (database.tables_.find(table->table_name_) != database.tables_.end()) {
             std::cout << "there is a table named \"" << table->table_name_ << "\" in database" << std::endl;
@@ -89,7 +89,8 @@ private:
         step_reader >> str;
         step_reader >> str;
         Row *row = new Row; 
-        for (const auto &c : table->columns_type_) {
+        for (const auto &c : table->column_types_) {
+                    std::cout << c << std::endl;
             step_reader >> str;
             if (str.back() == ',') {
                 str.pop_back();
@@ -108,14 +109,26 @@ private:
             row->items_.push_back(p);
         }
         table->rows_.push_back(row);
-        // print
-        for (const auto &c : table->columns_name_) {
+        std::cout << "insert successfully" << std::endl;
+    }
+
+    void do_select(Database &database, std::string user_input) {
+        std::istringstream step_reader(user_input);
+        std::string str;
+        // Currently only support select * from ...
+        step_reader >> str;
+        step_reader >> str;
+        step_reader >> str;
+        std::string table_name;
+        step_reader >> table_name;
+        Table *table = database.tables_[table_name];
+        for (const auto &c : table->column_names_) {
             std::cout << c << "\t";
         }
         std::cout << std::endl;
         for (const auto &c: table->rows_) {
             for (size_t k = 0; k < c->items_.size(); ++k) {
-                switch (types[table->columns_type_[k]]) {
+                switch (types[table->column_types_[k]]) {
                     case 0:
                         std::cout << *reinterpret_cast<int *>(c->items_[k]) << "\t";
                         break;
@@ -128,14 +141,6 @@ private:
             }
             std::cout << std::endl;
         }
-    }
-
-    void do_select(Database &database, std::string user_input) {
-        std::istringstream step_reader(user_input);
-        std::string str;
-        step_reader >> str;
-        step_reader >> str;
-        step_reader >> str;
     }
 };
 

@@ -44,6 +44,13 @@ private:
         }
         return (*command2number_)[command];
     }
+
+    void save_page() {
+        Page *page = new Page;
+        
+        
+
+    }
 };
 
 #endif
