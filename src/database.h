@@ -5,8 +5,15 @@
 #include <string>
 #include <unordered_map>
 
+class Page {
+public:
+    Page() = default;
+    ~Page() = default;
+    char buffer_[4096];
+};
+
 struct Row {
-    std::vector<void *> item;
+    std::vector<void *> items_;
 };
 
 class Table {
@@ -15,9 +22,9 @@ public:
     ~Table() = default;
 public:
     std::string table_name_;
-    std::vector<std::string> columns_name_;
-    std::vector<std::string> columns_type_;
-    std::vector<Row> row_;
+    std::vector<std::string> column_names_;
+    std::vector<std::string> column_types_;
+    std::vector<Row *> rows_;
 };
 
 class Database {
