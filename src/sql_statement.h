@@ -6,51 +6,81 @@
 #include <iostream>
 #include "database.h"
 
-typedef enum {
-    UNKNOWN_TYPE,
-    CREATE_TYPE,
-    INSERT_TYPE,
-    SELECT_TYPE
+typedef enum 
+{
+    STATEMENT_CREATE,
+    STATEMENT_INSERT,
+    STATEMENT_SELECT
 } StatementType;
 
-class SQLStatement {
+typedef enum
+{
+    PREPARE_SUCCESS,
+    PREPARE_UNRECOGNIZED_STATEMENT
+} PrepareResult;
+
+class SQLStatement 
+{
 public:
     SQLStatement() = default;
     ~SQLStatement() = default;
-    StatementType &statement_type() {
-        return statement_type_;
-    }
-    void parse(Database &database, const std::string &user_input) {
-        statement_type_ = UNKNOWN_TYPE;
-        if (user_input.substr(0, 6) == "create") {
-	    statement_type_ = CREATE_TYPE;
-        } else if (user_input.substr(0, 6) == "insert") {
-            statement_type_ = INSERT_TYPE;
-        } else if (user_input.substr(0, 6) == "select") {
-            statement_type_ = SELECT_TYPE;
-        }
-        switch (statement_type_) {
-            case CREATE_TYPE:
-                do_create(database, user_input);
+
+    void Parse(Database &database, const std::string &userInput)
+    {
+        switch (PrepareStatement(userInput))
+        {
+            case PREPARE_UNRECOGNIZED_STATEMENT:
+                std::cout << "Unknown command " << "\"" << userInput << "\"" << std::endl;
                 break;
-            case INSERT_TYPE:
-                do_insert(database, user_input);
-                break;
-            case SELECT_TYPE:
-                do_select(database, user_input);
-                break;
-            default:
-                std::cout << "unknown command" << std::endl;
+            case PREPARE_SUCCESS:
+                ExecuteStatement(database, userInput);       
                 break;
         }
     }
 private:
-    StatementType statement_type_;
+    StatementType type_;
     std::unordered_map<std::string, int> types{
         {"int", 0},
         {"double", 1}
     };
+
 private:
+    PrepareResult PrepareStatement(const std::string &userInput)
+    {
+        if (userInput.substr(0, 6) == "create")
+        {
+            type_ = STATEMENT_CREATE;
+        }
+        else if (userInput.substr(0, 6) == "insert") 
+        {
+            type_ = STATEMENT_INSERT;
+        } 
+        else if (userInput.substr(0, 6) == "select") 
+        {
+            type_ = STATEMENT_SELECT;
+        }
+        else
+        {
+            return PREPARE_UNRECOGNIZED_STATEMENT;
+        }
+        return PREPARE_SUCCESS;
+    }
+
+    void ExecuteStatement(Database &database, const std::string &userInput)
+    {
+        switch (type_) {
+            case STATEMENT_CREATE:
+                do_create(database, userInput);
+                break;
+            case STATEMENT_INSERT:
+                do_insert(database, userInput);
+                break;
+            case STATEMENT_SELECT:
+                do_select(database, userInput);
+                break;
+        }
+    }
+
     void do_create(Database &database, std::string user_input) {
         std::istringstream step_reader(user_input);
         std::string str;

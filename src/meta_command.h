@@ -4,7 +4,15 @@
 #include <unordered_map>
 #include <string>
 
-class MetaCommand {
+
+typedef enum 
+{
+    META_COMMAND_URECOGNIZED_COMMAND,
+    META_COMMAND_EXIT
+} MetaCommandType;
+
+class MetaCommand 
+{
 public:
     MetaCommand() : command2number_(nullptr) 
     {
@@ -22,7 +30,7 @@ public:
     {
         switch(command2number(userInput)) 
         {
-            case META_COMMAND_URECOGNIZED:
+            case META_COMMAND_URECOGNIZED_COMMAND:
             {
                 std::cout << "Unknown command " << "\"" << userInput << "\"" << std::endl;
                 break;
@@ -37,11 +45,6 @@ public:
         }
     }
 private:
-    enum MetaCommandType
-    {
-        META_COMMAND_URECOGNIZED,
-        META_COMMAND_EXIT
-    };
     std::unordered_map<std::string, MetaCommandType> *command2number_;
 
 private:
@@ -55,7 +58,7 @@ private:
     MetaCommandType command2number(const std::string &command) const
     {
         if (command2number_->find(command) == command2number_->end()) {
-            return META_COMMAND_URECOGNIZED;
+            return META_COMMAND_URECOGNIZED_COMMAND;
         }
         return (*command2number_)[command];
     }

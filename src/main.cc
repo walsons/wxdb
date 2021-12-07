@@ -28,7 +28,7 @@ int main()
         else 
         {
             // SQL statements
-            sqlStatement.parse(database, userInput);       
+            sqlStatement.Parse(database, userInput);
         }
     }
     
