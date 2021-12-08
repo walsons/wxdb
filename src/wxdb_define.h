@@ -1,0 +1,35 @@
+#ifndef WXDB_DEFINE_H_
+#define WXDB_DEFINE_H_
+
+typedef enum
+{
+    META_COMMAND_URECOGNIZED_COMMAND,
+    META_COMMAND_EXIT,
+    META_COMMAND_HELP
+} MetaCommandType;
+
+typedef enum
+{
+    PREPARE_SUCCESS,
+    PREPARE_FAILED,
+    PREPARE_UNRECOGNIZED_STATEMENT,
+    PREPARE_SYNTAX_ERROR,
+    PREPARE_TABLE_NAME_TOO_LONG,
+    PREPARE_ATTRIBUTE_SIZE_EXCESS,
+    PREPARE_TABLE_NOT_EXIST
+} PrepareResult;
+
+typedef enum
+{
+    EXECUTE_SUCCESS,
+    EXECUTE_FAILED
+} ExecuteResult;
+
+typedef enum 
+{
+    STATEMENT_CREATE,
+    STATEMENT_INSERT,
+    STATEMENT_SELECT
+} StatementType;
+
+#endif

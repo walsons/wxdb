@@ -4,58 +4,67 @@
 #include <string>
 #include <sstream>
 #include <iostream>
+#include "wxdb_define.h"
 #include "database.h"
 
-typedef enum 
-{
-    STATEMENT_CREATE,
-    STATEMENT_INSERT,
-    STATEMENT_SELECT
-} StatementType;
-
-typedef enum
-{
-    PREPARE_SUCCESS,
-    PREPARE_UNRECOGNIZED_STATEMENT
-} PrepareResult;
 
 class SQLStatement 
 {
 public:
     SQLStatement() = default;
+
     ~SQLStatement() = default;
 
-    void Parse(Database &database, const std::string &userInput)
+    PrepareResult PrepareStatement(Database &database, const std::string &userInput)
     {
-        switch (PrepareStatement(userInput))
-        {
-            case PREPARE_UNRECOGNIZED_STATEMENT:
-                std::cout << "Unknown command " << "\"" << userInput << "\"" << std::endl;
-                break;
-            case PREPARE_SUCCESS:
-                ExecuteStatement(database, userInput);       
-                break;
-        }
-    }
-private:
-    StatementType type_;
-    std::unordered_map<std::string, int> types{
-        {"int", 0},
-        {"double", 1}
-    };
+        std::istringstream reader(userInput);
+        std::string action;
+        reader >> action;
 
-private:
-    PrepareResult PrepareStatement(const std::string &userInput)
-    {
-        if (userInput.substr(0, 6) == "create")
+        if (action == "create")
         {
             type_ = STATEMENT_CREATE;
+            std::string tableName, redundantItem;
+            if (!(reader >> tableName) || (reader >> redundantItem))
+            {
+                std::cout << "Syntax Error" << std::endl;
+                return PREPARE_SYNTAX_ERROR;
+            }
+            if (tableName.size() > TABLE_NAME_MAX_LENGTH)
+            {
+                std::cout << "Table name is larger than 25 bytes" << std::endl;
+                return PREPARE_TABLE_NAME_TOO_LONG;
+            }
+            std::memcpy(table_name_for_create_, tableName.c_str(), tableName.size() + 1);
         }
-        else if (userInput.substr(0, 6) == "insert") 
+
+        else if (action == "insert") 
         {
             type_ = STATEMENT_INSERT;
+            std::string tableName, id, userName, email, redundantItem;
+            if (!(reader >> tableName >> id >> userName >> email) || (reader >> redundantItem))
+            {
+                std::cout << "Syntax Error" << std::endl;
+                return PREPARE_SYNTAX_ERROR;
+            }
+            if (database.AcquireTable() == nullptr || tableName != std::string(database.AcquireTable()->table_name))
+            {
+                std::cout << "Table \"" << tableName << "\" doesn't exist" << std::endl;
+                return PREPARE_TABLE_NOT_EXIST;
+            }
+            PrepareResult res = PREPARE_FAILED;
+            if ((res = CheckAttributeSize(id, kIdSize - 1)) == PREPARE_SUCCESS &&
+                (res = CheckAttributeSize(userName, kUserNameSize - 1)) == PREPARE_SUCCESS &&
+                (res = CheckAttributeSize(email, kEmailSize - 1)) == PREPARE_SUCCESS) 
+            {
+                std::memcpy(&row_for_insert_.id, id.c_str(), id.size() + 1);
+                std::memcpy(&row_for_insert_.user_name, userName.c_str(), userName.size() + 1);
+                std::memcpy(&row_for_insert_.email, email.c_str(), email.size() + 1);
+            }
+            return res;
         } 
-        else if (userInput.substr(0, 6) == "select") 
+
+        else if (action == "select") 
         {
             type_ = STATEMENT_SELECT;
         }
@@ -66,111 +75,69 @@ private:
         return PREPARE_SUCCESS;
     }
 
-    void ExecuteStatement(Database &database, const std::string &userInput)
+    ExecuteResult ExecuteStatement(Database &database, const std::string &userInput)
     {
-        switch (type_) {
+        ExecuteResult res = EXECUTE_FAILED;
+        switch (type_) 
+        {
             case STATEMENT_CREATE:
-                do_create(database, userInput);
+                res = DoCreate(database);
                 break;
             case STATEMENT_INSERT:
-                do_insert(database, userInput);
+                res = DoInsert(database, userInput);
                 break;
             case STATEMENT_SELECT:
-                do_select(database, userInput);
+                res = DoSelect(database, userInput);
                 break;
         }
+        return res;
     }
 
-    void do_create(Database &database, std::string user_input) {
-        std::istringstream step_reader(user_input);
-        std::string str;
-        step_reader >> str;
-        step_reader >> str;
-        Table *table = new Table;
-        step_reader >> str;
-        table->table_name_ = str;
-        step_reader >> str;
-        while (step_reader >> str) {
-            if (str[0] == ')') {
-                break;
-            }
-            table->column_names_.emplace_back(str);
-            step_reader >> str;
-            if (str.back() == ',') {
-                str.pop_back();
-            }
-            table->column_types_.emplace_back(str);
+private:
+    StatementType type_;
+    Row row_for_insert_;
+    char *table_name_for_create_[TABLE_NAME_MAX_LENGTH + 1];
+    char *table_name_for_select_[TABLE_NAME_MAX_LENGTH + 1];
+
+private:
+    PrepareResult CheckAttributeSize(const std::string &attribute, wxdb_uint size)
+    {
+        if (attribute.size() > size)
+        {
+            std::cout << "The size of attribute \"" << attribute << "\" excess range" << std::endl;
+            return PREPARE_ATTRIBUTE_SIZE_EXCESS;
         }
-        if (database.tables_.find(table->table_name_) != database.tables_.end()) {
-            std::cout << "there is a table named \"" << table->table_name_ << "\" in database" << std::endl;
-            return;
-        }
-        database.tables_[table->table_name_] = table;
-        std::cout << "create table \"" << table->table_name_ << "\" successfully" << std::endl;
+        return PREPARE_SUCCESS;
+    }
+
+    /*
+     * create tableName
+     * example: create user
+     */
+    ExecuteResult DoCreate(Database &database) 
+    {
+        ExecuteResult res = database.CreateTable(table_name_for_create_, sizeof(table_name_for_create_));
+        return res;
     }
     
-    void do_insert(Database &database, std::string user_input) {
-        std::istringstream step_reader(user_input);
-        std::string str;
-        step_reader >> str;
-        step_reader >> str;
-        step_reader >> str;
-        Table *table = database.tables_[str];
-        step_reader >> str;
-        step_reader >> str;
-        Row *row = new Row; 
-        for (const auto &c : table->column_types_) {
-                    std::cout << c << std::endl;
-            step_reader >> str;
-            if (str.back() == ',') {
-                str.pop_back();
-            }
-            void *p = nullptr;
-            switch (types[c]) {
-                case 0: 
-                    p = new int(stoi(str));
-                    break;
-                case 1:
-                    p = new double(stod(str));
-                    break;
-                default:
-                    break;
-            }
-            row->items_.push_back(p);
+    /*
+     * insert tableName id userName email 
+     * example: insert user 1 walsons walsons@163.com
+     */
+    ExecuteResult DoInsert(Database &database, std::string userInput) {
+        std::istringstream userInputIn(userInput);
+        std::string action, tableName, id, userName, email;
+        if (userInputIn >> action >> tableName >> id >> userName >> email)
+        {
+            
         }
-        table->rows_.push_back(row);
-        std::cout << "insert successfully" << std::endl;
+        // Table *table = database.AcquireTable(tableName);
+        std::cout << "Insert record into table \"" << tableName << "\" successfully" << std::endl;
+        return EXECUTE_SUCCESS;
     }
 
-    void do_select(Database &database, std::string user_input) {
-        std::istringstream step_reader(user_input);
-        std::string str;
-        // Currently only support select * from ...
-        step_reader >> str;
-        step_reader >> str;
-        step_reader >> str;
-        std::string table_name;
-        step_reader >> table_name;
-        Table *table = database.tables_[table_name];
-        for (const auto &c : table->column_names_) {
-            std::cout << c << "\t";
-        }
-        std::cout << std::endl;
-        for (const auto &c: table->rows_) {
-            for (size_t k = 0; k < c->items_.size(); ++k) {
-                switch (types[table->column_types_[k]]) {
-                    case 0:
-                        std::cout << *reinterpret_cast<int *>(c->items_[k]) << "\t";
-                        break;
-                    case 1:
-                        std::cout << *reinterpret_cast<double *>(c->items_[k]) << "\t";
-                        break;
-                    default:
-                        break;
-                }
-            }
-            std::cout << std::endl;
-        }
+    ExecuteResult DoSelect(Database &database, std::string userInput) {
+        return EXECUTE_SUCCESS;
     }
 };
 

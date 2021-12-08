@@ -3,64 +3,59 @@
 
 #include <unordered_map>
 #include <string>
-
-
-typedef enum 
-{
-    META_COMMAND_URECOGNIZED_COMMAND,
-    META_COMMAND_EXIT
-} MetaCommandType;
+#include "wxdb_define.h"
 
 class MetaCommand 
 {
 public:
-    MetaCommand() : command2number_(nullptr) 
-    {
+    MetaCommand() : command2type_(nullptr), main_loop_(true) { 
         Init();
     }
-    ~MetaCommand() 
+
+    ~MetaCommand() = default;
+
+    bool MainLoop() { return main_loop_; }
+
+    void ExecuteMetaCommand(const std::string &userInput) 
     {
-        if (command2number_ != nullptr)
-        {
-            delete command2number_;
-            command2number_ = nullptr;
-        }
-    }
-    void Parse(const std::string &userInput, bool &mainLoopFlag) const 
-    {
-        switch(command2number(userInput)) 
+        ParseMetaCommand(userInput);
+        switch(type_) 
         {
             case META_COMMAND_URECOGNIZED_COMMAND:
-            {
                 std::cout << "Unknown command " << "\"" << userInput << "\"" << std::endl;
                 break;
-            }
             case META_COMMAND_EXIT: 
-            {
-                mainLoopFlag = false;
+                main_loop_ = false;
                 break;
-            }
-            default:
+            case META_COMMAND_HELP:
+                // TODO walsons 
                 break;
         }
     }
 private:
-    std::unordered_map<std::string, MetaCommandType> *command2number_;
+    std::unordered_map<std::string, MetaCommandType> *command2type_;
+    MetaCommandType type_;
+    bool main_loop_;
 
 private:
     void Init() 
     {
-        command2number_ = new std::unordered_map<std::string, MetaCommandType>{
-            {".exit", META_COMMAND_EXIT}
+        command2type_ = new std::unordered_map<std::string, MetaCommandType>{
+            {".exit", META_COMMAND_EXIT},
+            {".help", META_COMMAND_HELP}
         };
     }
-    // If the command is not found, return -1
-    MetaCommandType command2number(const std::string &command) const
+
+    void ParseMetaCommand(const std::string &userInput)
     {
-        if (command2number_->find(command) == command2number_->end()) {
-            return META_COMMAND_URECOGNIZED_COMMAND;
+        if (command2type_->find(userInput) == command2type_->end()) 
+        {
+            type_ = META_COMMAND_URECOGNIZED_COMMAND;
         }
-        return (*command2number_)[command];
+        else
+        {
+            type_ = (*command2type_)[userInput];
+        }
     }
 };
 

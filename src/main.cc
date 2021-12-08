@@ -9,8 +9,7 @@ int main()
     MetaCommand metaCommand;
     SQLStatement sqlStatement;
     Database database;
-    bool mainLoopFlag = true;
-    while (mainLoopFlag)
+    while (metaCommand.MainLoop())
     {
         std::cout << "wxdb> " << std::flush;
         std::string userInput;
@@ -23,12 +22,15 @@ int main()
         else if (userInput[0] == '.') 
         {
             // Meta commands
-            metaCommand.Parse(userInput, mainLoopFlag);
+            metaCommand.ExecuteMetaCommand(userInput);
         } 
         else 
         {
             // SQL statements
-            sqlStatement.Parse(database, userInput);
+            if (sqlStatement.PrepareStatement(database, userInput) == PREPARE_SUCCESS)
+            {
+                sqlStatement.ExecuteStatement(database, userInput);
+            }
         }
     }
     
