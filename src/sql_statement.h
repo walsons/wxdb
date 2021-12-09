@@ -53,11 +53,12 @@ public:
                 return PREPARE_TABLE_NOT_EXIST;
             }
             PrepareResult res = PREPARE_FAILED;
-            if ((res = CheckAttributeSize(id, kIdSize - 1)) == PREPARE_SUCCESS &&
-                (res = CheckAttributeSize(userName, kUserNameSize - 1)) == PREPARE_SUCCESS &&
-                (res = CheckAttributeSize(email, kEmailSize - 1)) == PREPARE_SUCCESS) 
+            if ((res = CheckIntAttributeSize(id)) == PREPARE_SUCCESS &&
+                (res = CheckStringAttributeSize(userName, kUserNameSize - 1)) == PREPARE_SUCCESS &&
+                (res = CheckStringAttributeSize(email, kEmailSize - 1)) == PREPARE_SUCCESS) 
             {
-                std::memcpy(&row_for_insert_.id, id.c_str(), id.size() + 1);
+                wxdb_uint idNum = std::stoi(id);
+                std::memcpy(&row_for_insert_.id, &idNum, sizeof(idNum));
                 std::memcpy(&row_for_insert_.user_name, userName.c_str(), userName.size() + 1);
                 std::memcpy(&row_for_insert_.email, email.c_str(), email.size() + 1);
             }
@@ -67,9 +68,24 @@ public:
         else if (action == "select") 
         {
             type_ = STATEMENT_SELECT;
+            std::string tableName, redundantItem;
+            if (!(reader >> tableName) || (reader >> redundantItem))
+            {
+                std::cout << "Syntax Error" << std::endl;
+                return PREPARE_SYNTAX_ERROR;
+            }
+            if (database.AcquireTable() == nullptr || tableName != std::string(database.AcquireTable()->table_name))
+            {
+                std::cout << "Table \"" << tableName << "\" doesn't exist" << std::endl;
+                return PREPARE_TABLE_NOT_EXIST;
+            }
+            std::memcpy(table_name_for_select_, tableName.c_str(), tableName.size() + 1);
+            return PREPARE_SUCCESS;
         }
+
         else
         {
+            std::cout << "Unrecognized statement" << std::endl;
             return PREPARE_UNRECOGNIZED_STATEMENT;
         }
         return PREPARE_SUCCESS;
@@ -84,7 +100,7 @@ public:
                 res = DoCreate(database);
                 break;
             case STATEMENT_INSERT:
-                res = DoInsert(database, userInput);
+                res = DoInsert(database);
                 break;
             case STATEMENT_SELECT:
                 res = DoSelect(database, userInput);
@@ -96,16 +112,30 @@ public:
 private:
     StatementType type_;
     Row row_for_insert_;
-    char *table_name_for_create_[TABLE_NAME_MAX_LENGTH + 1];
-    char *table_name_for_select_[TABLE_NAME_MAX_LENGTH + 1];
+    char table_name_for_create_[TABLE_NAME_MAX_LENGTH + 1];
+    char table_name_for_select_[TABLE_NAME_MAX_LENGTH + 1];
 
 private:
-    PrepareResult CheckAttributeSize(const std::string &attribute, wxdb_uint size)
+    PrepareResult CheckStringAttributeSize(const std::string &attribute, wxdb_uint size)
     {
         if (attribute.size() > size)
         {
             std::cout << "The size of attribute \"" << attribute << "\" excess range" << std::endl;
             return PREPARE_ATTRIBUTE_SIZE_EXCESS;
+        }
+        return PREPARE_SUCCESS;
+    }
+
+    PrepareResult CheckIntAttributeSize(const std::string &attribute)
+    {
+        try
+        {
+            stoi(attribute);
+        }
+        catch(const std::exception& e)
+        {
+            std::cerr << "Error in the attribute of Integer type" << std::endl;;
+            return PREPARE_ATTRIBUTE_ERROR;
         }
         return PREPARE_SUCCESS;
     }
@@ -124,20 +154,19 @@ private:
      * insert tableName id userName email 
      * example: insert user 1 walsons walsons@163.com
      */
-    ExecuteResult DoInsert(Database &database, std::string userInput) {
-        std::istringstream userInputIn(userInput);
-        std::string action, tableName, id, userName, email;
-        if (userInputIn >> action >> tableName >> id >> userName >> email)
-        {
-            
-        }
-        // Table *table = database.AcquireTable(tableName);
-        std::cout << "Insert record into table \"" << tableName << "\" successfully" << std::endl;
-        return EXECUTE_SUCCESS;
+    ExecuteResult DoInsert(Database &database) 
+    {
+        ExecuteResult res = database.InsertRow(row_for_insert_);
+        return res;
     }
 
+    /*
+     * select tableName
+     * example: select user
+     */
     ExecuteResult DoSelect(Database &database, std::string userInput) {
-        return EXECUTE_SUCCESS;
+        ExecuteResult res = database.Select(table_name_for_select_, sizeof(table_name_for_select_));
+        return res;
     }
 };
 

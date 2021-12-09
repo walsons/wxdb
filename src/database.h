@@ -55,7 +55,7 @@ public:
         }
     }
 
-    ExecuteResult CreateTable(char *tableNameForCreate[], wxdb_uint bufferSize)
+    ExecuteResult CreateTable(char tableNameForCreate[], wxdb_uint bufferSize)
     {
         if (table_ == nullptr)
         {
@@ -68,6 +68,45 @@ public:
         }
         std::memcpy(table_->table_name, tableNameForCreate, bufferSize);
         std::cout << "Create table " << "\"" << table_->table_name << "\" successfully" << std::endl;
+        return EXECUTE_SUCCESS;
+    }
+
+    ExecuteResult InsertRow(Row rowForInsert)
+    {
+        wxdb_uint pageNumber = table_->row_number / kRowNumberPerPage;
+        if (pageNumber >= 100)
+        {
+            std::cout << "Table \"" << table_->table_name << "\" is full" << std::endl;
+            return EXECUTE_TABLE_FULL;
+        }
+        wxdb_uint rowNumber = table_->row_number % kRowNumberPerPage;
+        if (table_->page[pageNumber] == nullptr)
+        {
+            table_->page[pageNumber] = new char[PAGE_SIZE];
+        }
+        std::memcpy(table_->page[pageNumber] + rowNumber + kIdOffset, &rowForInsert.id, kIdSize);
+        std::memcpy(table_->page[pageNumber] + rowNumber + kUserNameOffset, &rowForInsert.user_name, kUserNameSize);
+        std::memcpy(table_->page[pageNumber] + rowNumber + kEmailOffset, &rowForInsert.email, kEmailSize);
+        ++table_->row_number;
+        std::cout << "Insert record into table \"" << table_->table_name << "\" successfully" << std::endl;
+        return EXECUTE_SUCCESS;
+    }
+
+    ExecuteResult Select(char tableNameForSelect[], wxdb_uint bufferSize)
+    {
+        std::cout << "\tid\tuser name\temail\t" << std::endl;
+        wxdb_uint id;
+        char userName[kUserNameSize];
+        char email[kEmailSize];
+        for (size_t row = 0; row < table_->row_number; ++row)
+        {
+            wxdb_uint pageNumber = row / kRowNumberPerPage;
+            wxdb_uint rowNumber = row % kRowNumberPerPage;
+            std::memcpy(&id, table_->page[pageNumber] + rowNumber + kIdOffset, kIdSize);
+            std::memcpy(&userName, table_->page[pageNumber] + rowNumber + kUserNameOffset, kUserNameSize);
+            std::memcpy(&email, table_->page[pageNumber] + rowNumber + kEmailOffset, kEmailSize);
+            std::cout << "\t" << id << "\t" << userName << "\t" << email << "\t" << std::endl;
+        }
         return EXECUTE_SUCCESS;
     }
 
@@ -101,6 +140,7 @@ public:
         wxdb_uint rowNumberInPage = rowNumber % kRowNumberPerPage;
         return table->page[pageNumber] + rowNumberInPage * sizeof(Row);
     }
+
 private:
     Table *table_;
 };
