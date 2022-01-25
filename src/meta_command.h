@@ -1,9 +1,10 @@
 #ifndef META_COMMAND_H_
 #define META_COMMAND_H_
 
+#include "wxdb_define.h"
+
 #include <unordered_map>
 #include <string>
-#include "wxdb_define.h"
 
 class MetaCommand 
 {
@@ -21,28 +22,28 @@ public:
         ParseMetaCommand(userInput);
         switch(type_) 
         {
-            case META_COMMAND_URECOGNIZED_COMMAND:
+            case META_COMMAND::URECOGNIZED:
                 std::cout << "Unknown command " << "\"" << userInput << "\"" << std::endl;
                 break;
-            case META_COMMAND_EXIT: 
+            case META_COMMAND::EXIT: 
                 main_loop_ = false;
                 break;
-            case META_COMMAND_HELP:
+            case META_COMMAND::HELP:
                 // TODO walsons 
                 break;
         }
     }
 private:
-    std::unordered_map<std::string, MetaCommandType> *command2type_;
-    MetaCommandType type_;
+    std::unordered_map<std::string, META_COMMAND> *command2type_;
+    META_COMMAND type_;
     bool main_loop_;
 
 private:
     void Init() 
     {
-        command2type_ = new std::unordered_map<std::string, MetaCommandType>{
-            {".exit", META_COMMAND_EXIT},
-            {".help", META_COMMAND_HELP}
+        command2type_ = new std::unordered_map<std::string, META_COMMAND>{
+            {".exit", META_COMMAND::EXIT},
+            {".help", META_COMMAND::HELP}
         };
     }
 
@@ -50,7 +51,7 @@ private:
     {
         if (command2type_->find(userInput) == command2type_->end()) 
         {
-            type_ = META_COMMAND_URECOGNIZED_COMMAND;
+            type_ = META_COMMAND::URECOGNIZED;
         }
         else
         {

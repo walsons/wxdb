@@ -1,12 +1,13 @@
 #ifndef SQL_STATEMENT_H_
 #define SQL_STATEMENT_H_
 
+#include "wxdb_define.h"
+
 #include <string>
 #include <sstream>
 #include <iostream>
-#include "wxdb_define.h"
-#include "database.h"
 
+#include "database.h"
 
 class SQLStatement 
 {
@@ -15,12 +16,13 @@ public:
 
     ~SQLStatement() = default;
 
-    PrepareResult PrepareStatement(Database &database, const std::string &userInput)
+    // Processing statement error
+    PREPARE_RESULT PrepareStatement(Database &database, const std::string &userInput)
     {
         std::istringstream reader(userInput);
         std::string action;
         reader >> action;
-
+        // Create statement
         if (action == "create")
         {
             type_ = STATEMENT_CREATE;
@@ -28,16 +30,16 @@ public:
             if (!(reader >> tableName) || (reader >> redundantItem))
             {
                 std::cout << "Syntax Error" << std::endl;
-                return PREPARE_SYNTAX_ERROR;
+                return PREPARE_RESULT::SYNTAX_ERROR;
             }
             if (tableName.size() > TABLE_NAME_MAX_LENGTH)
             {
                 std::cout << "Table name is larger than 25 bytes" << std::endl;
-                return PREPARE_TABLE_NAME_TOO_LONG;
+                return PREPARE_RESULT::TABLE_NAME_TOO_LONG;
             }
             std::memcpy(table_name_for_create_, tableName.c_str(), tableName.size() + 1);
         }
-
+        // Insert statement
         else if (action == "insert") 
         {
             type_ = STATEMENT_INSERT;
@@ -45,17 +47,17 @@ public:
             if (!(reader >> tableName >> id >> userName >> email) || (reader >> redundantItem))
             {
                 std::cout << "Syntax Error" << std::endl;
-                return PREPARE_SYNTAX_ERROR;
+                return PREPARE_RESULT::SYNTAX_ERROR;
             }
             if (database.AcquireTable() == nullptr || tableName != std::string(database.AcquireTable()->table_name))
             {
                 std::cout << "Table \"" << tableName << "\" doesn't exist" << std::endl;
-                return PREPARE_TABLE_NOT_EXIST;
+                return PREPARE_RESULT::TABLE_NOT_EXIST;
             }
-            PrepareResult res = PREPARE_FAILED;
-            if ((res = CheckIntAttributeSize(id)) == PREPARE_SUCCESS &&
-                (res = CheckStringAttributeSize(userName, kUserNameSize - 1)) == PREPARE_SUCCESS &&
-                (res = CheckStringAttributeSize(email, kEmailSize - 1)) == PREPARE_SUCCESS) 
+            PREPARE_RESULT res = PREPARE_RESULT::FAILED;
+            if ((res = CheckIntAttributeSize(id)) == PREPARE_RESULT::SUCCESS &&
+                (res = CheckStringAttributeSize(userName, kUserNameSize - 1)) == PREPARE_RESULT::SUCCESS &&
+                (res = CheckStringAttributeSize(email, kEmailSize - 1)) == PREPARE_RESULT::SUCCESS) 
             {
                 wxdb_uint idNum = std::stoi(id);
                 std::memcpy(&row_for_insert_.id, &idNum, sizeof(idNum));
@@ -64,7 +66,7 @@ public:
             }
             return res;
         } 
-
+        // Select statement
         else if (action == "select") 
         {
             type_ = STATEMENT_SELECT;
@@ -72,25 +74,26 @@ public:
             if (!(reader >> tableName) || (reader >> redundantItem))
             {
                 std::cout << "Syntax Error" << std::endl;
-                return PREPARE_SYNTAX_ERROR;
+                return PREPARE_RESULT::SYNTAX_ERROR;
             }
             if (database.AcquireTable() == nullptr || tableName != std::string(database.AcquireTable()->table_name))
             {
                 std::cout << "Table \"" << tableName << "\" doesn't exist" << std::endl;
-                return PREPARE_TABLE_NOT_EXIST;
+                return PREPARE_RESULT::TABLE_NOT_EXIST;
             }
             std::memcpy(table_name_for_select_, tableName.c_str(), tableName.size() + 1);
-            return PREPARE_SUCCESS;
+            return PREPARE_RESULT::SUCCESS;
         }
-
+        // Other statement
         else
         {
             std::cout << "Unrecognized statement" << std::endl;
-            return PREPARE_UNRECOGNIZED_STATEMENT;
+            return PREPARE_RESULT::UNRECOGNIZED;
         }
-        return PREPARE_SUCCESS;
+        return PREPARE_RESULT::SUCCESS;
     }
 
+    // Execute processed statement 
     ExecuteResult ExecuteStatement(Database &database, const std::string &userInput)
     {
         ExecuteResult res = EXECUTE_FAILED;
@@ -116,17 +119,17 @@ private:
     char table_name_for_select_[TABLE_NAME_MAX_LENGTH + 1];
 
 private:
-    PrepareResult CheckStringAttributeSize(const std::string &attribute, wxdb_uint size)
+    PREPARE_RESULT CheckStringAttributeSize(const std::string &attribute, wxdb_uint size)
     {
         if (attribute.size() > size)
         {
             std::cout << "The size of attribute \"" << attribute << "\" excess range" << std::endl;
-            return PREPARE_ATTRIBUTE_SIZE_EXCESS;
+            return PREPARE_RESULT::ATTRIBUTE_SIZE_EXCESS;
         }
-        return PREPARE_SUCCESS;
+        return PREPARE_RESULT::SUCCESS;
     }
 
-    PrepareResult CheckIntAttributeSize(const std::string &attribute)
+    PREPARE_RESULT CheckIntAttributeSize(const std::string &attribute)
     {
         try
         {
@@ -135,9 +138,9 @@ private:
         catch(const std::exception& e)
         {
             std::cerr << "Error in the attribute of Integer type" << std::endl;;
-            return PREPARE_ATTRIBUTE_ERROR;
+            return PREPARE_RESULT::ATTRIBUTE_ERROR;
         }
-        return PREPARE_SUCCESS;
+        return PREPARE_RESULT::SUCCESS;
     }
 
     /*

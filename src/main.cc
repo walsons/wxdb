@@ -27,7 +27,7 @@ int main()
         else 
         {
             // SQL statements
-            if (sqlStatement.PrepareStatement(database, userInput) == PREPARE_SUCCESS)
+            if (sqlStatement.PrepareStatement(database, userInput) == PREPARE_RESULT::SUCCESS)
             {
                 sqlStatement.ExecuteStatement(database, userInput);
             }
