@@ -9,34 +9,35 @@
 #include <unordered_map>
 #include <fstream>
 #include <memory>
-
-#define wxdb_uint uint32_t
+#include <stdexcept>
 
 #define size_of_attribure(Struct, Attribute) sizeof(((Struct*)0)->Attribute)
 
-#define USER_NAME_MAX_LENGTH 25
+/*********
+ *  Row  *
+ *********/
+#define USER_NAME_MAX_LENGTH 31
 #define EMAIL_MAX_LENGTH 255
-
 struct Row 
 {
-    wxdb_uint id;
+    unsigned id;
     char user_name[USER_NAME_MAX_LENGTH + 1];
     char email[EMAIL_MAX_LENGTH + 1];
 };
+const unsigned kIdSize = size_of_attribure(Row, id);
+const unsigned kUserNameSize = size_of_attribure(Row, user_name);
+const unsigned kEmailSize = size_of_attribure(Row, email);
+const unsigned kIdOffset = 0;
+const unsigned kUserNameOffset = kIdOffset + kIdSize;
+const unsigned kEmailOffset = kUserNameOffset + kUserNameSize;
 
-const wxdb_uint kIdSize = size_of_attribure(Row, id);
-const wxdb_uint kUserNameSize = size_of_attribure(Row, user_name);
-const wxdb_uint kEmailSize = size_of_attribure(Row, email);
-const wxdb_uint kIdOffset = 0;
-const wxdb_uint kUserNameOffset = kIdOffset + kIdSize;
-const wxdb_uint kEmailOffset = kUserNameOffset + kUserNameSize;
-
-#define TABLE_NAME_MAX_LENGTH 25
+/*********
+ * Pager *
+ *********/
 #define PAGE_SIZE 4096
 #define MAX_PAGE_NUMBER 100
-const wxdb_uint kRowNumberPerPage = PAGE_SIZE / sizeof(Row);
-const wxdb_uint kMaxRowNumber = kRowNumberPerPage * MAX_PAGE_NUMBER;
-
+const unsigned kRowNumberPerPage = PAGE_SIZE / sizeof(Row);
+const unsigned kMaxRowNumber = kRowNumberPerPage * MAX_PAGE_NUMBER;
 struct Pager
 {
     Pager(const std::string &file_name) 
@@ -93,6 +94,10 @@ struct Pager
     char *pages[MAX_PAGE_NUMBER];
 };
 
+/***********
+ *  Table  *
+ ***********/
+#define TABLE_NAME_MAX_LENGTH 25
 struct Table
 {
     Table(const std::string &file_name = "wxdb.db")
@@ -109,14 +114,28 @@ struct Table
         }
     }
     char table_name[TABLE_NAME_MAX_LENGTH + 1];
-    wxdb_uint row_number;
+    unsigned row_number;
     Pager *pager;
 };
 
+/************
+ *  Cursor  *
+ ************/
+struct Cursor
+{
+    Table *table;
+    unsigned row_num;
+    // unsigned page_num;
+    // unsigned cell_num;
+    bool end_of_table;
+};
 
+/************
+ * Database *
+ ************/
 class Database {
 public:
-    Database() : table_(nullptr) 
+    Database() : table_(nullptr)
     { 
         std::ifstream in("table_attribute.db", std::ifstream::binary | std::ifstream::in);
         if (in)
@@ -128,15 +147,15 @@ public:
     }
     ~Database() 
     {
+        FlushToDisk();
         if (table_ != nullptr)
         {
-            FlushToDisk();
             delete table_;
             table_ = nullptr;
         }
     }
 
-    ExecuteResult CreateTable(char tableNameForCreate[], wxdb_uint bufferSize)
+    ExecuteResult CreateTable(char tableNameForCreate[], unsigned bufferSize)
     {
         if (table_ == nullptr)
         {
@@ -154,74 +173,90 @@ public:
 
     ExecuteResult InsertRow(Row rowForInsert)
     {
-        auto pager = table_->pager;
-        wxdb_uint pageNumber = table_->row_number / kRowNumberPerPage;
+        Pager *pager = table_->pager;
+        Cursor cursor = TableEnd();
+        unsigned pageNumber = cursor.row_num / kRowNumberPerPage;
         if (pageNumber >= 100)
         {
             std::cout << "Table \"" << table_->table_name << "\" is full" << std::endl;
             return EXECUTE_TABLE_FULL;
         }
-        wxdb_uint rowNumber = table_->row_number % kRowNumberPerPage;
         if (pager->pages[pageNumber] == nullptr)
         {
             pager->pages[pageNumber] = new char[PAGE_SIZE];
         }
-        serialize_row(&rowForInsert, pager->pages[pageNumber] + rowNumber * sizeof(Row));
+        serialize_row(&rowForInsert, CursorValue(cursor));
         ++table_->row_number;
         std::cout << "Insert record into table \"" << table_->table_name << "\" successfully" << std::endl;
         return EXECUTE_SUCCESS;
     }
 
-    ExecuteResult Select(char tableNameForSelect[], wxdb_uint bufferSize)
+    ExecuteResult Select(char tableNameForSelect[], unsigned bufferSize)
     {
-        Pager *pager = table_->pager;
         std::cout << "\tid\tuser name\temail\t" << std::endl;
         Row oneRow;
-        for (size_t row = 0; row < table_->row_number; ++row)
+        Cursor cursor = TableStart();
+        while (!cursor.end_of_table)
         {
-            wxdb_uint pageNumber = row / kRowNumberPerPage;
-            wxdb_uint rowNumber = row % kRowNumberPerPage;
-            deserialize_row(&oneRow, pager->pages[pageNumber] + rowNumber * sizeof(Row));
+            deserialize_row(&oneRow, CursorValue(cursor));
             std::cout << "\t" << oneRow.id << "\t" << oneRow.user_name << "\t" << oneRow.email << "\t" << std::endl;
+            CursorAdvance(cursor);
         }
         return EXECUTE_SUCCESS;
     }
 
-    Table *AcquireTable()
+    // Get the position of the cursor
+    char *CursorValue(const Cursor &cursor)
     {
-        return table_;
-    }
-    // Get the position to insert a row by row number.
-    void *RowSlot(Table *table, wxdb_uint rowNumber)
-    {
-        wxdb_uint pageNumber = rowNumber / kRowNumberPerPage;
-        if (pageNumber >= 100)
+        unsigned pageNumber = cursor.row_num / kRowNumberPerPage;
+        if (pageNumber >= MAX_PAGE_NUMBER)
         {
             std::cout << "Row number beyond max range" << std::endl;
             return nullptr;
         }
-        wxdb_uint rowNumberInPage = rowNumber % kRowNumberPerPage;
-        return table->pager->pages[pageNumber] + rowNumberInPage * sizeof(Row);
-    }
-    // Get page
-    void *GetPage(Pager *pager, unsigned page_num)
-    {
-        if (page_num > MAX_PAGE_NUMBER)
-        {
-            std::cout << "excess max page number" << std::endl;
-            return nullptr;
-        }
-        if (pager->pages[page_num] == nullptr)
-        {
-            pager->fd.seekg(page_num * PAGE_SIZE, std::ios::beg);
-            pager->fd.read(pager->pages[page_num], PAGE_SIZE);
-        }
-        return pager->pages[page_num];
+        unsigned rowNumberInPage = cursor.row_num % kRowNumberPerPage;
+        return cursor.table->pager->pages[pageNumber] + rowNumberInPage * sizeof(Row);
     }
 
-private:
+    // Push the cursor advance one step
+    void CursorAdvance(Cursor &cursor) const
+    {
+        if (++cursor.row_num == table_->row_number)
+        {
+            cursor.end_of_table = true;
+        }
+    }
+
+    // Create a cursor indicate table start
+    Cursor TableStart() const
+    {
+        Cursor cursor;
+        cursor.table = table_;
+        cursor.row_num = 0;
+        cursor.end_of_table = (table_->row_number == 0);
+        return cursor;
+    }
+    // Create a cursor indicate table end
+    Cursor TableEnd() const 
+    {
+        Cursor cursor;
+        cursor.table = table_;
+        cursor.row_num = table_->row_number;
+        cursor.end_of_table = true;
+        return cursor;
+    }
+
+    Table *table() const
+    {
+        return table_;
+    }
+
+// member
+private: 
     Table *table_;
 
+// function
+private: 
     // copy row buffer to destination.
     void serialize_row(Row *row, char *destination)
     {
@@ -237,6 +272,23 @@ private:
         std::memcpy(&row->user_name, destination + kUserNameOffset, kUserNameSize);
         std::memcpy(&row->email, destination + kEmailOffset, kEmailSize);
     }
+
+    // Get page by page number
+    // char *GetPage(unsigned page_num)
+    // {
+    //     Pager *pager = table_->pager;
+    //     if (page_num > MAX_PAGE_NUMBER)
+    //     {
+    //         std::cout << "excess max page number" << std::endl;
+    //         return nullptr;
+    //     }
+    //     if (pager->pages[page_num] == nullptr)
+    //     {
+    //         pager->fd.seekg(page_num * PAGE_SIZE, std::ios::beg);
+    //         pager->fd.read(pager->pages[page_num], PAGE_SIZE);
+    //     }
+    //     return pager->pages[page_num];
+    // }
     
     // Flush buffer to disk
     void FlushToDisk()

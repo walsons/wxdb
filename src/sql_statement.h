@@ -49,7 +49,7 @@ public:
                 std::cout << "Syntax Error" << std::endl;
                 return PREPARE_RESULT::SYNTAX_ERROR;
             }
-            if (database.AcquireTable() == nullptr || tableName != std::string(database.AcquireTable()->table_name))
+            if (database.table() == nullptr || tableName != std::string(database.table()->table_name))
             {
                 std::cout << "Table \"" << tableName << "\" doesn't exist" << std::endl;
                 return PREPARE_RESULT::TABLE_NOT_EXIST;
@@ -59,7 +59,7 @@ public:
                 (res = CheckStringAttributeSize(userName, kUserNameSize - 1)) == PREPARE_RESULT::SUCCESS &&
                 (res = CheckStringAttributeSize(email, kEmailSize - 1)) == PREPARE_RESULT::SUCCESS) 
             {
-                wxdb_uint idNum = std::stoi(id);
+                unsigned idNum = std::stoi(id);
                 std::memcpy(&row_for_insert_.id, &idNum, sizeof(idNum));
                 std::memcpy(&row_for_insert_.user_name, userName.c_str(), userName.size() + 1);
                 std::memcpy(&row_for_insert_.email, email.c_str(), email.size() + 1);
@@ -76,7 +76,7 @@ public:
                 std::cout << "Syntax Error" << std::endl;
                 return PREPARE_RESULT::SYNTAX_ERROR;
             }
-            if (database.AcquireTable() == nullptr || tableName != std::string(database.AcquireTable()->table_name))
+            if (database.table() == nullptr || tableName != std::string(database.table()->table_name))
             {
                 std::cout << "Table \"" << tableName << "\" doesn't exist" << std::endl;
                 return PREPARE_RESULT::TABLE_NOT_EXIST;
@@ -119,7 +119,7 @@ private:
     char table_name_for_select_[TABLE_NAME_MAX_LENGTH + 1];
 
 private:
-    PREPARE_RESULT CheckStringAttributeSize(const std::string &attribute, wxdb_uint size)
+    PREPARE_RESULT CheckStringAttributeSize(const std::string &attribute, unsigned size)
     {
         if (attribute.size() > size)
         {
