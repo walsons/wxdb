@@ -47,7 +47,6 @@ struct Cursor
     Table *table;
     unsigned page_num;
     unsigned cell_num;
-    bool end_of_table;
 };
 
 /************
@@ -61,7 +60,7 @@ public:
         if (in)
         {
             table_ = new Table();
-            in.read((char*)table_, TABLE_NAME_MAX_LENGTH + 1);
+            in.read((char*)table_, sizeof(Table) - sizeof(Pager *));
             in.close();
         }
     }
@@ -95,77 +94,78 @@ public:
         // If table doesn't have any page/node
         if (table_->root_page_num == std::numeric_limits<unsigned>::max())
         {
-            Pager *pager = table_->pager;
-            unsigned unused_page_num = 0;
-            void *unused_page = pager->GetUnusedPage(unused_page_num);
+            // When fisrt insert, create an internal node and a leaf node, root node must be an internal node
+            unsigned unused_page_num = table_->pager->GetUnusedPageNum();
+            InternalNode *root_node = table_->pager->GetInternalNode(unused_page_num);
+            root_node->SetNode(true, unused_page_num, std::numeric_limits<unsigned>::max(), 0);
             table_->root_page_num = unused_page_num;
-            LeafNode *leaf_node = pager->PageToLeafNode(unused_page);
-            leaf_node->InitForPage(true, unused_page_num, std::numeric_limits<unsigned>::max());
+            // Get leaf node
+            unused_page_num = table_->pager->GetUnusedPageNum();
+            LeafNode *leaf_node = table_->pager->GetLeafNode(unused_page_num);
+            leaf_node->cell_[0].key = rowForInsert.id;
+            leaf_node->cell_[0].value = rowForInsert;
+            leaf_node->SetNode(unused_page_num, root_node->page_num_, 1);
+            // Bind child and set key to 0
+            root_node->clue_[0].key = rowForInsert.id;
+            root_node->clue_[0].child = leaf_node->page_num_;
+            ++root_node->num_clues_;
+            std::cout << "Insert record into table \"" << table_->table_name << "\" successfully" << std::endl;
+            return EXECUTE_SUCCESS;
         }
-        unsigned key = rowForInsert.id;
-        Cursor cursor = InsertPosition(key);
-
-        Pager *pager = table_->pager;
-        void *page = pager->GetPage(cursor.page_num);
-        LeafNode *leaf_node = pager->PageToLeafNode(page);
-
-        // move later element
-        if (leaf_node->num_cells_ > 0)
+        // If insert key larger than max key, need to update all most right internal node 
+        LeafNode *leaf_node = nullptr;
+        InternalNode *root_node = table_->pager->GetInternalNode(table_->root_page_num);
+        if (rowForInsert.id > root_node->clue_[root_node->num_clues_ - 1].key)
         {
-            for (int i = leaf_node->num_cells_ - 1; i >= cursor.cell_num; --i)
+            unsigned node_page_num = table_->root_page_num;
+            while (table_->pager->GetPageType(node_page_num) == NODE_TYPE::INTERNAL_NODE)
             {
-                leaf_node->cell_[i + 1] = leaf_node->cell_[i];
+                InternalNode *node = table_->pager->GetInternalNode(node_page_num);
+                node->clue_[node->num_clues_ - 1].key = rowForInsert.id;
+                node_page_num = node->clue_[node->num_clues_ - 1].child;
             }
+            leaf_node = table_->pager->GetLeafNode(node_page_num);
+            ++leaf_node->num_cells_;
+            leaf_node->cell_[leaf_node->num_cells_ - 1].key = rowForInsert.id;
+            leaf_node->cell_[leaf_node->num_cells_ - 1].value = rowForInsert;
         }
-        // The function will increase the number of cells
-        serialize_row(&rowForInsert, cursor);
-
-        // Need to check whether to update parent key if have parent, 
-        // if the insert position is end, need to update
-        if (cursor.cell_num = leaf_node->num_cells_ - 1)
+        // Other case
+        else
         {
-            if (leaf_node->parent_page_num_ != std::numeric_limits<unsigned>::max())
+            unsigned key = rowForInsert.id;
+            Cursor cursor = InsertPosition(key);
+            leaf_node = table_->pager->GetLeafNode(cursor.page_num);
+            // Move later element a step for insert
+            for (unsigned i = leaf_node->num_cells_; i > cursor.cell_num; --i)
             {
-                // find the max key before insert which index is (leaf_node->num_cells_ - 2)
-                unsigned index = pager->FindInternalNodeClue(leaf_node->parent_page_num_, leaf_node->cell_[leaf_node->num_cells_ - 2].key);
-                // update key
-                void *parent_page = pager->GetPage(leaf_node->parent_page_num_);           
-                InternalNode *parent_node = pager->PageToInternalNode(parent_page);
-                parent_node->clue_[index].key = leaf_node->cell_[leaf_node->num_cells_ - 1].key;
+                leaf_node->cell_[i] = leaf_node->cell_[i - 1];
             }
+            // Assignment
+            leaf_node->cell_[cursor.cell_num].key = rowForInsert.id;
+            leaf_node->cell_[cursor.cell_num].value = rowForInsert;
+            ++leaf_node->num_cells_;
         }
         // If page is full after insert, split the page
         if (leaf_node->num_cells_ >= CELL_CAPACITY)
         {
-            unsigned unused_page_num = 0;
-            void *unused_page = pager->GetUnusedPage(unused_page_num);
-            LeafNode *new_leaf_node = pager->PageToLeafNode(unused_page);
-            // Copy half of cell to the new node
-            unsigned mid_index = (leaf_node->num_cells_ + 1) / 2;
-            unsigned new_leaf_node_num_cells = leaf_node->num_cells_ - mid_index; 
-            std::memcpy(&new_leaf_node->cell_[0], &leaf_node->cell_[mid_index], (new_leaf_node_num_cells) * sizeof(Cell));
-            // Full leaf node have parent
-            if (leaf_node->parent_page_num_ != std::numeric_limits<unsigned>::max())
+            unsigned unused_page_num = table_->pager->GetUnusedPageNum();
+            LeafNode *new_leaf_node = table_->pager->GetLeafNode(unused_page_num);
+            // Copy half of lower cell to the new node
+            unsigned new_leaf_node_num_cells = (leaf_node->num_cells_ + 1) / 2;
+            std::memcpy(&new_leaf_node->cell_[0], &leaf_node->cell_[0], (new_leaf_node_num_cells) * sizeof(Cell));
+            new_leaf_node->SetNode(unused_page_num, leaf_node->parent_page_num_, new_leaf_node_num_cells);
+            // Move the element of leaf node
+            leaf_node->num_cells_ -= new_leaf_node_num_cells;
+            for (int i = 0; i < leaf_node->num_cells_; ++i) 
             {
-                // Modify both node attribute
-                new_leaf_node->InitForPage(false, unused_page_num, leaf_node->parent_page_num_);
-                new_leaf_node->num_cells_ = new_leaf_node_num_cells;
-                leaf_node->num_cells_ -= new_leaf_node_num_cells;
-                pager->InternalNodeInsert(leaf_node->parent_page_num_, leaf_node->page_num_, leaf_node->cell_[leaf_node->num_cells_ - 1].key);
+                leaf_node->cell_[i] = leaf_node->cell_[i + new_leaf_node_num_cells];
             }
-            // Full leaf node doesn't have parent
-
-
-
-
-
+            // Insert key to parent node and add correspondent pointer to child
+            table_->pager->InternalNodeInsert(new_leaf_node->parent_page_num_, new_leaf_node->page_num_, new_leaf_node->cell_[new_leaf_node->num_cells_ - 1].key);
         }
-
-
-
-
-        //     std::cout << "Table \"" << table_->table_name << "\" is full" << std::endl;
-        //     return EXECUTE_TABLE_FULL;
+        // TODO: exception check
+        // std::cout << "Table \"" << table_->table_name << "\" is full" << std::endl;
+        // return EXECUTE_TABLE_FULL;
         std::cout << "Insert record into table \"" << table_->table_name << "\" successfully" << std::endl;
         return EXECUTE_SUCCESS;
     }
@@ -173,84 +173,26 @@ public:
     ExecuteResult Select(char tableNameForSelect[], unsigned bufferSize)
     {
         std::cout << "\tid\tuser name\temail\t" << std::endl;
-        Row oneRow;
-        Cursor cursor = SelectPosition();
-        while (!cursor.end_of_table)
+        if (table_->root_page_num != std::numeric_limits<unsigned>::max())
         {
-            deserialize_row(&oneRow, cursor);
-            std::cout << "\t" << oneRow.id << "\t" << oneRow.user_name << "\t" << oneRow.email << "\t" << std::endl;
-            CursorAdvance(cursor);
+            ShowAllLeafNode(table_->root_page_num);
         }
         return EXECUTE_SUCCESS;
     }
 
-    // Create a cursor indicate table select position
-    Cursor SelectPosition() const
-    {
-        Cursor cursor;
-        cursor.table = table_;
-        cursor.page_num = table_->root_page_num;
-        cursor.cell_num = 0;
-        cursor.end_of_table = false;
-        if (table_->root_page_num == std::numeric_limits<unsigned>::max())
-        {
-            cursor.end_of_table = true;
-        }
-        return cursor;
-    }
     // Create a cursor indicate table insert position
-    Cursor InsertPosition(unsigned key)
+    Cursor InsertPosition(const unsigned &key)
     {
         // Currently, we assume insert will not excess node max size.
         Cursor cursor;
         cursor.table = table_;
-        cursor.end_of_table = true;
-        Pager *pager = table_->pager;
-        void *page = pager->GetPage(table_->root_page_num);
-        if (pager->GetPageType(page) == NODE_TYPE::LEAF_NODE)
-        {
-            LeafNode *root_node = pager->PageToLeafNode(page);
-            unsigned insert_index = BinarySearchLargerKey(root_node->cell_, root_node->num_cells_, key);
-            cursor.page_num = root_node->page_num_;
-            cursor.cell_num = insert_index;
-        }
-        else
-        {
-
-        }
+        InternalNode *root_node = table_->pager->GetInternalNode(table_->root_page_num);
+        // Search on all B+tree.
+        auto pos = table_->pager->SearchBPlusTree(root_node->page_num_, key);
+        cursor.page_num = pos.first;
+        cursor.cell_num = pos.second;
         return cursor;
     }
-
-    // Get the position of the cursor
-    void *CursorValue(const Cursor &cursor)
-    {
-        // Cursor must in the leaf node
-        Pager *pager = table_->pager;
-        void *page = pager->GetPage(cursor.page_num);
-        LeafNode *leaf_node = pager->PageToLeafNode(page);
-        return &(leaf_node->cell_[cursor.cell_num]);
-        // unsigned pageNumber = cursor.row_num / kRowNumberPerPage;
-        // if (pageNumber >= MAX_PAGE_NUMBER)
-        // {
-        //     std::cout << "Row number beyond max range" << std::endl;
-        //     return nullptr;
-        // }
-        // unsigned rowNumberInPage = cursor.row_num % kRowNumberPerPage;
-        // return cursor.table->pager->pages[pageNumber] + rowNumberInPage * sizeof(Row);
-    }
-
-    // Push the cursor advance one step
-    void CursorAdvance(Cursor &cursor) const
-    {
-        Pager *pager = table_->pager;
-        void *page = pager->GetPage(cursor.page_num);
-        LeafNode *leaf_node = pager->PageToLeafNode(page);
-        if (++cursor.cell_num == leaf_node->num_cells_)
-        {
-            cursor.end_of_table = true;
-        }
-    }
-
 
     Table *table() const
     {
@@ -263,52 +205,35 @@ private:
 
 // function
 private: 
-    // copy row buffer to destination.
-    void serialize_row(Row *row, const Cursor &cursor)
+    void ShowAllLeafNode(unsigned page_num)
     {
-        void *destination = CursorValue(cursor);
-        std::memcpy(destination + kIdOffset, &row->id, kIdSize);
-        std::memcpy(destination + kUserNameOffset, &row->user_name, kUserNameSize);
-        std::memcpy(destination + kEmailOffset, &row->email, kEmailSize);
-        // num_cells_ addition 
-        Pager *pager = table_->pager;
-        void *page = pager->GetPage(cursor.page_num);
-        LeafNode *leaf_node = pager->PageToLeafNode(page);
-        ++leaf_node->num_cells_;
+        InternalNode *node = table_->pager->GetInternalNode(page_num);
+        for (unsigned i = 0; i < node->num_clues_; ++i)
+        {
+            unsigned child_page_num = node->clue_[i].child;
+            if (table_->pager->GetPageType(child_page_num) == NODE_TYPE::INTERNAL_NODE)
+            {
+                ShowAllLeafNode(child_page_num);
+            }
+            else
+            {
+                LeafNode *leaf_node = table_->pager->GetLeafNode(child_page_num);
+                for (unsigned j = 0; j < leaf_node->num_cells_; ++j)
+                {
+                    Row &oneRow = leaf_node->cell_[j].value;
+                    std::cout << "\t" << oneRow.id << "\t" << oneRow.user_name << "\t" << oneRow.email << "\t" << std::endl;
+                }
+            }
+        }
     }
-
-    // copy destination buffer to row.
-    void deserialize_row(Row *row, const Cursor &cursor)
-    {
-        void *destination = CursorValue(cursor);
-        std::memcpy(&row->id, destination + kIdOffset, kIdSize);
-        std::memcpy(&row->user_name, destination + kUserNameOffset, kUserNameSize);
-        std::memcpy(&row->email, destination + kEmailOffset, kEmailSize);
-    }
-
-
 
     // Flush buffer to disk
     void FlushToDisk()
     {
         if (table_ != nullptr)
         {
-    //         size_t nums_of_pages = table_->row_number / kRowNumberPerPage;
-    //         for (size_t i = 0; i < nums_of_pages; ++i)
-    //         {
-    //             if (table_->pager->pages[i] != nullptr)
-    //             {
-    //                 table_->pager->fd.seekp(i * PAGE_SIZE, std::ios::beg);
-    //                 table_->pager->fd.write(table_->pager->pages[i], PAGE_SIZE);
-    //             }
-    //         }
-    //         // last page not full
-    //         size_t rest_row_num = table_->row_number - kRowNumberPerPage * nums_of_pages;
-    //         if (rest_row_num > 0)
-    //         {
-    //             table_->pager->fd.seekp(nums_of_pages * PAGE_SIZE, std::ios::beg);
-    //             table_->pager->fd.write(table_->pager->pages[nums_of_pages], rest_row_num * sizeof(Row));
-    //         }
+            // Flush page to disk
+            table_->pager->FlushPageToDisk();
             // Write table name and row number to file
             std::ofstream out("table_attribute.db", std::ofstream::out | std::ofstream::binary);
             out.write((char*)table_, sizeof(Table));

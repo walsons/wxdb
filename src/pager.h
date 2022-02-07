@@ -15,25 +15,15 @@ public:
         fd_.open(file_name, std::ios::binary | std::ios::in | std::ios::out);
         if (fd_)
         {
-            // fd.seekg(0, std::ios::end);
-            // file_length = fd.tellg();
-            // size_t row_num = file_length / sizeof(Row);
-            // size_t page_num = row_num / kRowNumberPerPage;
-            // fd.seekg(0, std::ios::beg);
-            // // Initialization
-            // for (size_t i = 0; i < MAX_PAGE_NUMBER; ++i)
-            // {
-            //     pages[i] = nullptr;
-            // }
-            // // Allocate
-            // for (size_t i = 0; i < page_num; ++i)
-            // {
-            //     pages[i] = new char[PAGE_SIZE];
-            //     fd.read(pages[i], PAGE_SIZE);
-            // }
-            // // rest of buffer in file
-            // pages[page_num] = new char[PAGE_SIZE];
-            // fd.read(pages[page_num], (row_num - page_num * kRowNumberPerPage) * sizeof(Row));
+            fd_.seekg(0, std::ios::end);
+            file_length_ = fd_.tellg();
+            num_pages_ = file_length_ / PAGE_SIZE;
+            fd_.seekg(0, std::ios::beg);
+            // Initialization
+            for (size_t i = 0; i < MAX_PAGE_NUMBER; ++i)
+            {
+                pages_[i] = nullptr;
+            }
         }
         else
         {
@@ -61,16 +51,113 @@ public:
         }
     }
 
-    // Get unused page
-    void *GetUnusedPage(unsigned &unused_page_num)
+    // Get unused page and allocate space
+    unsigned GetUnusedPageNum()
     {
-        unused_page_num = num_pages_;
+        unsigned unused_page_num = num_pages_;
         ++num_pages_;
         file_length_ += PAGE_SIZE;
         pages_[unused_page_num] = new char[PAGE_SIZE];
-        return pages_[unused_page_num];
+        return unused_page_num;
     }
 
+    NODE_TYPE GetPageType(unsigned page_num)
+    {
+        void *page = GetPage(page_num);
+        return *reinterpret_cast<NODE_TYPE *>(page);
+    }
+
+    // Get leaf node by page number
+    LeafNode *GetLeafNode(unsigned page_num)
+    {
+        void *page = GetPage(page_num);
+        return reinterpret_cast<LeafNode *>(page);
+    }
+    
+    // Get internal node by page number
+    InternalNode *GetInternalNode(unsigned page_num)
+    {
+        void *page = GetPage(page_num);
+        return reinterpret_cast<InternalNode *>(page);
+    }
+
+    /* 
+    * Search on tree until leaf node
+    */
+    std::pair<unsigned, unsigned> SearchBPlusTree(unsigned page_num, unsigned key)
+    {
+        if (GetPageType(page_num) == NODE_TYPE::LEAF_NODE)
+        {
+            LeafNode *node = GetLeafNode(page_num);
+            unsigned index = BinarySearchLargerKey<Cell>(node->cell_, node->num_cells_, key);
+            return {node->page_num_, index};
+        }
+        InternalNode *node = GetInternalNode(page_num);
+        unsigned index = BinarySearchLargerKey<Clue>(node->clue_, node->num_clues_, key);
+        unsigned child_page_num = node->clue_[index].child;
+        return SearchBPlusTree(child_page_num, key);
+    }
+
+    // unsigned FindInternalNodeClue(unsigned page_num, unsigned key)
+    // {
+    //     // Binary search for insert position of key
+    //     InternalNode *internal_node = GetInternalNode(page_num);
+    //     if (internal_node->clue_[internal_node->num_keys_ - 1].key == key)
+    //     {
+    //         return internal_node->num_keys_ - 1;
+    //     }
+    //     int beg = 0, end = internal_node->num_keys_ - 1;
+    //     while (beg <= end)
+    //     {
+    //         int mid = beg + (end - beg) / 2;
+    //         if (internal_node->clue_[mid].key <= key)
+    //         {
+    //             beg = mid + 1;
+    //         }
+    //         else
+    //         {
+    //             end = mid;
+    //         }
+    //     } // Requiring key is exist in page
+    //     return end - 1;
+    // }
+
+    void InternalNodeInsert(unsigned page_num, unsigned child_page_num, unsigned key)
+    {
+        // Binary search for insert position of key that larger than key
+        InternalNode *internal_node = GetInternalNode(page_num);
+        unsigned index = BinarySearchLargerKey<Clue>(internal_node->clue_, internal_node->num_clues_, key);
+        // move later element
+        for (int i = internal_node->num_clues_; i > index; --i)
+        {
+            internal_node->clue_[i] = internal_node->clue_[i - 1];
+        }
+        internal_node->clue_[index].key = key;
+        internal_node->clue_[index].child = child_page_num;
+        // modify internal node attribute
+        ++internal_node->num_clues_;
+    }
+
+    // Flush page to disk
+    void FlushPageToDisk()
+    {
+        for (unsigned i = 0; i < num_pages_; ++i)
+        {
+            if (pages_[i] != nullptr)
+            {
+                fd_.seekp(i * PAGE_SIZE, std::ios::beg);
+                fd_.write(pages_[i], PAGE_SIZE);
+            }
+        }
+    }
+
+private:
+    std::fstream fd_;
+    unsigned int file_length_;
+    unsigned num_pages_;
+    char *pages_[MAX_PAGE_NUMBER];
+
+private:
     // Get page that record in file by page number
     void *GetPage(unsigned page_num)
     {
@@ -86,87 +173,11 @@ public:
         if (pages_[page_num] == nullptr)
         {
             fd_.seekg(page_num * PAGE_SIZE, std::ios::beg);
+            pages_[page_num] = new char[PAGE_SIZE];
             fd_.read(pages_[page_num], PAGE_SIZE);
         }
         return pages_[page_num];
     }
-
-    // Convert page to leaf node
-    LeafNode *PageToLeafNode(void *page)
-    {
-        return reinterpret_cast<LeafNode *>(page);
-    }
-    // Convert page to internal node
-    InternalNode *PageToInternalNode(void *page)
-    {
-        return reinterpret_cast<InternalNode *>(page);
-    }
-    // Get page/node type
-    NODE_TYPE GetPageType(void *page)
-    {
-        return *reinterpret_cast<NODE_TYPE *>(page);
-    }
-
-    unsigned FindInternalNodeClue(unsigned page_num, unsigned key)
-    {
-        // Binary search for insert position of key
-        void *page = GetPage(page_num);
-        InternalNode *internal_node = PageToInternalNode(page);   
-        if (internal_node->clue_[internal_node->num_keys_ - 1].key == key)
-        {
-            return internal_node->num_keys_ - 1;
-        }
-        int beg = 0, end = internal_node->num_keys_ - 1;
-        while (beg <= end)
-        {
-            int mid = beg + (end - beg) / 2;
-            if (internal_node->clue_[mid].key <= key)
-            {
-                beg = mid + 1;
-            }
-            else
-            {
-                end = mid;
-            }
-        } // Requiring key is exist in page
-        return end - 1;
-    }
-
-    void InternalNodeInsert(unsigned page_num, unsigned child_page_num, unsigned key)
-    {
-        // Binary search for insert position of key that larger than key
-        void *page = GetPage(page_num);
-        InternalNode *internal_node = PageToInternalNode(page);   
-        int beg = 0, end = internal_node->num_keys_ = 1;
-        while (beg <= end)
-        {
-            int mid = beg + (end - beg) / 2;
-            if (internal_node->clue_[mid].key <= key)
-            {
-                beg = mid + 1;
-            }
-            else
-            {
-                end = mid;
-            }
-        } // Insert key is impossible larger than the end key
-        // move later element
-        for (int i = internal_node->num_keys_ - 1; i >= end; --i)
-        {
-            internal_node->clue_[i + 1] = internal_node->clue_[i];
-        }
-        internal_node->clue_[end].key = key;
-        internal_node->clue_[end].child = child_page_num;
-        // modify internal node attribute
-        ++internal_node->num_keys_;
-    }
-
-
-private:
-    std::fstream fd_;
-    unsigned int file_length_;
-    unsigned num_pages_;
-    char *pages_[MAX_PAGE_NUMBER];
 };
 
 #endif
