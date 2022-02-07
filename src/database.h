@@ -9,97 +9,23 @@
 #include <unordered_map>
 #include <fstream>
 #include <memory>
+#include <stdexcept>
+#include <limits>
 
-#define wxdb_uint uint32_t
+#include "row.h"
+#include "pager.h"
+#include "b_tree.h"
 
-#define size_of_attribure(Struct, Attribute) sizeof(((Struct*)0)->Attribute)
-
-#define USER_NAME_MAX_LENGTH 25
-#define EMAIL_MAX_LENGTH 255
-
-struct Row 
-{
-    wxdb_uint id;
-    char user_name[USER_NAME_MAX_LENGTH + 1];
-    char email[EMAIL_MAX_LENGTH + 1];
-};
-
-const wxdb_uint kIdSize = size_of_attribure(Row, id);
-const wxdb_uint kUserNameSize = size_of_attribure(Row, user_name);
-const wxdb_uint kEmailSize = size_of_attribure(Row, email);
-const wxdb_uint kIdOffset = 0;
-const wxdb_uint kUserNameOffset = kIdOffset + kIdSize;
-const wxdb_uint kEmailOffset = kUserNameOffset + kUserNameSize;
-
+/***********
+ *  Table  *
+ ***********/
 #define TABLE_NAME_MAX_LENGTH 25
-#define PAGE_SIZE 4096
-#define MAX_PAGE_NUMBER 100
-const wxdb_uint kRowNumberPerPage = PAGE_SIZE / sizeof(Row);
-const wxdb_uint kMaxRowNumber = kRowNumberPerPage * MAX_PAGE_NUMBER;
-
-struct Pager
+class Table
 {
-    Pager(const std::string &file_name) 
-    {
-        fd.open(file_name, std::ios::binary | std::ios::in | std::ios::out);
-        if (fd)
-        {
-            fd.seekg(0, std::ios::end);
-            file_length = fd.tellg();
-            size_t row_num = file_length / sizeof(Row);
-            size_t page_num = row_num / kRowNumberPerPage;
-            fd.seekg(0, std::ios::beg);
-            // Initialization
-            for (size_t i = 0; i < MAX_PAGE_NUMBER; ++i)
-            {
-                pages[i] = nullptr;
-            }
-            // Allocate
-            for (size_t i = 0; i < page_num; ++i)
-            {
-                pages[i] = new char[PAGE_SIZE];
-                fd.read(pages[i], PAGE_SIZE);
-            }
-            // rest of buffer in file
-            pages[page_num] = new char[PAGE_SIZE];
-            fd.read(pages[page_num], (row_num - page_num * kRowNumberPerPage) * sizeof(Row));
-        }
-        else
-        {
-            std::ofstream out_fd(file_name, std::ios::out);
-            out_fd.close();
-            file_length = 0;
-            fd.open(file_name, std::ios::binary | std::ios::in | std::ios::out);
-            for (size_t i = 0; i < MAX_PAGE_NUMBER; ++i)
-            {
-                pages[i] = nullptr;
-            }
-        }
-    }
-    ~Pager()
-    {
-        fd.close();
-        for (size_t i = 0; i < MAX_PAGE_NUMBER; ++i)
-        {
-            if (pages[i] != nullptr)
-            {
-                delete[] pages[i];
-                pages[i] = nullptr;
-            }
-        }
-    }
-    std::fstream fd;
-    unsigned int file_length;
-    char *pages[MAX_PAGE_NUMBER];
-};
-
-struct Table
-{
+public:
+    // If root_page_num = std::numeric_limits<unsigned>::max(), which means not have any node.
     Table(const std::string &file_name = "wxdb.db")
-    {
-        pager = new Pager(file_name);
-        row_number = pager->file_length / sizeof(Row);
-    }
+        : table_name(""), root_page_num(std::numeric_limits<unsigned>::max()), pager(new Pager(file_name)) { }
     ~Table()
     {
         if (pager != nullptr)
@@ -109,39 +35,50 @@ struct Table
         }
     }
     char table_name[TABLE_NAME_MAX_LENGTH + 1];
-    wxdb_uint row_number;
+    unsigned root_page_num;
     Pager *pager;
 };
 
+/************
+ *  Cursor  *
+ ************/
+struct Cursor
+{
+    Table *table;
+    unsigned page_num;
+    unsigned cell_num;
+};
 
+/************
+ * Database *
+ ************/
 class Database {
 public:
-    Database() : table_(nullptr) 
+    Database() : table_(nullptr)
     { 
         std::ifstream in("table_attribute.db", std::ifstream::binary | std::ifstream::in);
         if (in)
         {
             table_ = new Table();
-            in.read((char*)table_, TABLE_NAME_MAX_LENGTH + 1);
+            in.read((char*)table_, sizeof(Table) - sizeof(Pager *));
             in.close();
         }
     }
     ~Database() 
     {
+        FlushToDisk();
         if (table_ != nullptr)
         {
-            FlushToDisk();
             delete table_;
             table_ = nullptr;
         }
     }
 
-    ExecuteResult CreateTable(char tableNameForCreate[], wxdb_uint bufferSize)
+    ExecuteResult CreateTable(char tableNameForCreate[], unsigned bufferSize)
     {
         if (table_ == nullptr)
         {
             table_ = new Table();
-            table_->row_number = 0;
             std::memcpy(table_->table_name, tableNameForCreate, bufferSize);
             std::cout << "Create table " << "\"" << table_->table_name << "\" successfully" << std::endl;
         }
@@ -154,111 +91,149 @@ public:
 
     ExecuteResult InsertRow(Row rowForInsert)
     {
-        auto pager = table_->pager;
-        wxdb_uint pageNumber = table_->row_number / kRowNumberPerPage;
-        if (pageNumber >= 100)
+        // If table doesn't have any page/node
+        if (table_->root_page_num == std::numeric_limits<unsigned>::max())
         {
-            std::cout << "Table \"" << table_->table_name << "\" is full" << std::endl;
-            return EXECUTE_TABLE_FULL;
+            // When fisrt insert, create an internal node and a leaf node, root node must be an internal node
+            unsigned unused_page_num = table_->pager->GetUnusedPageNum();
+            InternalNode *root_node = table_->pager->GetInternalNode(unused_page_num);
+            root_node->SetNode(true, unused_page_num, std::numeric_limits<unsigned>::max(), 0);
+            table_->root_page_num = unused_page_num;
+            // Get leaf node
+            unused_page_num = table_->pager->GetUnusedPageNum();
+            LeafNode *leaf_node = table_->pager->GetLeafNode(unused_page_num);
+            leaf_node->cell_[0].key = rowForInsert.id;
+            leaf_node->cell_[0].value = rowForInsert;
+            leaf_node->SetNode(unused_page_num, root_node->page_num_, 1);
+            // Bind child and set key to 0
+            root_node->clue_[0].key = rowForInsert.id;
+            root_node->clue_[0].child = leaf_node->page_num_;
+            ++root_node->num_clues_;
+            std::cout << "Insert record into table \"" << table_->table_name << "\" successfully" << std::endl;
+            return EXECUTE_SUCCESS;
         }
-        wxdb_uint rowNumber = table_->row_number % kRowNumberPerPage;
-        if (pager->pages[pageNumber] == nullptr)
+        // If insert key larger than max key, need to update all most right internal node 
+        LeafNode *leaf_node = nullptr;
+        InternalNode *root_node = table_->pager->GetInternalNode(table_->root_page_num);
+        if (rowForInsert.id > root_node->clue_[root_node->num_clues_ - 1].key)
         {
-            pager->pages[pageNumber] = new char[PAGE_SIZE];
+            unsigned node_page_num = table_->root_page_num;
+            while (table_->pager->GetPageType(node_page_num) == NODE_TYPE::INTERNAL_NODE)
+            {
+                InternalNode *node = table_->pager->GetInternalNode(node_page_num);
+                node->clue_[node->num_clues_ - 1].key = rowForInsert.id;
+                node_page_num = node->clue_[node->num_clues_ - 1].child;
+            }
+            leaf_node = table_->pager->GetLeafNode(node_page_num);
+            ++leaf_node->num_cells_;
+            leaf_node->cell_[leaf_node->num_cells_ - 1].key = rowForInsert.id;
+            leaf_node->cell_[leaf_node->num_cells_ - 1].value = rowForInsert;
         }
-        serialize_row(&rowForInsert, pager->pages[pageNumber] + rowNumber * sizeof(Row));
-        ++table_->row_number;
+        // Other case
+        else
+        {
+            unsigned key = rowForInsert.id;
+            Cursor cursor = InsertPosition(key);
+            leaf_node = table_->pager->GetLeafNode(cursor.page_num);
+            // Move later element a step for insert
+            for (unsigned i = leaf_node->num_cells_; i > cursor.cell_num; --i)
+            {
+                leaf_node->cell_[i] = leaf_node->cell_[i - 1];
+            }
+            // Assignment
+            leaf_node->cell_[cursor.cell_num].key = rowForInsert.id;
+            leaf_node->cell_[cursor.cell_num].value = rowForInsert;
+            ++leaf_node->num_cells_;
+        }
+        // If page is full after insert, split the page
+        if (leaf_node->num_cells_ >= CELL_CAPACITY)
+        {
+            unsigned unused_page_num = table_->pager->GetUnusedPageNum();
+            LeafNode *new_leaf_node = table_->pager->GetLeafNode(unused_page_num);
+            // Copy half of lower cell to the new node
+            unsigned new_leaf_node_num_cells = (leaf_node->num_cells_ + 1) / 2;
+            std::memcpy(&new_leaf_node->cell_[0], &leaf_node->cell_[0], (new_leaf_node_num_cells) * sizeof(Cell));
+            new_leaf_node->SetNode(unused_page_num, leaf_node->parent_page_num_, new_leaf_node_num_cells);
+            // Move the element of leaf node
+            leaf_node->num_cells_ -= new_leaf_node_num_cells;
+            for (int i = 0; i < leaf_node->num_cells_; ++i) 
+            {
+                leaf_node->cell_[i] = leaf_node->cell_[i + new_leaf_node_num_cells];
+            }
+            // Insert key to parent node and add correspondent pointer to child
+            table_->pager->InternalNodeInsert(new_leaf_node->parent_page_num_, new_leaf_node->page_num_, new_leaf_node->cell_[new_leaf_node->num_cells_ - 1].key);
+        }
+        // TODO: exception check
+        // std::cout << "Table \"" << table_->table_name << "\" is full" << std::endl;
+        // return EXECUTE_TABLE_FULL;
         std::cout << "Insert record into table \"" << table_->table_name << "\" successfully" << std::endl;
         return EXECUTE_SUCCESS;
     }
 
-    ExecuteResult Select(char tableNameForSelect[], wxdb_uint bufferSize)
+    ExecuteResult Select(char tableNameForSelect[], unsigned bufferSize)
     {
-        Pager *pager = table_->pager;
         std::cout << "\tid\tuser name\temail\t" << std::endl;
-        Row oneRow;
-        for (size_t row = 0; row < table_->row_number; ++row)
+        if (table_->root_page_num != std::numeric_limits<unsigned>::max())
         {
-            wxdb_uint pageNumber = row / kRowNumberPerPage;
-            wxdb_uint rowNumber = row % kRowNumberPerPage;
-            deserialize_row(&oneRow, pager->pages[pageNumber] + rowNumber * sizeof(Row));
-            std::cout << "\t" << oneRow.id << "\t" << oneRow.user_name << "\t" << oneRow.email << "\t" << std::endl;
+            ShowAllLeafNode(table_->root_page_num);
         }
         return EXECUTE_SUCCESS;
     }
 
-    Table *AcquireTable()
+    // Create a cursor indicate table insert position
+    Cursor InsertPosition(const unsigned &key)
+    {
+        // Currently, we assume insert will not excess node max size.
+        Cursor cursor;
+        cursor.table = table_;
+        InternalNode *root_node = table_->pager->GetInternalNode(table_->root_page_num);
+        // Search on all B+tree.
+        auto pos = table_->pager->SearchBPlusTree(root_node->page_num_, key);
+        cursor.page_num = pos.first;
+        cursor.cell_num = pos.second;
+        return cursor;
+    }
+
+    Table *table() const
     {
         return table_;
     }
-    // Get the position to insert a row by row number.
-    void *RowSlot(Table *table, wxdb_uint rowNumber)
-    {
-        wxdb_uint pageNumber = rowNumber / kRowNumberPerPage;
-        if (pageNumber >= 100)
-        {
-            std::cout << "Row number beyond max range" << std::endl;
-            return nullptr;
-        }
-        wxdb_uint rowNumberInPage = rowNumber % kRowNumberPerPage;
-        return table->pager->pages[pageNumber] + rowNumberInPage * sizeof(Row);
-    }
-    // Get page
-    void *GetPage(Pager *pager, unsigned page_num)
-    {
-        if (page_num > MAX_PAGE_NUMBER)
-        {
-            std::cout << "excess max page number" << std::endl;
-            return nullptr;
-        }
-        if (pager->pages[page_num] == nullptr)
-        {
-            pager->fd.seekg(page_num * PAGE_SIZE, std::ios::beg);
-            pager->fd.read(pager->pages[page_num], PAGE_SIZE);
-        }
-        return pager->pages[page_num];
-    }
 
-private:
+// member
+private: 
     Table *table_;
 
-    // copy row buffer to destination.
-    void serialize_row(Row *row, char *destination)
+// function
+private: 
+    void ShowAllLeafNode(unsigned page_num)
     {
-        std::memcpy(destination + kIdOffset, &row->id, kIdSize);
-        std::memcpy(destination + kUserNameOffset, &row->user_name, kUserNameSize);
-        std::memcpy(destination + kEmailOffset, &row->email, kEmailSize);
+        InternalNode *node = table_->pager->GetInternalNode(page_num);
+        for (unsigned i = 0; i < node->num_clues_; ++i)
+        {
+            unsigned child_page_num = node->clue_[i].child;
+            if (table_->pager->GetPageType(child_page_num) == NODE_TYPE::INTERNAL_NODE)
+            {
+                ShowAllLeafNode(child_page_num);
+            }
+            else
+            {
+                LeafNode *leaf_node = table_->pager->GetLeafNode(child_page_num);
+                for (unsigned j = 0; j < leaf_node->num_cells_; ++j)
+                {
+                    Row &oneRow = leaf_node->cell_[j].value;
+                    std::cout << "\t" << oneRow.id << "\t" << oneRow.user_name << "\t" << oneRow.email << "\t" << std::endl;
+                }
+            }
+        }
     }
 
-    // copy destination buffer to row.
-    void deserialize_row(Row *row, char *destination)
-    {
-        std::memcpy(&row->id, destination + kIdOffset, kIdSize);
-        std::memcpy(&row->user_name, destination + kUserNameOffset, kUserNameSize);
-        std::memcpy(&row->email, destination + kEmailOffset, kEmailSize);
-    }
-    
     // Flush buffer to disk
     void FlushToDisk()
     {
         if (table_ != nullptr)
         {
-            size_t nums_of_pages = table_->row_number / kRowNumberPerPage;
-            for (size_t i = 0; i < nums_of_pages; ++i)
-            {
-                if (table_->pager->pages[i] != nullptr)
-                {
-                    table_->pager->fd.seekp(i * PAGE_SIZE, std::ios::beg);
-                    table_->pager->fd.write(table_->pager->pages[i], PAGE_SIZE);
-                }
-            }
-            // last page not full
-            size_t rest_row_num = table_->row_number - kRowNumberPerPage * nums_of_pages;
-            if (rest_row_num > 0)
-            {
-                table_->pager->fd.seekp(nums_of_pages * PAGE_SIZE, std::ios::beg);
-                table_->pager->fd.write(table_->pager->pages[nums_of_pages], rest_row_num * sizeof(Row));
-            }
+            // Flush page to disk
+            table_->pager->FlushPageToDisk();
             // Write table name and row number to file
             std::ofstream out("table_attribute.db", std::ofstream::out | std::ofstream::binary);
             out.write((char*)table_, sizeof(Table));

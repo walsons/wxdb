@@ -34,4 +34,10 @@ typedef enum
     STATEMENT_SELECT
 } StatementType;
 
+/*********
+ * Pager *
+ *********/
+const unsigned PAGE_SIZE = 4096;
+const unsigned MAX_PAGE_NUMBER = 100;
+
 #endif
