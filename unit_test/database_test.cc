@@ -1,11 +1,11 @@
-#define CATCH_CONFIG_MAIN  // This tells Catch to provide a main() - only do this in one cpp file
-#include "catch2.hpp"
+#include "catch.hpp"
 
+#include <iostream>
 #include <string>
 #include <vector>
 
-#include "../src/meta_command.h"
-#include "../src/a_sql_statement.h"
+#include "../include/meta_command.h"
+#include "../include/a_sql_statement.h"
 
 MetaCommand meta_command;
 TEST_CASE( "META_COMMAND", "[meta command test]" ) {
