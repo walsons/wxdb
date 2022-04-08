@@ -1,13 +1,13 @@
 #include <iostream>
 #include "hello_interface.h"
 #include "meta_command.h"
-#include "sql_statement.h"
+#include "a_sql_statement.h"
 
 int main() 
 {
     HelloInterface();
     MetaCommand metaCommand;
-    SQLStatement sqlStatement;
+    ASQLStatement sqlStatement;
     Database database;
     while (metaCommand.MainLoop())
     {

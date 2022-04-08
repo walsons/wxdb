@@ -1,3 +1,6 @@
+/**************************************
+ ********** semantic parsing **********
+ **************************************/
 #ifndef PARSER_H_
 #define PARSER_H_
 
@@ -15,12 +18,13 @@ enum class Parser_State_Type
 class Parser
 {
 public:
-    Parser(Tokenizer *Tokenizer);
+    Parser(Tokenizer *tokenizer);
+    virtual ~Parser();
     Token *ParseNextToken();
     Token *ParseEatToken();
     Token *ParseEatAndNextToken();
-    void ParseError(const std::string message);
-    bool MatchToken(Token_Type, const std::string text);
+    void ParseError(const std::string &message);
+    bool MatchToken(Token_Type type, const std::string &text);
 
 public:
     Tokenizer *tokenizer_;

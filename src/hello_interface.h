@@ -1,6 +1,8 @@
 #ifndef HELLO_INTERFACE_H_
 #define HELLO_INTERFACE_H_
 
+#include <iostream>
+
 class HelloInterface {
 public:
     HelloInterface() {
