@@ -1,4 +1,4 @@
-#include "sql_statement.h"
+#include "../include/sql_statement.h"
 
 SQLStatement::SQLStatement(SQL_Statement_Type type) : type_(type)
 {
@@ -24,5 +24,9 @@ SQLStmtCreate::SQLStmtCreate(SQL_Statement_Type type,
     : SQLStatement(type)
     , table_info_(table_info)
     , constraints_(constraints)
+{
+}
+
+SQLStmtCreate::~SQLStmtCreate()
 {
 }

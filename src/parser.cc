@@ -1,4 +1,4 @@
-#include "parser.h"
+#include "../include/parser.h"
 
 Parser::Parser(Tokenizer *tokenizer)
     : tokenizer_(tokenizer)
