@@ -3,6 +3,7 @@
 
 #include "parser.h"
 #include "sql_statement.h"
+#include <memory>
 
 constexpr int INT_SIZE = 4;
 
@@ -12,8 +13,8 @@ public:
     CreateParser(Tokenizer *tokenizer);
     ~CreateParser();
 
-    SQLStmtCreate *ParseSQLStmtCreate();
-    FieldInfo *ParseSQLStmtColumnExpr();
+    std::shared_ptr<SQLStmtCreate> ParseSQLStmtCreate();
+    std::shared_ptr<FieldInfo> ParseSQLStmtColumnExpr();
 };
 
 #endif

@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <memory>
 
 class Tokenizer
 {
@@ -18,8 +19,8 @@ public:
 
     bool NextChar();
     void ClearBuffer();
-    Token *MakeToken(Token_Type token_type);
-    Token *GetNextToken();
+    std::shared_ptr<Token> MakeToken(Token_Type token_type);
+    std::shared_ptr<Token> GetNextToken();
 
 private:
     std::string input_stream_;
@@ -31,21 +32,21 @@ private:
 
 private:
     bool IsReservedWord(std::string word);
-    Token *word();
-    Token *zero();
-    Token *octal();
-    Token *hex(bool is_x);
-    Token *fraction(bool is_dot);
-    Token *decimal();
-    Token *not_equal();
-    Token *double_quote();
+    std::shared_ptr<Token> word();
+    std::shared_ptr<Token> zero();
+    std::shared_ptr<Token> octal();
+    std::shared_ptr<Token> hex(bool is_x);
+    std::shared_ptr<Token> fraction(bool is_dot);
+    std::shared_ptr<Token> decimal();
+    std::shared_ptr<Token> not_equal();
+    std::shared_ptr<Token> double_quote();
 
-    Token *open_parenthesis();
-    Token *close_parenthesis();
+    std::shared_ptr<Token> open_parenthesis();
+    std::shared_ptr<Token> close_parenthesis();
 
-    Token *semicolon();
+    std::shared_ptr<Token> semicolon();
 
-    Token *invalid();
+    std::shared_ptr<Token> invalid();
 };
 
 #endif

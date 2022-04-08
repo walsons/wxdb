@@ -1,4 +1,5 @@
 #include "../include/parser.h"
+#include <memory>
 
 Parser::Parser(Tokenizer *tokenizer)
     : tokenizer_(tokenizer)
@@ -12,7 +13,7 @@ Parser::~Parser()
 }
 
 // Get next token, if current token doesn't be eat, return current token
-Token *Parser::ParseNextToken()
+std::shared_ptr<Token> Parser::ParseNextToken()
 {
     if (parser_state_type_ == Parser_State_Type::PARSER_WRONG) { return nullptr; }
     if (curr_token_ == NULL) 
@@ -23,7 +24,7 @@ Token *Parser::ParseNextToken()
 }
 
 // Eat current token
-Token *Parser::ParseEatToken()
+std::shared_ptr<Token> Parser::ParseEatToken()
 {
     if (parser_state_type_ == Parser_State_Type::PARSER_WRONG) { return nullptr; }
     curr_token_ = nullptr;
@@ -31,7 +32,7 @@ Token *Parser::ParseEatToken()
 }
 
 // Eat current token then return next token
-Token *Parser::ParseEatAndNextToken()
+std::shared_ptr<Token> Parser::ParseEatAndNextToken()
 {
     if (parser_state_type_ == Parser_State_Type::PARSER_WRONG) { return nullptr; }
     curr_token_ = tokenizer_->GetNextToken();
@@ -46,7 +47,7 @@ void Parser::ParseError(const std::string &message)
 
 bool Parser::MatchToken(Token_Type type, const std::string &text)
 {
-    Token *token = ParseNextToken();
+    std::shared_ptr<Token> token = ParseNextToken();
     if (token && token->type_ == type && token->text_ == text)
     {
         ParseEatAndNextToken();
