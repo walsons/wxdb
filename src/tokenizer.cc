@@ -5,6 +5,7 @@
 #include <vector>
 #include <unordered_map>
 #include <algorithm>
+#include <memory>
 
 Tokenizer::Tokenizer(std::string statement)
     : input_stream_(statement), 
@@ -47,12 +48,12 @@ void Tokenizer::ClearBuffer()
     token_buffer_.clear();
 }
 
-Token *Tokenizer::MakeToken(Token_Type token_type)
+std::shared_ptr<Token> Tokenizer::MakeToken(Token_Type token_type)
 {
-    return new Token(token_buffer_, token_type);
+    return std::make_shared<Token>(token_buffer_, token_type);
 }
 
-Token *Tokenizer::GetNextToken()
+std::shared_ptr<Token> Tokenizer::GetNextToken()
 {
     // If reach end of statement, return nullptr
     if (input_iter_ == input_stream_.size()) { return nullptr; }
@@ -99,7 +100,7 @@ bool Tokenizer::IsReservedWord(std::string word)
 
 /********** Token states **********/
 
-Token *Tokenizer::word()
+std::shared_ptr<Token> Tokenizer::word()
 {
     if (NextChar())
     {
@@ -125,7 +126,7 @@ Token *Tokenizer::word()
     return MakeToken(Token_Type::TOKEN_WORD);
 }
 
-Token *Tokenizer::zero()
+std::shared_ptr<Token> Tokenizer::zero()
 {
     if (NextChar())
     {
@@ -138,7 +139,7 @@ Token *Tokenizer::zero()
     return MakeToken(Token_Type::TOKEN_ZERO);
 }
 
-Token *Tokenizer::octal()
+std::shared_ptr<Token> Tokenizer::octal()
 {
     if (NextChar())
     {
@@ -149,7 +150,7 @@ Token *Tokenizer::octal()
     return MakeToken(Token_Type::TOKEN_OCTAL);
 }
 
-Token *Tokenizer::hex(bool is_x)
+std::shared_ptr<Token> Tokenizer::hex(bool is_x)
 {
     if (NextChar())
     {
@@ -166,7 +167,7 @@ Token *Tokenizer::hex(bool is_x)
     return MakeToken(Token_Type::TOKEN_HEX);
 }
 
-Token *Tokenizer::fraction(bool is_dot)
+std::shared_ptr<Token> Tokenizer::fraction(bool is_dot)
 {
     if (NextChar())
     {
@@ -179,7 +180,7 @@ Token *Tokenizer::fraction(bool is_dot)
     return MakeToken(Token_Type::TOKEN_FRACTION);
 }
 
-Token *Tokenizer::decimal()
+std::shared_ptr<Token> Tokenizer::decimal()
 {
     if (NextChar())
     {
@@ -192,7 +193,7 @@ Token *Tokenizer::decimal()
     return MakeToken(Token_Type::TOKEN_DECIMAL);
 }
 
-Token *Tokenizer::not_equal()
+std::shared_ptr<Token> Tokenizer::not_equal()
 {
     if (NextChar())
     {
@@ -207,7 +208,7 @@ Token *Tokenizer::not_equal()
     return MakeToken(Token_Type::TOKEN_INVALID);
 }
 
-Token *Tokenizer::double_quote()
+std::shared_ptr<Token> Tokenizer::double_quote()
 {
     bool end_of_string = false;
     if (NextChar())
@@ -229,25 +230,25 @@ Token *Tokenizer::double_quote()
     return MakeToken(Token_Type::TOKEN_INVALID);
 }
 
-Token *Tokenizer::open_parenthesis()
+std::shared_ptr<Token> Tokenizer::open_parenthesis()
 {
     NextChar();
     return MakeToken(Token_Type::TOKEN_OPEN_PARENTHESIS);
 }
 
-Token *Tokenizer::close_parenthesis()
+std::shared_ptr<Token> Tokenizer::close_parenthesis()
 {
     NextChar();
     return MakeToken(Token_Type::TOKEN_CLOSE_PARENTHESIS);
 }
 
-Token *Tokenizer::semicolon()
+std::shared_ptr<Token> Tokenizer::semicolon()
 {
     NextChar();
     return MakeToken(Token_Type::TOKEN_SEMICOLON);
 }
 
-Token *Tokenizer::invalid()
+std::shared_ptr<Token> Tokenizer::invalid()
 {
     NextChar();
     return MakeToken(Token_Type::TOKEN_INVALID);

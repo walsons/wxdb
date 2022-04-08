@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <memory>
 
 enum class SQL_Statement_Type
 {
@@ -61,12 +62,12 @@ class TableInfo
 {
 public:
     TableInfo(const std::string &table_name, std::vector<std::string> fields_name,
-              std::unordered_map<std::string, FieldInfo *> *fields);
+              std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<FieldInfo>>> fields);
 
     std::string table_name_;
     std::vector<std::string> fields_name_;
-    std::unordered_map<std::string, FieldInfo *> *fields_;
-    std::unordered_map<unsigned int, int> *offsets_;
+    std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<FieldInfo>>> fields_;
+    std::shared_ptr<std::unordered_map<unsigned int, int>> offsets_;
     int record_length_;
 };
 
@@ -77,18 +78,18 @@ struct Constraint_t
     {
         // TODO
     };
-    Constraint_t *next_;
+    std::shared_ptr<Constraint_t> next_;
 };
 
 class SQLStmtCreate : public SQLStatement
 {
 public:
     SQLStmtCreate(SQL_Statement_Type type,
-                  TableInfo * table_info, 
-                  Constraint_t *constraints);
+                  std::shared_ptr<TableInfo> table_info, 
+                  std::shared_ptr<Constraint_t> constraints);
     ~SQLStmtCreate();
-    TableInfo *table_info_;
-    Constraint_t *constraints_;
+    std::shared_ptr<TableInfo> table_info_;
+    std::shared_ptr<Constraint_t> constraints_;
 };
 
 #endif
