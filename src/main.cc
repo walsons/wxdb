@@ -1,7 +1,7 @@
 #include <iostream>
-#include "hello_interface.h"
-#include "meta_command.h"
-#include "a_sql_statement.h"
+#include "../include/hello_interface.h"
+#include "../include/meta_command.h"
+#include "../include/a_sql_statement.h"
 
 int main() 
 {
