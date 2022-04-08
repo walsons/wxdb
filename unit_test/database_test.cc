@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "../src/meta_command.h"
-#include "../src/sql_statement.h"
+#include "../src/a_sql_statement.h"
 
 MetaCommand meta_command;
 TEST_CASE( "META_COMMAND", "[meta command test]" ) {
@@ -15,7 +15,7 @@ TEST_CASE( "META_COMMAND", "[meta command test]" ) {
     meta_command.ExecuteMetaCommand(".help");
 };
 
-SQLStatement sql_statement;
+ASQLStatement sql_statement;
 Database database;
 TEST_CASE( "SQL_STATEMENT", "[SQL statement test]" ) {
     std::string user_input = "create user";

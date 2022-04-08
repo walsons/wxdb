@@ -1,4 +1,6 @@
-// lexical analysis
+/**************************************
+ ********** lexical analysis **********
+ **************************************/
 
 #ifndef TOKENIZER_H_
 #define TOKENIZER_H_

@@ -15,7 +15,7 @@ Tokenizer::Tokenizer(std::string statement)
 {
     std::vector<std::string> reserved_word{
         "select", "from", "where", "order", "by", "group", "create", "table", "index", "and", "not", "or", "null",
-        "like", "in", "grant", "integer", "int", "char", "values", "insert", "into", "update", "delete", "set", "on",
+        "like", "in", "grant", "int", "char", "values", "insert", "into", "update", "delete", "set", "on",
         "user", "view", "rule", "default", "check", "between", "trigger", "primary", "key", "foreign"
     };
     for (const auto &word : reserved_word)
