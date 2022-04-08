@@ -1,15 +1,14 @@
-#define CATCH_CONFIG_MAIN  // This tells Catch to provide a main() - only do this in one cpp file
-#include "catch2.hpp"
+#include "catch.hpp"
 
 #include <iostream>
+#include <memory>
 
-#include "../src/token.h"
-#include "../src/tokenizer.h"
-#include "../src/tokenizer.cc" // TODO: for elegant
+#include "../include/token.h"
+#include "../include/tokenizer.h"
 
 TEST_CASE( "TOKENIZER", "[tokenizer test]" ) {
     Tokenizer tokenizer("select name age from users");
-    Token *token = nullptr;
+    std::shared_ptr<Token> token = nullptr;
     token = tokenizer.GetNextToken();
     CHECK(token->text_ == "select");
     CHECK(token->type_ == Token_Type::TOKEN_RESERVED_WORD);
