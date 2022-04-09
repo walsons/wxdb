@@ -17,8 +17,6 @@ public:
     Tokenizer(std::string statement);
     ~Tokenizer();
 
-    bool NextChar();
-    void ClearBuffer();
     std::shared_ptr<Token> MakeToken(Token_Type token_type);
     std::shared_ptr<Token> GetNextToken();
 
@@ -31,6 +29,8 @@ private:
     std::unordered_map<std::string, bool> reserved_word_;
 
 private:
+    bool NextChar();
+    void ClearBuffer();
     bool IsReservedWord(std::string word);
     std::shared_ptr<Token> word();
     std::shared_ptr<Token> zero();
@@ -40,12 +40,20 @@ private:
     std::shared_ptr<Token> decimal();
     std::shared_ptr<Token> not_equal();
     std::shared_ptr<Token> double_quote();
-
+    std::shared_ptr<Token> mod();
+    std::shared_ptr<Token> single_quote();
     std::shared_ptr<Token> open_parenthesis();
     std::shared_ptr<Token> close_parenthesis();
-
+    std::shared_ptr<Token> plus();
+    std::shared_ptr<Token> minus();
+    std::shared_ptr<Token> multiply();
+    std::shared_ptr<Token> divide();
+    std::shared_ptr<Token> comma();
     std::shared_ptr<Token> semicolon();
-
+    std::shared_ptr<Token> lt();
+    std::shared_ptr<Token> equal();
+    std::shared_ptr<Token> gt();
+    std::shared_ptr<Token> power();
     std::shared_ptr<Token> invalid();
 };
 
