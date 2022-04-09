@@ -25,29 +25,9 @@ Tokenizer::Tokenizer(std::string statement)
     }
 }
 
-Tokenizer::~Tokenizer() 
-{
-}
+Tokenizer::~Tokenizer() = default;
 
-bool Tokenizer::NextChar()
-{
-    token_buffer_.insert(token_buffer_.size(), 1, input_stream_[input_iter_]);
-    ++input_iter_;
-    ++buffer_iter_;
-    bool next_not_null = true;
-    if (input_iter_ == input_stream_.size())
-    {
-        next_not_null = false;
-    }
-    return next_not_null;
-}
-
-void Tokenizer::ClearBuffer()
-{
-    buffer_iter_ = 0;
-    token_buffer_.clear();
-}
-
+inline
 std::shared_ptr<Token> Tokenizer::MakeToken(Token_Type token_type)
 {
     return std::make_shared<Token>(token_buffer_, token_type);
@@ -72,18 +52,41 @@ std::shared_ptr<Token> Tokenizer::GetNextToken()
     else if (std::isdigit(c)) { return decimal(); }
     else if (c == '!') { return not_equal(); }
     else if (c == '"') { return double_quote(); }
-    else if (c == '%') {} // TODO
-    else if (c == '\'') {} // TODO
+    else if (c == '%') { return mod(); } 
+    else if (c == '\'') { return single_quote(); }
     else if (c == '(') { return open_parenthesis(); }
     else if (c == ')') { return close_parenthesis(); }
-    else if (c == '*') {} // TODO
-    else if (c == '+') {} // TODO
-    else if (c == ',') {} // TODO
-    else if (c == '-') {} // TODO
-    else if (c == '/') {} // TODO
+    else if (c == '+') { return plus(); }
+    else if (c == '-') { return minus(); }
+    else if (c == '*') { return multiply(); }
+    else if (c == '/') { return divide(); }
+    else if (c == ',') { return comma(); }
     else if (c == ';') { return semicolon(); }
-    // ......
+    else if (c == '<') { return lt(); }
+    else if (c == '=') { return equal(); }
+    else if (c == '>') { return gt(); }
+    else if (c == '^') { return power(); }
     return invalid();
+}
+
+bool Tokenizer::NextChar()
+{
+    token_buffer_.insert(buffer_iter_, 1, input_stream_[input_iter_]);
+    ++input_iter_;
+    ++buffer_iter_;
+    bool next_not_null = true;
+    if (input_iter_ == input_stream_.size())
+    {
+        next_not_null = false;
+    }
+    return next_not_null;
+}
+
+inline
+void Tokenizer::ClearBuffer()
+{
+    buffer_iter_ = 0;
+    token_buffer_.clear();
 }
 
 bool Tokenizer::IsReservedWord(std::string word)
@@ -98,7 +101,9 @@ bool Tokenizer::IsReservedWord(std::string word)
     return false;
 }
 
-/********** Token states **********/
+/**********************************
+ ********** Token states **********
+ **********************************/
 
 std::shared_ptr<Token> Tokenizer::word()
 {
@@ -177,7 +182,7 @@ std::shared_ptr<Token> Tokenizer::fraction(bool is_dot)
         else if (c != ' ') { return MakeToken(Token_Type::TOKEN_INVALID); }
     }
     if (is_dot) { return MakeToken(Token_Type::TOKEN_INVALID); }
-    return MakeToken(Token_Type::TOKEN_FRACTION);
+    return MakeToken(Token_Type::TOKEN_FLOAT);
 }
 
 std::shared_ptr<Token> Tokenizer::decimal()
@@ -210,9 +215,9 @@ std::shared_ptr<Token> Tokenizer::not_equal()
 
 std::shared_ptr<Token> Tokenizer::double_quote()
 {
-    bool end_of_string = false;
     if (NextChar())
     {
+        bool end_of_string = false;
         char c;
         while ((c = input_stream_[input_iter_]) != '"')
         {
@@ -227,27 +232,140 @@ std::shared_ptr<Token> Tokenizer::double_quote()
         NextChar();
         return MakeToken(Token_Type::TOKEN_STRING);
     }
-    return MakeToken(Token_Type::TOKEN_INVALID);
+    return MakeToken(Token_Type::TOKEN_UNENDED_STRING);
 }
 
+inline
+std::shared_ptr<Token> Tokenizer::mod()
+{
+    NextChar();
+    return MakeToken(Token_Type::TOKEN_MOD);
+}
+
+std::shared_ptr<Token> Tokenizer::single_quote()
+{
+    if (NextChar())
+    {
+        bool end_of_string = false;
+        char c;
+        while ((c = input_stream_[input_iter_]) != '\'')
+        {
+            if (!NextChar()) 
+            { 
+                end_of_string = true;
+                break; 
+            }
+        }
+        if (end_of_string) { return MakeToken(Token_Type::TOKEN_UNENDED_STRING); }
+        NextChar();
+        return MakeToken(Token_Type::TOKEN_STRING);
+    }
+    return MakeToken(Token_Type::TOKEN_UNENDED_STRING);
+}
+
+inline
 std::shared_ptr<Token> Tokenizer::open_parenthesis()
 {
     NextChar();
     return MakeToken(Token_Type::TOKEN_OPEN_PARENTHESIS);
 }
 
+inline
 std::shared_ptr<Token> Tokenizer::close_parenthesis()
 {
     NextChar();
     return MakeToken(Token_Type::TOKEN_CLOSE_PARENTHESIS);
 }
 
+inline
+std::shared_ptr<Token> Tokenizer::plus()
+{
+    NextChar();
+    return MakeToken(Token_Type::TOKEN_PLUS);
+}
+
+inline
+std::shared_ptr<Token> Tokenizer::minus()
+{
+    NextChar();
+    return MakeToken(Token_Type::TOKEN_MINUS);
+}
+
+inline
+std::shared_ptr<Token> Tokenizer::multiply()
+{
+    NextChar();
+    return MakeToken(Token_Type::TOKEN_MULTIPLY);
+}
+
+inline
+std::shared_ptr<Token> Tokenizer::divide()
+{
+    NextChar();
+    return MakeToken(Token_Type::TOKEN_DIVIDE);
+}
+
+inline
+std::shared_ptr<Token> Tokenizer::comma()
+{
+    NextChar();
+    return MakeToken(Token_Type::TOKEN_COMMA);
+}
+
+inline
 std::shared_ptr<Token> Tokenizer::semicolon()
 {
     NextChar();
     return MakeToken(Token_Type::TOKEN_SEMICOLON);
 }
 
+std::shared_ptr<Token> Tokenizer::lt()
+{
+    if (NextChar())
+    {
+        if (input_stream_[input_iter_] == '=')
+        {
+            NextChar();
+            return MakeToken(Token_Type::TOKEN_LE);
+        }
+    }
+    return MakeToken(Token_Type::TOKEN_LT);
+}
+
+std::shared_ptr<Token> Tokenizer::equal()
+{
+    if (NextChar())
+    {
+        if (input_stream_[input_iter_] == '=')
+        {
+            NextChar();
+            return MakeToken(Token_Type::TOKEN_EQ);
+        }
+    }
+    return MakeToken(Token_Type::TOKEN_ASSIGNMENT);
+}
+
+std::shared_ptr<Token> Tokenizer::gt()
+{
+    if (NextChar())
+    {
+        if (input_stream_[input_iter_] == '=')
+        {
+            NextChar();
+            return MakeToken(Token_Type::TOKEN_GE);
+        }
+    }
+    return MakeToken(Token_Type::TOKEN_GT);
+}
+
+inline
+std::shared_ptr<Token> Tokenizer::power()
+{
+    NextChar();
+    return MakeToken(Token_Type::TOKEN_POWER);
+}
+
+inline
 std::shared_ptr<Token> Tokenizer::invalid()
 {
     NextChar();

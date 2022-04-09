@@ -58,3 +58,20 @@ bool Parser::MatchToken(Token_Type type, const std::string &text)
     parser_message_ += "!";
     return false;
 }
+
+/******************************************************
+ * Parsing expression by using recursive descent approach
+ * 
+ * or 
+ * and 
+ * equality: equal | not equal 
+ * comparison: GE | LE | GT | LT
+ * expr: plus | mnus
+ * term: mutiply | divide
+ * power
+ * unary: not | plus | minus (positive negative)
+ * paren: open_paren | close_paren ------
+ * ---> or
+ * ---> read_builtin: word | func | identifier | mutiply (wildcard)
+ *      literal: float | decimal | exp_float | string | char 
+ ******************************************************/ 

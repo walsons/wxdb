@@ -5,9 +5,10 @@
 
 enum class Token_Type
 {
-    /* Operator */
+    // Operator
     TOKEN_OPEN_PARENTHESIS = 0,    // (
     TOKEN_CLOSE_PARENTHESIS,       // )
+    TOKEN_POWER,                   // ^
     TOKEN_PLUS,                    // +
     TOKEN_MINUS,                   // -
     TOKEN_MULTIPLY,                // *
@@ -23,26 +24,36 @@ enum class Token_Type
     TOKEN_AND,
     TOKEN_OR,
     TOKEN_NOT,
-    TOKEN_NULL,
     TOKEN_ASSIGNMENT,
     TOKEN_FUN,
     TOKEN_COMMA,
 
-    /* Other token */
-    TOKEN_INVALID,                 // invalid token
+
+    // Invalid token 
+    TOKEN_INVALID,
+
     TOKEN_RESERVED_WORD,
     TOKEN_WORD,
     TOKEN_UNENDED_STRING,
     TOKEN_STRING,
+    TOKEN_MOD,
+    TOKEN_INCOMPLETE_CHAR,
+    TOKEN_CHAR,
+    INVALID_CHAR,
+    TOKEN_SEMICOLON,
+    TOKEN_EXP_FLOAT,
+    TOKEN_FLOAT,
+
+    // Integer
     TOKEN_OCTAL,
     TOKEN_HEX,
-    TOKEN_FRACTION,
-    TOKEN_ZERO,
     TOKEN_DECIMAL,
-    TOKEN_SEMICOLON,
+    TOKEN_ZERO,                    
+
+    TOKEN_NULL,
     
     /* No meaning, only for end */
-    Token_end                   
+    TOKEN_END                   
 };
 
 class Token
