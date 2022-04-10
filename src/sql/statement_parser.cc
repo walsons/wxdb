@@ -1,4 +1,4 @@
-#include "../include/statement_parser.h"
+#include "../../include/sql/statement_parser.h"
 #include <string>
 #include <vector>
 #include <unordered_map>
@@ -8,9 +8,7 @@ CreateParser::CreateParser(Tokenizer *tokenizer) : Parser(tokenizer)
 {
 }
 
-CreateParser::~CreateParser()
-{
-}
+CreateParser::~CreateParser() = default;
 
 std::shared_ptr<SQLStmtCreate> CreateParser::ParseSQLStmtCreate()
 {
@@ -22,7 +20,7 @@ std::shared_ptr<SQLStmtCreate> CreateParser::ParseSQLStmtCreate()
     /*** table ***/
     if (!MatchToken(Token_Type::TOKEN_RESERVED_WORD, "table")) 
     { 
-        parser_message_ = "invalid sql: should be table!";
+        ParseError("invalid SQL: should be table!");
         return nullptr; 
     }
     /*** table name ***/
@@ -30,14 +28,14 @@ std::shared_ptr<SQLStmtCreate> CreateParser::ParseSQLStmtCreate()
     if (token->type_ == Token_Type::TOKEN_WORD) { table_name = token->text_; }
     else
     {
-        parser_message_ = "invalid sql: missing table name!";
+        ParseError("invalid SQL: missing table name!");
         return nullptr;
     }
     token = ParseEatToken();
     /*** ( ***/
     if (!MatchToken(Token_Type::TOKEN_OPEN_PARENTHESIS, "("))
     {
-        parser_message_ = "invalid sql: missing \"(\"!";
+        ParseError("invalid SQL: missing \"(\"!");
         return nullptr;
     }
     /*** column expression ***/
@@ -61,12 +59,12 @@ std::shared_ptr<SQLStmtCreate> CreateParser::ParseSQLStmtCreate()
     token = this->ParseNextToken();
     if (!MatchToken(Token_Type::TOKEN_CLOSE_PARENTHESIS, ")"))
     {
-        parser_message_ = "invalid sql: missing \")\"!";
+        ParseError("invalid SQL: missing \")\"!");
         return nullptr;
     }
     auto table_info = std::make_shared<TableInfo>(table_name, fields_name, fields);
     // TODO: add constrains
-    std::shared_ptr<Constraint_t> constraints = nullptr;
+    std::shared_ptr<Constraint> constraints = nullptr;
     auto sql_stmt_create = std::make_shared<SQLStmtCreate>(SQL_Statement_Type::SQL_CREATE_TABLE,
                                                            table_info, constraints);
     return sql_stmt_create;
@@ -81,16 +79,22 @@ std::shared_ptr<FieldInfo> CreateParser::ParseSQLStmtColumnExpr()
     if (token->type_ == Token_Type::TOKEN_WORD) { column_name = token->text_; }
     else
     {
-        parser_message_ = "invalid sql: missing field name!";
+        ParseError("invalid SQL: missing field name!");
         return nullptr;
     }
     token = ParseEatAndNextToken();
     if (token->type_ == Token_Type::TOKEN_RESERVED_WORD)
     {
-        if (token->text_ == "int") 
+        if (token->text_ == "int" || token->text_ == "integer") 
         {
             data_type = Data_Type::DATA_TYPE_INT;
-            length = sizeof(INT_SIZE);
+            length = sizeof(int);
+            token = ParseEatAndNextToken();
+        }
+        else if (token->text_ == "double")
+        {
+            data_type = Data_Type::DATA_TYPE_DOUBLE;
+            length = sizeof(double);
             token = ParseEatAndNextToken();
         }
         else if (token->text_ == "char")
@@ -110,34 +114,32 @@ std::shared_ptr<FieldInfo> CreateParser::ParseSQLStmtColumnExpr()
                     }
                     else
                     {
-                        parser_message_ = "invalid sql: missing \")\"!";
+                        ParseError("invalid SQL: missing \")\"!");
                         return nullptr;
                     }
                 }
                 else
                 {
-                    parser_message_ = "invalid sql: missing char length!";
+                    ParseError("invalid SQL: missing char length!");
                     return nullptr;
                 }
             }
             else
             {
-                parser_message_ = "invalid sql: missing \"(\"!";
+                ParseError("invalid SQL: missing \"(\"!");
                 return nullptr;
             }
         }
         // TODO: support other data type
         else
         {
-            parser_message_ = "invalid sql: wrong data type: ";
-            parser_message_ += token->text_;
-            parser_message_ += "!";
+            ParseError("invalid SQL: wrong data type: " + token->text_ + "!");
             return nullptr;
         }
     }
     else
     {
-        parser_message_ = "invalid sql: missing field name!";
+        ParseError("invalid SQL: missing field type!");
         return nullptr;
     }
     auto field = std::make_shared<FieldInfo>(data_type, length, column_name);

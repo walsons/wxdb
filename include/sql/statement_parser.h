@@ -5,8 +5,6 @@
 #include "sql_statement.h"
 #include <memory>
 
-constexpr int INT_SIZE = 4;
-
 class CreateParser : public Parser
 {
 public:

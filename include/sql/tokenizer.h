@@ -37,6 +37,7 @@ private:
     std::shared_ptr<Token> octal();
     std::shared_ptr<Token> hex(bool is_x);
     std::shared_ptr<Token> fraction(bool is_dot);
+    std::shared_ptr<Token> exp_fraction(bool is_e, bool is_sign);
     std::shared_ptr<Token> decimal();
     std::shared_ptr<Token> not_equal();
     std::shared_ptr<Token> double_quote();

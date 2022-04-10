@@ -1,5 +1,5 @@
-#ifndef SQL_STATEMENT_H_
-#define SQL_STATEMENT_H_
+#ifndef common_h_
+#define common_h_
 
 #include <string>
 #include <vector>
@@ -38,19 +38,11 @@ enum class Constraint_Type
     CONS_SIZE
 };
 
-class SQLStatement
-{
-public:
-    SQLStatement(SQL_Statement_Type type);
-    virtual ~SQLStatement();
-
-    SQL_Statement_Type type_;
-};
-
 class FieldInfo
 {
 public:
     FieldInfo(Data_Type type, int length, const std::string &field_name);
+    ~FieldInfo();
 
     std::string field_name_;
     unsigned int hash_code_;
@@ -63,6 +55,7 @@ class TableInfo
 public:
     TableInfo(const std::string &table_name, std::vector<std::string> fields_name,
               std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<FieldInfo>>> fields);
+    ~TableInfo();
 
     std::string table_name_;
     std::vector<std::string> fields_name_;
@@ -71,25 +64,25 @@ public:
     int record_length_;
 };
 
-struct Constraint_t
+class ForeignKeyRef
+{
+public:
+    std::string column_name_, table_name_, table_column_name_;
+    ForeignKeyRef(const std::string &column_name);
+    ForeignKeyRef(const std::string &table_name, const std::string &column_name);
+    ~ForeignKeyRef();
+};
+
+struct Constraint
 {
     Constraint_Type type_;
     union
     {
-        // TODO
+        
     };
-    std::shared_ptr<Constraint_t> next_;
-};
-
-class SQLStmtCreate : public SQLStatement
-{
-public:
-    SQLStmtCreate(SQL_Statement_Type type,
-                  std::shared_ptr<TableInfo> table_info, 
-                  std::shared_ptr<Constraint_t> constraints);
-    ~SQLStmtCreate();
-    std::shared_ptr<TableInfo> table_info_;
-    std::shared_ptr<Constraint_t> constraints_;
+    // Perhaps more than 2 column have the same constraints,
+    // using link list to connect these constrains to save space
+    Constraint *next_;
 };
 
 #endif

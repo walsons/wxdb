@@ -1,4 +1,4 @@
-#include "../include/parser.h"
+#include "../../include/sql/parser.h"
 #include <memory>
 
 Parser::Parser(Tokenizer *tokenizer)
@@ -8,9 +8,7 @@ Parser::Parser(Tokenizer *tokenizer)
 {
 }
 
-Parser::~Parser()
-{
-}
+Parser::~Parser() = default;
 
 // Get next token, if current token doesn't be eat, return current token
 std::shared_ptr<Token> Parser::ParseNextToken()
@@ -53,9 +51,6 @@ bool Parser::MatchToken(Token_Type type, const std::string &text)
         ParseEatAndNextToken();
         return true;
     }
-    parser_message_ = "invalid sql: missing ";
-    parser_message_ += text;
-    parser_message_ += "!";
     return false;
 }
 
