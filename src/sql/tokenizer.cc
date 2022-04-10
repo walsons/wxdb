@@ -1,4 +1,4 @@
-#include "../include/tokenizer.h"
+#include "../../include/sql/tokenizer.h"
 #include <cctype>
 #include <cassert>
 #include <string>
@@ -16,8 +16,8 @@ Tokenizer::Tokenizer(std::string statement)
 {
     std::vector<std::string> reserved_word{
         "select", "from", "where", "order", "by", "group", "create", "table", "index", "and", "not", "or", "null",
-        "like", "in", "grant", "int", "char", "values", "insert", "into", "update", "delete", "set", "on",
-        "user", "view", "rule", "default", "check", "between", "trigger", "primary", "key", "foreign"
+        "like", "in", "grant", "int", "integer", "double", "char", "values", "insert", "into", "update", "delete", 
+        "set", "on", "user", "view", "rule", "default", "check", "between", "trigger", "primary", "key", "foreign"
     };
     for (const auto &word : reserved_word)
     {
@@ -40,7 +40,7 @@ std::shared_ptr<Token> Tokenizer::GetNextToken()
 
     // Skip space character
     char c = input_stream_[input_iter_];
-    while (c == ' ')
+    while (c == ' ' || c == '\n')
     {
         if (!NextChar()) { return nullptr; }
         c = input_stream_[input_iter_];
@@ -110,8 +110,7 @@ std::shared_ptr<Token> Tokenizer::word()
     if (NextChar())
     {
         char c = input_stream_[input_iter_];
-        if (std::isalnum(c) || c == '_') { return word(); }
-        else if (c != ' ') { return MakeToken(Token_Type::TOKEN_INVALID); }
+        if (std::isalnum(c) || c == '_' || c == '.' || c == '*') { return word(); }
     }
     if (IsReservedWord(token_buffer_)) 
     {
@@ -139,7 +138,6 @@ std::shared_ptr<Token> Tokenizer::zero()
         if (c >= '0' && c <= '7') { return octal(); }
         else if (c == 'x' || c == 'X') { return hex(true); }
         else if (c == '.') { return fraction(true); }
-        else if (c != ' ') { return MakeToken(Token_Type::TOKEN_INVALID); }
     }
     return MakeToken(Token_Type::TOKEN_ZERO);
 }
@@ -150,7 +148,6 @@ std::shared_ptr<Token> Tokenizer::octal()
     {
         char c = input_stream_[input_iter_];
         if (c >= '0' && c <= '7') { return octal(); }
-        else if (c != ' ') { return MakeToken(Token_Type::TOKEN_INVALID); }
     }
     return MakeToken(Token_Type::TOKEN_OCTAL);
 }
@@ -166,7 +163,6 @@ std::shared_ptr<Token> Tokenizer::hex(bool is_x)
         {
             return hex(false);
         }
-        else if (c != ' ') { return MakeToken(Token_Type::TOKEN_INVALID); }
     }
     if (is_x) { return MakeToken(Token_Type::TOKEN_INVALID); }
     return MakeToken(Token_Type::TOKEN_HEX);
@@ -177,12 +173,31 @@ std::shared_ptr<Token> Tokenizer::fraction(bool is_dot)
     if (NextChar())
     {
         char c = input_stream_[input_iter_];
-        if (c >= '0' && c <= '9') { return fraction(false); }
-        // TODO: support exponent
-        else if (c != ' ') { return MakeToken(Token_Type::TOKEN_INVALID); }
+        if (std::isdigit(c)) { return fraction(false); }
+        // Support 0.e3
+        if (c == 'e' || c == 'E') { return exp_fraction(true, false); }
     }
     if (is_dot) { return MakeToken(Token_Type::TOKEN_INVALID); }
     return MakeToken(Token_Type::TOKEN_FLOAT);
+}
+
+std::shared_ptr<Token> Tokenizer::exp_fraction(bool is_e, bool is_sign)
+{
+    if (NextChar())
+    {
+        char c = input_stream_[input_iter_];
+        if (std::isdigit(c)) { return exp_fraction(false, false); }
+        // If both is_e and is_sign are false, indicate that end is digit.
+        if (!is_e && !is_sign) { return MakeToken(Token_Type::TOKEN_EXP_FLOAT); }
+        if (c == '+' || c == '-') 
+        { 
+            if (is_sign) { return MakeToken(Token_Type::TOKEN_INVALID); }
+            return exp_fraction(false, true);
+        }
+    }
+    if (is_e) { return MakeToken(Token_Type::TOKEN_INVALID); }
+    if (is_sign) { return MakeToken(Token_Type::TOKEN_INVALID); }
+    return MakeToken(Token_Type::TOKEN_EXP_FLOAT);
 }
 
 std::shared_ptr<Token> Tokenizer::decimal()
@@ -191,9 +206,8 @@ std::shared_ptr<Token> Tokenizer::decimal()
     {
         char c = input_stream_[input_iter_];
         if (std::isdigit(c)) { return decimal(); }
-        else if (c == '.') { return fraction(true); }
-        // TODO: support exponent
-        else if (c != ' ') { return MakeToken(Token_Type::TOKEN_INVALID); }
+        if (c == '.') { return fraction(true); }
+        if (c == 'e' || c == 'E') { return exp_fraction(true, false); }
     }
     return MakeToken(Token_Type::TOKEN_DECIMAL);
 }
@@ -205,7 +219,6 @@ std::shared_ptr<Token> Tokenizer::not_equal()
         char c = input_stream_[input_iter_];
         if (c == '=')
         {
-            // In this case, we can ensure to get "!=", which make expression "a !=b" make sense
             NextChar();
             return MakeToken(Token_Type::TOKEN_NOT_EQ);
         }

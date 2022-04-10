@@ -3,8 +3,8 @@
 #include <iostream>
 #include <memory>
 
-#include "../include/token.h"
-#include "../include/tokenizer.h"
+#include "../include/sql/token.h"
+#include "../include/sql/tokenizer.h"
 
 TEST_CASE( "TOKENIZER", "[tokenizer test]" ) {
     Tokenizer tokenizer("select name age from users");
