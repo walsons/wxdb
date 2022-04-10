@@ -1,17 +1,9 @@
-#include "../../include/sql/sql_statement.h"
+#include "../../include/sql/sql_stmt_create.h"
 
-SQLStatement::SQLStatement(SQL_Statement_Type type) : type_(type)
-{
-}
-
-SQLStatement::~SQLStatement()
-{
-}
-
-SQLStmtCreate::SQLStmtCreate(SQL_Statement_Type type,
+SQLStmtCreate::SQLStmtCreate(SQL_Stmt_Type type,
                              std::shared_ptr<TableInfo> table_info, 
                              std::shared_ptr<Constraint> constraint)
-    : SQLStatement(type)
+    : SQLStmt(type)
     , table_info_(table_info)
     , constraint_(constraint)
 {

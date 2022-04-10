@@ -2,13 +2,13 @@
 #define STATEMENT_PARSER_H_
 
 #include "parser.h"
-#include "sql_statement.h"
+#include "sql_stmt_create.h"
 #include <memory>
 
 class CreateParser : public Parser
 {
 public:
-    CreateParser(Tokenizer *tokenizer);
+    CreateParser(std::shared_ptr<Tokenizer> tokenizer);
     ~CreateParser();
 
     std::shared_ptr<SQLStmtCreate> ParseSQLStmtCreate();

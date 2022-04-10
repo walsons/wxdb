@@ -19,7 +19,7 @@ enum class Parser_State_Type
 class Parser
 {
 public:
-    Parser(Tokenizer *tokenizer);
+    Parser(std::shared_ptr<Tokenizer> tokenizer);
     virtual ~Parser();
     std::shared_ptr<Token> ParseNextToken();
     std::shared_ptr<Token> ParseEatToken();
@@ -28,7 +28,7 @@ public:
     bool MatchToken(Token_Type type, const std::string &text);
 
 public:
-    Tokenizer *tokenizer_;
+    std::shared_ptr<Tokenizer> tokenizer_;
     std::shared_ptr<Token> curr_token_;
     Parser_State_Type parser_state_type_;
     std::string parser_message_;

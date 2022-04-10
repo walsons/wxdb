@@ -1,5 +1,21 @@
 #include "../../include/sql/common.h"
 
+DataValue::DataValue(Data_Type type, size_t string_length) : type_(type)
+{
+    if (type_ == Data_Type::DATA_TYPE_CHAR)
+    {
+        char_value_ = new char[string_length + 1];
+    }
+}
+
+DataValue::~DataValue()
+{
+    if (type_ == Data_Type::DATA_TYPE_CHAR)
+    {
+        delete char_value_;
+    }
+}
+
 FieldInfo::FieldInfo(Data_Type type, int length, const std::string &field_name)
 {
 }
