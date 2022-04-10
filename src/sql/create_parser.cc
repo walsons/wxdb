@@ -1,10 +1,6 @@
-#include "../../include/sql/statement_parser.h"
-#include <string>
-#include <vector>
-#include <unordered_map>
-#include <memory>
+#include "../../include/sql/create_parser.h"
 
-CreateParser::CreateParser(Tokenizer *tokenizer) : Parser(tokenizer)
+CreateParser::CreateParser(std::shared_ptr<Tokenizer> tokenizer) : Parser(tokenizer)
 {
 }
 
@@ -65,7 +61,7 @@ std::shared_ptr<SQLStmtCreate> CreateParser::ParseSQLStmtCreate()
     auto table_info = std::make_shared<TableInfo>(table_name, fields_name, fields);
     // TODO: add constrains
     std::shared_ptr<Constraint> constraints = nullptr;
-    auto sql_stmt_create = std::make_shared<SQLStmtCreate>(SQL_Statement_Type::SQL_CREATE_TABLE,
+    auto sql_stmt_create = std::make_shared<SQLStmtCreate>(SQL_Stmt_Type::SQL_CREATE_TABLE,
                                                            table_info, constraints);
     return sql_stmt_create;
 }

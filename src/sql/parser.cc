@@ -1,7 +1,7 @@
 #include "../../include/sql/parser.h"
 #include <memory>
 
-Parser::Parser(Tokenizer *tokenizer)
+Parser::Parser(std::shared_ptr<Tokenizer> tokenizer)
     : tokenizer_(tokenizer)
     , curr_token_(nullptr)
     , parser_state_type_(Parser_State_Type::PARSER_CORRECT)

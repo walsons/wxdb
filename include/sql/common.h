@@ -6,16 +6,6 @@
 #include <unordered_map>
 #include <memory>
 
-enum class SQL_Statement_Type
-{
-    SQL_CREATE_DATABASE,
-    SQL_CREATE_TABLE,
-    SQL_CREATE_VIEW,
-    SQL_CREATE_INDEX,
-    SQL_CREATE_USER,
-    // ......
-};
-
 enum class Data_Type
 {
     DATA_TYPE_INT,
@@ -26,16 +16,17 @@ enum class Data_Type
     DATA_TYPE_NULL
 };
 
-enum class Constraint_Type
+struct DataValue
 {
-    CONS_NOT_NULL,
-    CONS_UNIQUE,
-    CONS_PRIMARY_KEY,
-    CONS_FOREIGN_KEY,
-    CONS_DEFAULT,
-    OONS_AUTO_INCREMENT,
-    CONS_CHECK,
-    CONS_SIZE
+    DataValue(Data_Type type, size_t string_length = 0);
+    ~DataValue();
+    Data_Type type_;
+    union
+    {
+        int int_value_;
+        double double_value_;
+        char *char_value_; 
+    };
 };
 
 class FieldInfo
@@ -71,6 +62,18 @@ public:
     ForeignKeyRef(const std::string &column_name);
     ForeignKeyRef(const std::string &table_name, const std::string &column_name);
     ~ForeignKeyRef();
+};
+
+enum class Constraint_Type
+{
+    CONS_NOT_NULL,
+    CONS_UNIQUE,
+    CONS_PRIMARY_KEY,
+    CONS_FOREIGN_KEY,
+    CONS_DEFAULT,
+    OONS_AUTO_INCREMENT,
+    CONS_CHECK,
+    CONS_SIZE
 };
 
 struct Constraint
