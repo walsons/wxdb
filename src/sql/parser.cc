@@ -70,3 +70,13 @@ bool Parser::MatchToken(Token_Type type, const std::string &text)
  * ---> read_builtin: word | func | identifier | mutiply (wildcard)
  *      literal: float | decimal | exp_float | string | char 
  ******************************************************/ 
+
+Expression *Parser::ParseExpressionRD()
+{
+    Expression *expr = ParseReadBooleanOr();
+}
+
+Expression *Parser::ParseReadBooleanOr()
+{
+
+}
