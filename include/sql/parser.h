@@ -6,6 +6,7 @@
 
 #include "token.h"
 #include "tokenizer.h"
+#include "expression.h"
 #include <string>
 #include <memory>
 
@@ -26,6 +27,10 @@ public:
     std::shared_ptr<Token> ParseEatAndNextToken();
     void ParseError(const std::string &message);
     bool MatchToken(Token_Type type, const std::string &text);
+
+    // Parsing expression by using recursive descent approach
+    Expression *ParseExpressionRD();
+    Expression *ParseReadBooleanOr();
 
 public:
     std::shared_ptr<Tokenizer> tokenizer_;

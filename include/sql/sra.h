@@ -13,6 +13,11 @@ Pi([(f,a,col1), (g,a,col2)],
     )
 }
 *****************************/
+
+#include "expression.h"
+#include <string>
+#include <vector>
+
 enum class SRA_Type
 {
     SRA_TABLE,
@@ -28,7 +33,76 @@ enum class SRA_Type
     SRA_INTERSECT
 };
 
+struct TableRef
+{
+    std::string table_name_;
+    std::string alias_;
+};
+
+
 struct SRATable
 {
+    TableRef *table_ref_;
+};
 
+struct SRAProject
+{
+    SRA *sra_;
+    std::vector<Expression *> expr_list_;
+    std::vector<Expression *> order_by_;
+    bool distinct_;
+    std::vector<Expression *> group_by_;
+};
+
+struct SRASelect
+{
+    SRA *sra_;
+    Expression *condition_;
+};
+
+enum Join_Condition_Type
+{
+    JOIN_CONDITION_ON,
+    JOIN_CONDITION_USING   
+};
+
+struct StringList
+{
+    std::string str_;
+    StringList *next_;
+};
+
+struct JoinCondition
+{
+    Join_Condition_Type type_;   
+    // TODO: add destruction function to destruct StringList correctly
+    union 
+    {
+        Expression *on_;
+        StringList *col_list_;  
+    };
+};
+
+struct SRAJoin
+{
+    SRA *sra1_, *sra2_;
+    JoinCondition join_condition_;   
+};
+
+struct SRABinary
+{
+    SRA *sra1_, *sra2_;
+};
+
+struct SRA
+{
+    SRA_Type type_;
+    union
+    {
+        SRATable table_;
+        SRAProject project_;
+        SRASelect select_;
+        SRAJoin join_;
+        SRABinary binary;
+    };
 };
