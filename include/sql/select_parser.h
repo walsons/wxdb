@@ -13,6 +13,7 @@ public:
 
     std::shared_ptr<SRA> *ParseSQLStmtSelect();
     std::vector<Expression *> ParseFieldsExpr();
+    SRA *ParseTablesExpr();
 };
 
 #endif
