@@ -35,6 +35,8 @@ enum class SRA_Type
 
 struct TableRef
 {
+    TableRef(const std::string &table_name, const std::string &alias = "");
+    ~TableRef();
     std::string table_name_;
     std::string alias_;
 };
@@ -42,6 +44,8 @@ struct TableRef
 
 struct SRATable
 {
+    SRATable(TableRef *table_ref);
+    ~SRATable();
     TableRef *table_ref_;
 };
 
@@ -85,8 +89,10 @@ struct JoinCondition
 
 struct SRAJoin
 {
+    SRAJoin(SRA *sra1, SRA *sra2, JoinCondition *join_condition);
+    ~SRAJoin();
     SRA *sra1_, *sra2_;
-    JoinCondition join_condition_;   
+    JoinCondition *join_condition_;   
 };
 
 struct SRABinary
@@ -96,6 +102,8 @@ struct SRABinary
 
 struct SRA
 {
+    SRA(SRA_Type type);
+    ~SRA();
     SRA_Type type_;
     union
     {
