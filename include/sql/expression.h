@@ -36,7 +36,6 @@ enum class Term_Type
 class ColumnRef
 {
 public:
-    ColumnRef(const std::string &table_name, const std::string &column_name);
     ColumnRef(const std::string &all_name);
     ~ColumnRef();
     std::string table_name_;
@@ -67,7 +66,7 @@ public:
 class Expression
 {
 public:
-    Expression(Token_Type operator_type, Expression *next_expr);
+    Expression(Token_Type operator_type, TermExpr *term, Expression *next_expr);
     ~Expression();
 
     Token_Type operator_type_;

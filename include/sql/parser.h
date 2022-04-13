@@ -31,6 +31,16 @@ public:
     // Parsing expression by using recursive descent approach
     Expression *ParseExpressionRD();
     Expression *ParseReadBooleanOr();
+    Expression *ParseReadBooleanAnd();
+    Expression *ParseReadBooleanEquality();
+    Expression *ParseReadBooleanComparison();
+    Expression *ParseReadExpr();
+    Expression *ParseReadTerm();
+    Expression *ParseReadPower();
+    Expression *ParseReadUnary();
+    Expression *ParseReadParen();
+    Expression *ParseReadBuiltin();
+    Expression *ParseReadLiteral();
 
 public:
     std::shared_ptr<Tokenizer> tokenizer_;
