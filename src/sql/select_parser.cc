@@ -53,23 +53,19 @@ SRA *SelectParser::ParseTablesExpr()
     {
         std::string table_name = token->text_;
         TableRef *table_ref = new TableRef(table_name);
-        SRA *sra = new SRA(SRA_Type::SRA_TABLE);
-        sra->table_ = table_ref;
+        SRA *sra1 = SRAOfTable(table_ref);
         token = ParseEatAndNextToken();
         while (token != nullptr && token->type_ == Token_Type::TOKEN_COMMA)
         {
             token = ParseEatAndNextToken();
             table_name = token->text_;
             table_ref = new TableRef(table_name);
-            SRA *sra2 = new SRA(SRA_Type::SRA_TABLE);
-            sra2->table_ = table_ref;
+            SRA *sra2 = SRAOfTable(table_ref);
             // Cartesian product
-            SRA *new_sra = new SRA(SRA_Type::SRA_JOIN);
-            new_sra->join_ = SRAJoin(sra, sra2, nullptr);
-            sra = new_sra;
+            sra1 = SRAOfJoin(sra1, sra2, nullptr);
             token = ParseEatAndNextToken();
         }
-        return sra;
+        return sra1;
     }
     return nullptr;
 }
