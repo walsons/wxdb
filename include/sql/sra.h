@@ -41,7 +41,6 @@ struct TableRef
     std::string alias_;
 };
 
-
 struct SRATable
 {
     SRATable(TableRef *table_ref);
@@ -114,3 +113,11 @@ struct SRA
         SRABinary binary;
     };
 };
+
+
+/**********************************
+ ***** Super Relation Algebra *****
+ **********************************/
+
+SRA *SRAOfTable(TableRef *table_ref);
+SRA *SRAOfJoin(SRA *sra1, SRA *sra2, JoinCondition *join_condition);
