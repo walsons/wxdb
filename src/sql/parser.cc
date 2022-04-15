@@ -74,6 +74,7 @@ bool Parser::MatchToken(Token_Type type, const std::string &text)
 Expression *Parser::ParseExpressionRD()
 {
     Expression *expr = ParseReadBooleanOr();
+    return expr;
 }
 
 Expression *Parser::ParseReadBooleanOr()
@@ -81,6 +82,7 @@ Expression *Parser::ParseReadBooleanOr()
     Expression *expr0 = nullptr, *expr1 = nullptr, *expr2 = nullptr;
     auto token = ParseNextToken();
     expr0 = ParseReadBooleanAnd();
+    return expr0;
 }
 
 Expression *Parser::ParseReadBooleanAnd()
@@ -88,6 +90,7 @@ Expression *Parser::ParseReadBooleanAnd()
     Expression *expr0 = nullptr, *expr1 = nullptr, *expr2 = nullptr;
     auto token = ParseNextToken();
     expr0 = ParseReadBooleanEquality();
+    return expr0;
 }
 
 Expression *Parser::ParseReadBooleanEquality()
@@ -95,6 +98,7 @@ Expression *Parser::ParseReadBooleanEquality()
     Expression *expr0 = nullptr, *expr1 = nullptr, *expr2 = nullptr;
     auto token = ParseNextToken();
     expr0 = ParseReadBooleanComparison();
+    return expr0;
 }
 
 Expression *Parser::ParseReadBooleanComparison()
@@ -102,6 +106,7 @@ Expression *Parser::ParseReadBooleanComparison()
     Expression *expr0 = nullptr, *expr1 = nullptr, *expr2 = nullptr;
     auto token = ParseNextToken();
     expr0 = ParseReadExpr();
+    return expr0;
 }
 
 Expression *Parser::ParseReadExpr()
@@ -121,6 +126,7 @@ Expression *Parser::ParseReadExpr()
         ParseEatToken();
         expr0 = ParseReadTerm();
     }
+    return expr0;
 }
 
 Expression *Parser::ParseReadTerm()
@@ -128,6 +134,7 @@ Expression *Parser::ParseReadTerm()
     Expression *expr0 = nullptr, *expr1 = nullptr, *expr2 = nullptr;
     auto token = ParseNextToken();
     expr0 = ParseReadPower();
+    return expr0;
 }
 
 Expression *Parser::ParseReadPower()
@@ -135,6 +142,7 @@ Expression *Parser::ParseReadPower()
     Expression *expr0 = nullptr, *expr1 = nullptr;
     auto token = ParseNextToken();
     expr0 = ParseReadUnary();
+    return expr0;
 }
 
 Expression *Parser::ParseReadUnary()
@@ -155,6 +163,7 @@ Expression *Parser::ParseReadUnary()
         ParseEatAndNextToken();
         expr1 = ParseReadParen();
     }
+    return expr1;
 }
 
 Expression *Parser::ParseReadParen()

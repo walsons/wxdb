@@ -17,6 +17,7 @@ DataValue::~DataValue()
 }
 
 FieldInfo::FieldInfo(Data_Type type, int length, const std::string &field_name)
+    : type_(type), length_(length), field_name_(field_name)
 {
 }
 

@@ -11,6 +11,11 @@ project(wxdb_unit_test)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
+# debug or release, use gdb to debug
+SET(CMAKE_BUILD_TYPE "Debug")
+SET(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g2 -ggdb")
+SET(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall") 
+
 # find all cpp files in src directory recursively 
 # and set it to a variable named src_files
 file(GLOB_RECURSE src_files ../src/*.cc ./*.cc)

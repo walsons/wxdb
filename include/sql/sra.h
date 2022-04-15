@@ -33,6 +33,8 @@ enum class SRA_Type
     SRA_INTERSECT
 };
 
+struct SRA;
+
 struct TableRef
 {
     TableRef(const std::string &table_name, const std::string &alias = "");
@@ -50,15 +52,19 @@ struct SRATable
 
 struct SRAProject
 {
+    SRAProject(SRA *sra, std::vector<Expression *> expr_list, bool distinct = false);
+    ~SRAProject();
     SRA *sra_;
     std::vector<Expression *> expr_list_;
-    std::vector<Expression *> order_by_;
     bool distinct_;
+    std::vector<Expression *> order_by_;
     std::vector<Expression *> group_by_;
 };
 
 struct SRASelect
 {
+    SRASelect(SRA *sra, Expression *condition);
+    ~SRASelect();
     SRA *sra_;
     Expression *condition_;
 };
@@ -71,6 +77,8 @@ enum Join_Condition_Type
 
 struct StringList
 {
+    StringList(const std::string &str, StringList *next);
+    ~StringList();
     std::string str_;
     StringList *next_;
 };
@@ -121,3 +129,4 @@ struct SRA
 
 SRA *SRAOfTable(TableRef *table_ref);
 SRA *SRAOfJoin(SRA *sra1, SRA *sra2, JoinCondition *join_condition);
+SRA *SRAOfProject(SRA *sra, std::vector<Expression *> expr_list);
