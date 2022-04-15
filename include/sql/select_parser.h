@@ -11,7 +11,7 @@ public:
     SelectParser(std::shared_ptr<Tokenizer> tokenizer);
     ~SelectParser();
 
-    std::shared_ptr<SRA> *ParseSQLStmtSelect();
+    SRA *ParseSQLStmtSelect();
     std::vector<Expression *> ParseFieldsExpr();
     SRA *ParseTablesExpr();
 };

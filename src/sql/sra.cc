@@ -15,6 +15,30 @@ SRATable::SRATable(TableRef *table_ref) : table_ref_(table_ref)
 
 SRATable::~SRATable() = default;
 
+// SRAProject
+SRAProject::SRAProject(SRA *sra, std::vector<Expression *> expr_list, bool distinct)
+    : sra_(sra), expr_list_(expr_list), distinct_(distinct)
+{
+}
+
+SRAProject::~SRAProject() = default;
+
+// SRASelect
+SRASelect::SRASelect(SRA *sra, Expression *condition)
+    : sra_(sra), condition_(condition)
+{
+}
+
+SRASelect::~SRASelect() = default;
+
+// StringList
+StringList::StringList(const std::string &str, StringList *next)
+    : str_(str), next_(next)
+{
+}
+
+StringList::~StringList() = default;
+
 // SRAJoin
 SRAJoin::SRAJoin(SRA *sra1, SRA *sra2, JoinCondition *join_condition)
     : sra1_(sra1), sra2_(sra2), join_condition_(join_condition)
@@ -48,8 +72,13 @@ SRA *SRAOfTable(TableRef *table_ref)
 SRA *SRAOfJoin(SRA *sra1, SRA *sra2, JoinCondition *join_condition)
 {
     SRA *sra = new SRA(SRA_Type::SRA_JOIN);
-    sra->join_.sra1_ = sra1;
-    sra->join_.sra2_ = sra2;
-    sra->join_.join_condition_ = join_condition;
+    sra->join_ = SRAJoin(sra1, sra2, join_condition);
     return sra;
+}
+
+SRA *SRAOfProject(SRA *sra, std::vector<Expression *> expr_list)
+{
+    SRA *new_sra = new SRA(SRA_Type::SRA_PROJECT);
+    new_sra->project_ = SRAProject(sra, expr_list);
+    return new_sra;
 }

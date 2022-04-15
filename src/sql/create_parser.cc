@@ -58,6 +58,11 @@ std::shared_ptr<SQLStmtCreate> CreateParser::ParseSQLStmtCreate()
         ParseError("invalid SQL: missing \")\"!");
         return nullptr;
     }
+    if (!MatchToken(Token_Type::TOKEN_SEMICOLON, ";"))
+    {
+        ParseError("invalid SQL: missing \";\"!");
+        return nullptr;
+    }
     auto table_info = std::make_shared<TableInfo>(table_name, fields_name, fields);
     // TODO: add constrains
     std::shared_ptr<Constraint> constraints = nullptr;

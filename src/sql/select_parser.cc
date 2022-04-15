@@ -7,15 +7,16 @@ SelectParser::SelectParser(std::shared_ptr<Tokenizer> tokenizer)
 
 SelectParser::~SelectParser() = default;
 
-std::shared_ptr<SRA> *SelectParser::ParseSQLStmtSelect()
+SRA *SelectParser::ParseSQLStmtSelect()
 {
     auto token = ParseNextToken();
     /*** select ***/
     if (!MatchToken(Token_Type::TOKEN_RESERVED_WORD, "select")) { return nullptr; }
     /*** Expression list ***/
     std::vector<Expression *> field_exprs = ParseFieldsExpr();
+    if (parser_state_type_ == Parser_State_Type::PARSER_WRONG) { return nullptr; }
     /*** from ***/
-    if (!MatchToken(Token_Type::TOKEN_RESERVED_WORD, "word"))
+    if (!MatchToken(Token_Type::TOKEN_RESERVED_WORD, "from"))
     {
         ParseError("invalid SQL: missing \"from\"!");
         return nullptr;
@@ -23,6 +24,17 @@ std::shared_ptr<SRA> *SelectParser::ParseSQLStmtSelect()
     /*** table ***/
     token = ParseNextToken();
     SRA *table_expr = ParseTablesExpr();
+    if (parser_state_type_ == Parser_State_Type::PARSER_WRONG) { return nullptr; }
+    // If select statement ends, transform to relation algebra and return
+    token = ParseNextToken();
+    if (MatchToken(Token_Type::TOKEN_SEMICOLON, ";"))
+    {
+        SRA *project = SRAOfProject(table_expr, field_exprs);
+        return project;
+    }
+    // TODO: If isn't end, then to match where sub-statement
+    return nullptr;
+
 }
 
 std::vector<Expression *> SelectParser::ParseFieldsExpr()

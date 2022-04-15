@@ -12,6 +12,8 @@ public:
     ~CreateParser();
 
     std::shared_ptr<SQLStmtCreate> ParseSQLStmtCreate();
+
+private:
     std::shared_ptr<FieldInfo> ParseSQLStmtColumnExpr();
 };
 
