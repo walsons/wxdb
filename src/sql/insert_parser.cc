@@ -67,10 +67,15 @@ std::shared_ptr<SQLStmtInsert> InsertParser::ParseSQLStmtInsert()
     }
     else
     {
-        ParseError("invalid SQL: missing values!");
+        ParseError("invalid SQL: missing \"values\"!");
         return nullptr;
     }
     if (values == nullptr) { return nullptr; }
+    if (!MatchToken(Token_Type::TOKEN_COMMA, ";"))
+    {
+        ParseError("invalid SQL: missing \";\"!");
+        return nullptr;
+    }
     // If fields_name is empty, which means must provide all field with values respectively
     auto sql_stmt_insert = std::make_shared<SQLStmtInsert>(SQL_Stmt_Type::SQL_INSERT, 
                                                            table_name,

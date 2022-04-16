@@ -16,7 +16,7 @@ SRATable::SRATable(TableRef *table_ref) : table_ref_(table_ref)
 SRATable::~SRATable() = default;
 
 // SRAProject
-SRAProject::SRAProject(SRA *sra, std::vector<Expression *> expr_list, bool distinct)
+SRAProject::SRAProject(std::shared_ptr<SRA> sra, std::vector<std::shared_ptr<Expression>> expr_list, bool distinct)
     : sra_(sra), expr_list_(expr_list), distinct_(distinct)
 {
 }
@@ -24,7 +24,7 @@ SRAProject::SRAProject(SRA *sra, std::vector<Expression *> expr_list, bool disti
 SRAProject::~SRAProject() = default;
 
 // SRASelect
-SRASelect::SRASelect(SRA *sra, Expression *condition)
+SRASelect::SRASelect(std::shared_ptr<SRA> sra, Expression *condition)
     : sra_(sra), condition_(condition)
 {
 }
@@ -40,7 +40,7 @@ StringList::StringList(const std::string &str, StringList *next)
 StringList::~StringList() = default;
 
 // SRAJoin
-SRAJoin::SRAJoin(SRA *sra1, SRA *sra2, JoinCondition *join_condition)
+SRAJoin::SRAJoin(std::shared_ptr<SRA> sra1, std::shared_ptr<SRA> sra2, JoinCondition *join_condition)
     : sra1_(sra1), sra2_(sra2), join_condition_(join_condition)
 {
 }
@@ -62,23 +62,23 @@ SRA::~SRA()
  ***** Super Relation Algebra *****
  **********************************/
 
-SRA *SRAOfTable(TableRef *table_ref)
+std::shared_ptr<SRA> SRAOfTable(TableRef *table_ref)
 {
-    SRA *sra = new SRA(SRA_Type::SRA_TABLE);
+    auto sra = std::make_shared<SRA>(SRA_Type::SRA_TABLE);
     sra->table_ = SRATable(table_ref);
     return sra;
 }
 
-SRA *SRAOfJoin(SRA *sra1, SRA *sra2, JoinCondition *join_condition)
+std::shared_ptr<SRA> SRAOfJoin(std::shared_ptr<SRA> sra1, std::shared_ptr<SRA> sra2, JoinCondition *join_condition)
 {
-    SRA *sra = new SRA(SRA_Type::SRA_JOIN);
+    auto sra = std::make_shared<SRA>(SRA_Type::SRA_JOIN);
     sra->join_ = SRAJoin(sra1, sra2, join_condition);
     return sra;
 }
 
-SRA *SRAOfProject(SRA *sra, std::vector<Expression *> expr_list)
+std::shared_ptr<SRA> SRAOfProject(std::shared_ptr<SRA> sra, std::vector<std::shared_ptr<Expression>> expr_list)
 {
-    SRA *new_sra = new SRA(SRA_Type::SRA_PROJECT);
+    auto new_sra = std::make_shared<SRA>(SRA_Type::SRA_PROJECT);
     new_sra->project_ = SRAProject(sra, expr_list);
     return new_sra;
 }

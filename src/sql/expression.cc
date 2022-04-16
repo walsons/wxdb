@@ -23,10 +23,28 @@ TermExpr::TermExpr(Term_Type term_type) : term_type_(term_type)
 
 TermExpr::~TermExpr()
 {
-    if (term_type_ == Term_Type::TERM_ID) { id.~basic_string(); }
+    switch (term_type_)
+    {
+    case Term_Type::TERM_ID:
+        id_.~basic_string();
+        break;
+    case Term_Type::TERM_LITERAL:
+        delete val_;
+        break;
+    case Term_Type::TERM_COL_REF:
+        delete ref_;
+        break;
+    case Term_Type::TERM_FUNC:
+        func_.~Func();
+        break;
+    default:
+        break;
+    }
 }
 
-Expression::Expression(Token_Type operator_type, TermExpr *term, Expression *next_expr)
+Expression::Expression(Token_Type operator_type, 
+                       std::shared_ptr<TermExpr> term, 
+                       std::shared_ptr<Expression> next_expr)
     : operator_type_(operator_type), term_(nullptr), next_expr_(next_expr)
 {
 }

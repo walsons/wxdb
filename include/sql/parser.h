@@ -29,18 +29,18 @@ public:
     bool MatchToken(Token_Type type, const std::string &text);
 
     // Parsing expression by using recursive descent approach
-    Expression *ParseExpressionRD();
-    Expression *ParseReadBooleanOr();
-    Expression *ParseReadBooleanAnd();
-    Expression *ParseReadBooleanEquality();
-    Expression *ParseReadBooleanComparison();
-    Expression *ParseReadExpr();
-    Expression *ParseReadTerm();
-    Expression *ParseReadPower();
-    Expression *ParseReadUnary();
-    Expression *ParseReadParen();
-    Expression *ParseReadBuiltin();
-    Expression *ParseReadLiteral();
+    std::shared_ptr<Expression> ParseExpressionRD();
+    std::shared_ptr<Expression> ParseReadBooleanOr();
+    std::shared_ptr<Expression> ParseReadBooleanAnd();
+    std::shared_ptr<Expression> ParseReadBooleanEquality();
+    std::shared_ptr<Expression> ParseReadBooleanComparison();
+    std::shared_ptr<Expression> ParseReadExpr();
+    std::shared_ptr<Expression> ParseReadTerm();
+    std::shared_ptr<Expression> ParseReadPower();
+    std::shared_ptr<Expression> ParseReadUnary();
+    std::shared_ptr<Expression> ParseReadParen();
+    std::shared_ptr<Expression> ParseReadBuiltin();
+    std::shared_ptr<Expression> ParseReadLiteral();
 
 public:
     std::shared_ptr<Tokenizer> tokenizer_;
