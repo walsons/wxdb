@@ -148,4 +148,15 @@ TEST_CASE("TC-PARSER", "[parser test]")
         CHECK(sql_stmt_insert->values_[2].GetDataType() == value.GetDataType());
         CHECK(sql_stmt_insert->values_[2].char_value() == value.char_value());
     }
+
+    SECTION("select parser")
+    {
+        std::string statement = "selec cust_id, cust_address \
+                                 from customers;";
+        auto tokenizer = std::make_shared<Tokenizer>(statement);
+        SelectParser select_parser(tokenizer);
+        auto sra = select_parser.ParseSQLStmtSelect();
+        REQUIRE(sra != nullptr);
+        REQUIRE(sra->type_ == SRA_Type::SRA_PROJECT);
+    }
 }

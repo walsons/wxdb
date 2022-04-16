@@ -18,9 +18,11 @@ class Expression;
 class Func
 {
 public:
+    Func() = default;
+    ~Func() = default;
     // Function type
     Func_Type type_;
-    Expression *expr;
+    std::shared_ptr<Expression> expr;
 };
 
 enum class Term_Type
@@ -53,28 +55,30 @@ public:
     union
     {
         // Identifier, table name...
-        std::string id;
+        std::string id_;
         // Literal
-        Literal *val;
+        Literal *val_;
         // Field variable
-        ColumnRef *ref;
+        ColumnRef *ref_;
         // Function
-        Func func;
+        Func func_;
     };
 };
 
 class Expression
 {
 public:
-    Expression(Token_Type operator_type, TermExpr *term, Expression *next_expr);
+    Expression(Token_Type operator_type, 
+               std::shared_ptr<TermExpr> term, 
+               std::shared_ptr<Expression> next_expr);
     ~Expression();
 
     Token_Type operator_type_;
-    Term_Type *term_;
+    std::shared_ptr<TermExpr> term_;
     // It might have alias when appears in select statement
     std::string alias_;
     // Linking expression via link list
-    Expression *next_expr_;
+    std::shared_ptr<Expression> next_expr_;
 };
 
 #endif

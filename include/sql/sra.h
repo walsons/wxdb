@@ -52,20 +52,20 @@ struct SRATable
 
 struct SRAProject
 {
-    SRAProject(SRA *sra, std::vector<Expression *> expr_list, bool distinct = false);
+    SRAProject(std::shared_ptr<SRA> sra, std::vector<std::shared_ptr<Expression>> expr_list, bool distinct = false);
     ~SRAProject();
-    SRA *sra_;
-    std::vector<Expression *> expr_list_;
+    std::shared_ptr<SRA> sra_;
+    std::vector<std::shared_ptr<Expression>> expr_list_;
     bool distinct_;
-    std::vector<Expression *> order_by_;
-    std::vector<Expression *> group_by_;
+    std::vector<std::shared_ptr<Expression>> order_by_;
+    std::vector<std::shared_ptr<Expression>> group_by_;
 };
 
 struct SRASelect
 {
-    SRASelect(SRA *sra, Expression *condition);
+    SRASelect(std::shared_ptr<SRA> sra, Expression *condition);
     ~SRASelect();
-    SRA *sra_;
+    std::shared_ptr<SRA> sra_;
     Expression *condition_;
 };
 
@@ -96,15 +96,15 @@ struct JoinCondition
 
 struct SRAJoin
 {
-    SRAJoin(SRA *sra1, SRA *sra2, JoinCondition *join_condition);
+    SRAJoin(std::shared_ptr<SRA> sra1, std::shared_ptr<SRA> sra2, JoinCondition *join_condition);
     ~SRAJoin();
-    SRA *sra1_, *sra2_;
+    std::shared_ptr<SRA> sra1_, sra2_;
     JoinCondition *join_condition_;   
 };
 
 struct SRABinary
 {
-    SRA *sra1_, *sra2_;
+    std::shared_ptr<SRA> sra1_, sra2_;
 };
 
 struct SRA
@@ -127,6 +127,6 @@ struct SRA
  ***** Super Relation Algebra *****
  **********************************/
 
-SRA *SRAOfTable(TableRef *table_ref);
-SRA *SRAOfJoin(SRA *sra1, SRA *sra2, JoinCondition *join_condition);
-SRA *SRAOfProject(SRA *sra, std::vector<Expression *> expr_list);
+std::shared_ptr<SRA> SRAOfTable(TableRef *table_ref);
+std::shared_ptr<SRA> SRAOfJoin(std::shared_ptr<SRA> sra1, std::shared_ptr<SRA> sra2, JoinCondition *join_condition);
+std::shared_ptr<SRA> SRAOfProject(std::shared_ptr<SRA> sra, std::vector<std::shared_ptr<Expression>> expr_list);
