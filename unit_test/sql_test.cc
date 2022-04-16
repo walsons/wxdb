@@ -6,6 +6,8 @@
 #include "../include/sql/token.h"
 #include "../include/sql/tokenizer.h"
 #include "../include/sql/create_parser.h"
+#include "../include/sql/insert_parser.h"
+#include "../include/sql/select_parser.h"
 
 TEST_CASE( "TC-TOKENIZER", "[tokenizer test]" ) 
 {
@@ -36,6 +38,10 @@ TEST_CASE( "TC-TOKENIZER", "[tokenizer test]" )
     }
 }
 
+void same_insert_stmt_test(const std::string &statement)
+{
+}
+
 TEST_CASE("TC-PARSER", "[parser test]")
 {
     SECTION("create parser")
@@ -49,6 +55,9 @@ TEST_CASE("TC-PARSER", "[parser test]")
         CreateParser create_parser(tokenizer);
         auto sql_stmt_create = create_parser.ParseSQLStmtCreate();
         REQUIRE(sql_stmt_create != nullptr);
+
+        // # SQL_Stmt_Type
+        CHECK(sql_stmt_create->type_ == SQL_Stmt_Type::SQL_CREATE_TABLE);
 
         // # TableInfo
         auto table_info = sql_stmt_create->table_info_;
@@ -72,7 +81,71 @@ TEST_CASE("TC-PARSER", "[parser test]")
         CHECK(field_info->length_ == 50);
 
         // # Constraint
-        auto constraint = sql_stmt_create->constraint_;
-        
+    }
+
+    SECTION("insert parser")
+    {
+        std::string statement = "insert into customers \
+                                 values \
+                                 ( 1, \
+                                   'Jack', \
+                                   'Shanghai' \
+                                 );";
+        auto tokenizer = std::make_shared<Tokenizer>(statement);
+        InsertParser insert_parser(tokenizer);
+        auto sql_stmt_insert = insert_parser.ParseSQLStmtInsert();
+        REQUIRE(sql_stmt_insert != nullptr);
+
+        // # SQL_Stmt_Type
+        CHECK(sql_stmt_insert->type_ == SQL_Stmt_Type::SQL_INSERT);
+        // # Table name
+        CHECK(sql_stmt_insert->table_name_ == "customers");
+        // # field name
+        CHECK(sql_stmt_insert->fields_name_.empty());
+        // # values
+        DataValue value(Data_Type::DATA_TYPE_INT);
+        value.SetIntValue(1);
+        CHECK(sql_stmt_insert->values_[0].GetDataType() == value.GetDataType());
+        CHECK(sql_stmt_insert->values_[0].int_value() == value.int_value());
+        value.SetCharValue("Jack");
+        CHECK(sql_stmt_insert->values_[1].GetDataType() == value.GetDataType());
+        CHECK(sql_stmt_insert->values_[1].char_value() == value.char_value());
+        value.SetCharValue("Shanghai");
+        CHECK(sql_stmt_insert->values_[2].GetDataType() == value.GetDataType());
+        CHECK(sql_stmt_insert->values_[2].char_value() == value.char_value());
+
+        statement = "insert into customers \
+                     ( cust_id, \
+                       cust_name, \
+                       cust_address \
+                     ) \
+                     values \
+                     ( 1, \
+                       \"Jack\", \
+                       \"Shanghai\" \
+                     );";
+        tokenizer = std::make_shared<Tokenizer>(statement);
+        insert_parser = InsertParser(tokenizer);
+        sql_stmt_insert = insert_parser.ParseSQLStmtInsert();
+        REQUIRE(sql_stmt_insert != nullptr);
+
+        // # SQL_Stmt_Type
+        CHECK(sql_stmt_insert->type_ == SQL_Stmt_Type::SQL_INSERT);
+        // # Table name
+        CHECK(sql_stmt_insert->table_name_ == "customers");
+        // # field name
+        CHECK(sql_stmt_insert->fields_name_[0] == "cust_id");
+        CHECK(sql_stmt_insert->fields_name_[1] == "cust_name");
+        CHECK(sql_stmt_insert->fields_name_[2] == "cust_address");
+        // # values
+        value.SetIntValue(1);
+        CHECK(sql_stmt_insert->values_[0].GetDataType() == value.GetDataType());
+        CHECK(sql_stmt_insert->values_[0].int_value() == value.int_value());
+        value.SetCharValue("Jack");
+        CHECK(sql_stmt_insert->values_[1].GetDataType() == value.GetDataType());
+        CHECK(sql_stmt_insert->values_[1].char_value() == value.char_value());
+        value.SetCharValue("Shanghai");
+        CHECK(sql_stmt_insert->values_[2].GetDataType() == value.GetDataType());
+        CHECK(sql_stmt_insert->values_[2].char_value() == value.char_value());
     }
 }
