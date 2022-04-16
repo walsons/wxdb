@@ -16,7 +16,13 @@ enum class SQL_Stmt_Type
     SQL_CREATE_INDEX,
     SQL_CREATE_USER,
 
-    SQL_INSERT_TABLE,
+    SQL_INSERT,
+
+    SQL_SELECT,
+
+    SQL_UPDATE,
+
+    SQL_DELETE
     // ......
 };
 

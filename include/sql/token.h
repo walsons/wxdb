@@ -65,7 +65,7 @@ public:
         // If it's string, need to remove single quotation marks
         if (type_ == Token_Type::TOKEN_STRING)
         {
-            text_ = text_.substr(1, text.size() - 1);
+            text_ = text_.substr(1, text.size() - 2);
         }
     }
     std::string text_;

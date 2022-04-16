@@ -16,16 +16,28 @@ enum class Data_Type
     DATA_TYPE_NULL
 };
 
-struct DataValue
+class DataValue
 {
-    DataValue(Data_Type type, size_t string_length = 0);
+public:
+    DataValue(Data_Type type);
+    DataValue(const DataValue &data_value);
+    DataValue &operator=(const DataValue &data_value);
     ~DataValue();
+    Data_Type GetDataType();
+    void SetIntValue(const int &value);
+    void SetDoubleValue(const double &value);
+    void SetCharValue(const std::string &value);
+    const int int_value();
+    const double double_value();
+    const std::string char_value();
+
+private:
     Data_Type type_;
     union
     {
         int int_value_;
         double double_value_;
-        char *char_value_; 
+        std::string char_value_;
     };
 };
 

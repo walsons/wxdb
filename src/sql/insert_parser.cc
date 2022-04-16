@@ -1,5 +1,4 @@
 #include "../../include/sql/insert_parser.h"
-#include <cstring>
 
 InsertParser::InsertParser(std::shared_ptr<Tokenizer> tokenizer) : Parser(tokenizer)
 {
@@ -44,6 +43,7 @@ std::shared_ptr<SQLStmtInsert> InsertParser::ParseSQLStmtInsert()
                 {
                     break;
                 }
+                token = ParseNextToken();
             }
         }
         else
@@ -72,7 +72,7 @@ std::shared_ptr<SQLStmtInsert> InsertParser::ParseSQLStmtInsert()
     }
     if (values == nullptr) { return nullptr; }
     // If fields_name is empty, which means must provide all field with values respectively
-    auto sql_stmt_insert = std::make_shared<SQLStmtInsert>(SQL_Stmt_Type::SQL_INSERT_TABLE, 
+    auto sql_stmt_insert = std::make_shared<SQLStmtInsert>(SQL_Stmt_Type::SQL_INSERT, 
                                                            table_name,
                                                            fields_name,
                                                            *values);
@@ -102,35 +102,36 @@ std::shared_ptr<std::vector<DataValue>> InsertParser::ParseDataValueExpr()
         {
             if (token->type_ == Token_Type::TOKEN_STRING)
             {
-                DataValue data_value(Data_Type::DATA_TYPE_CHAR, token->text_.size());
-                std::memcpy(data_value.char_value_, token->text_.c_str(), token->text_.size() + 1);
+                DataValue data_value(Data_Type::DATA_TYPE_CHAR);
+                data_value.SetCharValue(token->text_);
                 values->push_back(data_value);
             }
             else if (token->type_ == Token_Type::TOKEN_DECIMAL ||
                      token->type_ == Token_Type::TOKEN_ZERO)
             {
                 DataValue data_value(Data_Type::DATA_TYPE_INT);
-                data_value.int_value_ = std::stoi(token->text_);
+                data_value.SetIntValue(std::stoi(token->text_));
                 values->push_back(data_value);
             }
             else if (token->type_ == Token_Type::TOKEN_FLOAT ||
                      token->type_ == Token_Type::TOKEN_EXP_FLOAT)
             {
                 DataValue data_value(Data_Type::DATA_TYPE_DOUBLE);
-                data_value.double_value_ = std::stod(token->text_);
+                data_value.SetDoubleValue(std::stod(token->text_));
                 values->push_back(data_value);
             }
             else if (token->type_ == Token_Type::TOKEN_NULL)
             {
                 DataValue data_value(Data_Type::DATA_TYPE_NULL);
-                data_value.int_value_ = 0;
                 values->push_back(data_value);
             }
+            token = ParseEatToken();
             // TODO: support other type
             if (!MatchToken(Token_Type::TOKEN_COMMA, ","))
             {
                 break;
             }
+            token = ParseNextToken();
         }
     }
     else
