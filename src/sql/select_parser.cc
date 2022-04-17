@@ -1,4 +1,5 @@
 #include "../../include/sql/select_parser.h"
+#include <iostream>
 
 SelectParser::SelectParser(std::shared_ptr<Tokenizer> tokenizer)
     : Parser(tokenizer)
@@ -50,7 +51,7 @@ std::vector<std::shared_ptr<Expression>> SelectParser::ParseFieldsExpr()
     auto token = ParseNextToken();
     while (token != nullptr && token->type_ == Token_Type::TOKEN_COMMA)
     {
-        auto token = ParseEatAndNextToken();
+        token = ParseEatAndNextToken();
         auto expr1 = ParseExpressionRD();
         exprs.push_back(expr1);
         token = ParseNextToken();
