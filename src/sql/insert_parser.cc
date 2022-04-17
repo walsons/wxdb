@@ -71,7 +71,7 @@ std::shared_ptr<SQLStmtInsert> InsertParser::ParseSQLStmtInsert()
         return nullptr;
     }
     if (values == nullptr) { return nullptr; }
-    if (!MatchToken(Token_Type::TOKEN_COMMA, ";"))
+    if (!MatchToken(Token_Type::TOKEN_SEMICOLON, ";"))
     {
         ParseError("invalid SQL: missing \";\"!");
         return nullptr;

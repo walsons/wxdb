@@ -79,6 +79,7 @@ std::shared_ptr<SRA> SRAOfJoin(std::shared_ptr<SRA> sra1, std::shared_ptr<SRA> s
 std::shared_ptr<SRA> SRAOfProject(std::shared_ptr<SRA> sra, std::vector<std::shared_ptr<Expression>> expr_list)
 {
     auto new_sra = std::make_shared<SRA>(SRA_Type::SRA_PROJECT);
-    new_sra->project_ = SRAProject(sra, expr_list);
+    new (&new_sra->project_) SRAProject(sra, expr_list);
+    // new_sra->project_ = SRAProject(sra, expr_list);
     return new_sra;
 }

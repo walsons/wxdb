@@ -151,7 +151,7 @@ TEST_CASE("TC-PARSER", "[parser test]")
 
     SECTION("select parser")
     {
-        std::string statement = "selec cust_id, cust_address \
+        std::string statement = "select cust_id, cust_address \
                                  from customers;";
         auto tokenizer = std::make_shared<Tokenizer>(statement);
         SelectParser select_parser(tokenizer);
