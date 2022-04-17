@@ -110,7 +110,10 @@ struct SRABinary
 struct SRA
 {
     SRA(SRA_Type type);
+    SRA(const SRA &sra) = delete;
+    SRA &operator=(const SRA &sra) = delete;
     ~SRA();
+
     SRA_Type type_;
     union
     {

@@ -54,7 +54,23 @@ SRA::SRA(SRA_Type type) : type_(type)
 
 SRA::~SRA()
 {
-    // TODO: call member destructor correctly
+    switch (type_)
+    {
+    case SRA_Type::SRA_TABLE:
+        table_.~SRATable();
+        break;
+    case SRA_Type::SRA_PROJECT:
+        project_.~SRAProject();
+        break;
+    case SRA_Type::SRA_SELECT:
+        select_.~SRASelect();
+        break;
+    case SRA_Type::SRA_JOIN:
+        join_.~SRAJoin();
+        break;
+    default:
+        break;
+    }
 }
 
 
@@ -64,22 +80,21 @@ SRA::~SRA()
 
 std::shared_ptr<SRA> SRAOfTable(TableRef *table_ref)
 {
-    auto sra = std::make_shared<SRA>(SRA_Type::SRA_TABLE);
-    sra->table_ = SRATable(table_ref);
-    return sra;
+    auto new_sra = std::make_shared<SRA>(SRA_Type::SRA_TABLE);
+    new (&new_sra->table_) SRATable(table_ref);
+    return new_sra;
 }
 
 std::shared_ptr<SRA> SRAOfJoin(std::shared_ptr<SRA> sra1, std::shared_ptr<SRA> sra2, JoinCondition *join_condition)
 {
-    auto sra = std::make_shared<SRA>(SRA_Type::SRA_JOIN);
-    sra->join_ = SRAJoin(sra1, sra2, join_condition);
-    return sra;
+    auto new_sra = std::make_shared<SRA>(SRA_Type::SRA_JOIN);
+    new (&new_sra->join_) SRAJoin(sra1, sra2, join_condition);
+    return new_sra;
 }
 
 std::shared_ptr<SRA> SRAOfProject(std::shared_ptr<SRA> sra, std::vector<std::shared_ptr<Expression>> expr_list)
 {
     auto new_sra = std::make_shared<SRA>(SRA_Type::SRA_PROJECT);
     new (&new_sra->project_) SRAProject(sra, expr_list);
-    // new_sra->project_ = SRAProject(sra, expr_list);
     return new_sra;
 }
