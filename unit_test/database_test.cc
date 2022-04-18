@@ -4,8 +4,8 @@
 #include <string>
 #include <vector>
 
-#include "../include/db/meta_command.h"
-#include "../include/db/a_sql_statement.h"
+#include "../include/db_old/meta_command.h"
+#include "../include/db_old/a_sql_statement.h"
 
 MetaCommand meta_command;
 TEST_CASE( "META_COMMAND", "[meta command test]" ) {
