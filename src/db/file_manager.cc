@@ -1,4 +1,6 @@
 #include "../../include/db/file_manager.h"
+#include "../../include/db/buffer_manager.h"
+#include "../../include/db/record_file.h"
 #include <direct.h>
 #include <cstring>
 #include <iostream>
@@ -14,15 +16,46 @@ DiskBlock::DiskBlock(const std::string &file_name, int block_number,
 MemoryPage::MemoryPage(std::shared_ptr<FileManager> file_manager)
     : file_manager_(file_manager)
 {
-    std::memset(content_, 0, sizeof(content_));
+    std::memset(contents_, 0, sizeof(contents_));
 }
-int Read(std::shared_ptr<DiskBlock> block)
+
+int MemoryPage::Read(std::shared_ptr<DiskBlock> block)
 {
-    // TODO
+    return file_manager_->Read(this, block);
 }
-int Write(std::shared_ptr<DiskBlock> block)
+
+int MemoryPage::Write(std::shared_ptr<DiskBlock> block)
 {
-    // TODO
+    return file_manager_->Write(this, block);
+}
+
+int MemoryPage::Append(std::shared_ptr<MemoryBuffer> memory_buffer,
+            const std::string &file_name,
+            std::shared_ptr<TableInfo> table_info)
+{
+    // TODO: Think of implement like above
+    return memory_buffer->contents_->file_manager_->Append(memory_buffer, file_name, table_info);
+}
+
+int MemoryPage::RecordFormatter(std::shared_ptr<TableInfo> table_info)
+{
+    // Reserve a size of int to save slot usage state, 
+    // which default is RECORD_PAGE_EMPTY
+    int record_size = table_info->record_length_ + sizeof(int);
+    for (int pos = 0; pos + record_size <= DISK_BLOCK_SIZE; pos += record_size)
+    {
+        // First, write slot state
+        SetInt(pos, Record_Page_Status::RECORD_PAGE_EMPTY);
+        // TODO
+    }
+}
+
+int MemoryPage::SetInt(int offset, int val)
+{
+    contents_[offset] = val >> 24;
+    contents_[offset + 1] = val >> 16;
+    contents_[offset + 2] = val >> 8;
+    contents_[offset + 3] = val;
 }
 
 /******************** FileManager ********************/
@@ -51,9 +84,28 @@ FileManager::~FileManager()
     // TODO: check all files are opened and close them
 }
 
-int FileManager::Read(std::shared_ptr<MemoryPage> memory_page, std::shared_ptr<DiskBlock> disk_block)
+int FileManager::Read(MemoryPage *memory_page, std::shared_ptr<DiskBlock> disk_block)
 {
-    // TODO: std::fstream fp = 
+    std::fstream &fp = GetFile(disk_block->file_name_);
+    fp.seekg(disk_block->block_number_ * DISK_BLOCK_SIZE, std::fstream::beg);
+    fp.read(memory_page->contents_, sizeof(memory_page->contents_));
+}
+
+int FileManager::Write(MemoryPage *memory_page, std::shared_ptr<DiskBlock> disk_block)
+{
+    std::fstream &fp = GetFile(disk_block->file_name_);
+    fp.seekp(disk_block->block_number_ * DISK_BLOCK_SIZE, std::fstream::beg);
+    fp.write(memory_page->contents_, sizeof(memory_page->contents_));
+}
+
+int FileManager::Append(std::shared_ptr<MemoryBuffer> memory_buffer,
+                        const std::string &file_name,
+                        std::shared_ptr<TableInfo> table_info)
+{
+    int new_block_number = Size(file_name);
+    auto disk_block = std::make_shared<DiskBlock>(file_name, new_block_number, table_info);
+    memory_buffer->disk_block_ = disk_block;
+    Write(memory_buffer->contents_.get(), disk_block);
 }
 
 std::fstream &FileManager::GetFile(const std::string &file_name)
@@ -72,4 +124,12 @@ std::fstream &FileManager::GetFile(const std::string &file_name)
         return fd;
     }
     return it->second;
+}
+
+int FileManager::Size(const std::string &file_name)
+{
+    std::fstream &fd = GetFile(file_name);
+    fd.seekg(0, std::fstream::end);
+    auto file_length = fd.tellg();
+    return file_length / DISK_BLOCK_SIZE;
 }
