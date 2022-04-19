@@ -2,35 +2,42 @@
 #include "../../include/db/file_manager.h"
 
 MemoryBuffer::MemoryBuffer(std::shared_ptr<FileManager> file_manager_)
-    : contents_(std::make_shared<MemoryPage>(file_manager_))
+    : memory_page_(std::make_shared<MemoryPage>(file_manager_))
     , disk_block_(nullptr)
     , pins_(0)
-    , is_modified_(-1)
+    , modified_by_(-1)
     , log_sequence_number_(-1)
 {
 }
 
 int MemoryBuffer::GetInt(int offset)
 {
+    return memory_page_->GetInt(offset);
 }
 
-int MemoryBuffer::GetDouble(int offset)
+void MemoryBuffer::SetInt(int offset, int val, int tx_num, int lsn)
+{
+    // lsn is a abbreviation of log_sequence_number_
+    modified_by_ = tx_num;
+    if (lsn >= 0) { log_sequence_number_ = lsn; }
+    memory_page_->SetInt(offset, val);
+}
+
+double MemoryBuffer::GetDouble(int offset)
+{
+    return memory_page_->GetDouble(offset);
+}
+
+void MemoryBuffer::SetDouble(int offset)
 {
 }
 
-int MemoryBuffer::GetString(int offset)
+std::string MemoryBuffer::GetString(int offset)
 {
+    return memory_page_->GetString(offset);
 }
 
-int MemoryBuffer::SetInt(int offset)
-{
-}
-
-int MemoryBuffer::SetDouble(int offset)
-{
-}
-
-int MemoryBuffer::SetString(int offset)
+void MemoryBuffer::SetString(int offset)
 {
 }
 
@@ -50,7 +57,7 @@ int MemoryBuffer::IsPinned()
 {
 }
 
-int MemoryBuffer::IsModified(int num)
+int MemoryBuffer::IsModifiedBy(int tx_num)
 {
 }
 
