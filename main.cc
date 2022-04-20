@@ -1,3 +1,4 @@
+/******************** old implement ********************
 #include <iostream>
 #include "include/db_old/hello_interface.h"
 #include "include/db_old/meta_command.h"
@@ -35,4 +36,20 @@ int main()
     }
     
     return 0;
+}
+ ******************** old implement ********************/
+
+#include "include/db_old/hello_interface.h"
+#include "include/db/dbms.h"
+
+int main()
+{
+    HelloInterface();
+    DBMS dbms;
+
+    std::string db_name;
+    std::cin >> db_name;
+    dbms.CreateDatabase(db_name);
+    std::cout << "finish" << std::endl;
+    std::cin >> db_name;
 }
