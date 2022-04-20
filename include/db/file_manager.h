@@ -37,7 +37,7 @@ public:
     MemoryPage(std::shared_ptr<FileManager> file_manager);
     void Read(std::shared_ptr<DiskBlock> block);
     void Write(std::shared_ptr<DiskBlock> block);
-    void Append(std::shared_ptr<MemoryBuffer> memory_buffer,
+    void Append(MemoryBuffer *memory_buffer,
                const std::string &file_name,
                std::shared_ptr<TableInfo> table_info);
     void RecordFormatter(std::shared_ptr<TableInfo> table_info);
@@ -63,9 +63,9 @@ public:
     ~FileManager();
     void Read(MemoryPage *memory_page, std::shared_ptr<DiskBlock> disk_block);
     void Write(MemoryPage *memory_page, std::shared_ptr<DiskBlock> disk_block);
-    void Append(std::shared_ptr<MemoryBuffer> memory_buffer,
-               const std::string &file_name,
-               std::shared_ptr<TableInfo> table_info);
+    void Append(MemoryBuffer *memory_buffer,
+                const std::string &file_name,
+                std::shared_ptr<TableInfo> table_info);
 
 private:
     std::string db_dir_name_;

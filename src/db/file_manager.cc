@@ -29,9 +29,9 @@ void MemoryPage::Write(std::shared_ptr<DiskBlock> block)
     file_manager_->Write(this, block);
 }
 
-void MemoryPage::Append(std::shared_ptr<MemoryBuffer> memory_buffer,
-            const std::string &file_name,
-            std::shared_ptr<TableInfo> table_info)
+void MemoryPage::Append(MemoryBuffer *memory_buffer,
+                        const std::string &file_name,
+                        std::shared_ptr<TableInfo> table_info)
 {
     memory_buffer->memory_page_->file_manager_->Append(memory_buffer, file_name, table_info);
 }
@@ -132,8 +132,8 @@ FileManager::FileManager(const std::string &db_dir_name, const std::string &db_n
         }
     }
     // Create a database file
-    std::string db_file_path = db_dir_name_ + db_name; 
-    fd_.open(db_file_path, std::ios::in | std::ios::out | std::ios::binary);
+    std::string db_file_path = "./" + db_dir_name_ + db_name; 
+    fd_.open(db_file_path, std::ios::out | std::ios::binary);
 }
 
 FileManager::~FileManager()
@@ -155,9 +155,9 @@ void FileManager::Write(MemoryPage *memory_page, std::shared_ptr<DiskBlock> disk
     fp.write(memory_page->contents_, sizeof(memory_page->contents_));
 }
 
-void FileManager::Append(std::shared_ptr<MemoryBuffer> memory_buffer,
-                        const std::string &file_name,
-                        std::shared_ptr<TableInfo> table_info)
+void FileManager::Append(MemoryBuffer *memory_buffer,
+                         const std::string &file_name,
+                         std::shared_ptr<TableInfo> table_info)
 {
     int new_block_number = Size(file_name);
     auto disk_block = std::make_shared<DiskBlock>(file_name, new_block_number, table_info);
