@@ -48,6 +48,7 @@ public:
     ~FieldInfo();
 
     std::string field_name_;
+    // This member is used to map offset
     unsigned int hash_code_;
     Data_Type type_;
     int length_;
