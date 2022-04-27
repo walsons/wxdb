@@ -2,11 +2,14 @@
 #define TABLE_MANAGER_H_
 
 #include "../sql/common.h"
+#include "table_header.h"
 
 class TableManager
 {
 public:
-    TableInfo table_info_;
+    TableManager() = default;
+    ~TableManager() = default;
+    void CreateTable(const std::shared_ptr<TableHeader> table_header);
 
 };
 
