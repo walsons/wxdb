@@ -18,6 +18,8 @@ char *PageFileSystem::read(int file_id, int page_id, int &index)
         dirty_[index] = false;
         index2page_[index] = key;
         page2index_[key] = index;
+        files_[file_id].seekp(page_id * PAGE_SIZE, std::ios::beg);
+        files_[file_id].write(reinterpret_cast<const char *>(buffer_ + index * PAGE_SIZE), PAGE_SIZE);
     }
     else
     {
@@ -101,4 +103,33 @@ void PageFileSystem::WriteBack(int file_id)
     // write PageFileHeader
     files_[file_id].seekp(0, std::ios::beg);
     files_[file_id].write(reinterpret_cast<const char *>(&file_info_[file_id]), sizeof(PageFileHeader));
+}
+
+int PageFileSystem::Allocate(int file_id)
+{
+    int page_id = ++file_info_[file_id].page_num;
+    Read(file_id, page_id);
+    return page_id;
+}
+
+void PageFileSystem::Deallocate(int file_id, int page_id)
+{
+    // This will deallocate all pages whose page_id 
+    // greater or equal to page_id;
+    file_info_[file_id].page_num = page_id - 1;
+    // TODO: reduce file size
+}
+
+char *PageFileSystem::Read(int file_id, int page_id)
+{
+    int index;
+    return read(file_id, page_id, index);
+}
+
+char *PageFileSystem::ReadForWrite(int file_id, int page_id)
+{
+    int index;
+    char *buf = read(file_id, page_id, index);
+    dirty_[index] = true;
+    return buf;
 }

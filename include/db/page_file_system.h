@@ -61,6 +61,13 @@ public:
     int open(const std::string &name);
     void Close(int file_id);
     void WriteBack(int file_id);
+    int Allocate(int file_id);
+    void Deallocate(int file_id, int page_id);
+    // Return the buffer just for read
+    char *Read(int file_id, int page_id);
+    // Return the buffer that can be write,
+    // it will set dirty to true automatically
+    char *ReadForWrite(int file_id, int page_id);
 };
 
 inline
