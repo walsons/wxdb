@@ -58,7 +58,7 @@ private:
 public:
     static PageFileSystem &GetInstance();
     ~PageFileSystem();
-    int open(const std::string &name);
+    int Open(const std::string &name);
     void Close(int file_id);
     void WriteBack(int file_id);
     int Allocate(int file_id);
