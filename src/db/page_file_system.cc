@@ -54,7 +54,7 @@ void PageFileSystem::write_page_to_file(int file_id, int page_id, const char *da
     files_[file_id].write(data, PAGE_SIZE);
 }
 
-int PageFileSystem::open(const std::string &name)
+int PageFileSystem::Open(const std::string &name)
 {
     int file_id = fid_manager_.Allocate();
     // Allocate failed
