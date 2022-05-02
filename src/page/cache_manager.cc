@@ -1,4 +1,4 @@
-#include "../../include/db/cache_manager.h"
+#include "../../include/page/cache_manager.h"
 
 CacheManager::CacheManager()
 {
