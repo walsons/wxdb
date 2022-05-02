@@ -1,4 +1,4 @@
-#include "../../include/db/fixed_page.h"
+#include "../../include/page/fixed_page.h"
 #include <cstring>
 
 template <typename T> inline
