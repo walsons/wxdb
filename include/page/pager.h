@@ -18,6 +18,7 @@ public:
     void FreePage(int page_id);
     char *Read(int page_id);
     char *ReadForWrite(int page_id);
+    void FreeOverflowPage(int page_id);
 };
 
 inline

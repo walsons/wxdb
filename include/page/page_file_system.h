@@ -9,7 +9,7 @@
 #include "cache_manager.h"
 #include "fid_manager.h"
 
-constexpr unsigned PAGE_SIZE = 4092;
+constexpr unsigned PAGE_SIZE = 4096;
 
 // The FileHeader is saved in first page of the file, 
 // it is not counted to page_num, and if page_num = 0,
