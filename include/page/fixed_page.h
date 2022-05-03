@@ -12,8 +12,8 @@
  * next_page     8                                     4             next page id
  * prev_page     12                                    4             previous page id
  * children[i]   16                                    4             i th children
- * ----------------------------  used space  --------------------------------
- * key[i]        PAGE_SIZE - field_size * (size - i)   field_size    i th key
+ * ----------------------------  unused space  --------------------------------
+ * keys[i]       PAGE_SIZE - field_size * (size - i)   field_size    i th key
  */
 
 template <typename T>

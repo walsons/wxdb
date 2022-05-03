@@ -3,6 +3,7 @@
 
 constexpr unsigned MAX_NUM_FILE_ID = 1024;
 
+// file id manager
 class FidManager
 {
     int free_fid_num_;

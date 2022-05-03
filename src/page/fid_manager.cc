@@ -1,6 +1,5 @@
 #include "../../include/page/fid_manager.h"
 
-// file id manager
 FidManager::FidManager()
     : free_fid_num_(MAX_NUM_FILE_ID)
 {
