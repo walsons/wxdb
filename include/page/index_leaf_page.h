@@ -4,7 +4,7 @@
 #include "fixed_page.h"
 
 template <typename T>
-class IndexLeafPage : public FixedPage
+class IndexLeafPage : public FixedPage<T>
 {
 public:
     using FixedPage<T>::FixedPage;
@@ -16,7 +16,7 @@ template <typename T > inline
 void IndexLeafPage<T>::Init(int field_size)
 {
     FixedPage<T>::Init(field_size);
-    page_type() = Page_Type::INDEX_LEAF_PAGE;
+    this->page_type() = Page_Type::INDEX_LEAF_PAGE;
 }
 
 template <typename T > inline

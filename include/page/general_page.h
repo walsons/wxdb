@@ -21,6 +21,7 @@ public:
     GeneralPage(char *buf, std::shared_ptr<Pager> pg);
     ~GeneralPage() = default;
     Page_Type &page_type();
+    static Page_Type GetPageType(const char *addr);
 };
 
 inline
@@ -33,6 +34,12 @@ inline
 Page_Type &GeneralPage::page_type()
 {
     return *reinterpret_cast<Page_Type *>(buf_);
+}
+
+inline
+Page_Type GeneralPage::GetPageType(const char *addr)
+{
+    return *reinterpret_cast<const Page_Type *>(addr);
 }
 
 #endif

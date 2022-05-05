@@ -4,7 +4,7 @@
 
 void Pager::FreeOverflowPage(int page_id)
 {
-    auto overflow_page = OverflowPage(ReadForWrite(page_id), std::shared_ptr<Pager>(this));
+    auto overflow_page = OverflowPage(ReadForWrite(page_id), shared_from_this());
     int next_page_id = overflow_page.next();
     FreePage(page_id);
     FreeOverflowPage(next_page_id);
