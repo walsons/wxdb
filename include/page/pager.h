@@ -2,9 +2,10 @@
 #define PAGER_H_
 
 #include <string>
+#include <memory>
 #include "page_file_system.h"
 
-class Pager
+class Pager : public std::enable_shared_from_this<Pager>
 {
     int file_id_;
 public:
