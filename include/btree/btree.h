@@ -45,7 +45,13 @@ private:
         merge_ret merge;
         key_t largest;
     };
-    insert_ret insert_leaf(int now, char *addr, key_t key, const char *data, int data_size);
+    insert_ret insert_leaf(int now_page_id, char *now_addr, key_t key, const char *data, int data_size);
+    insert_ret insert_interior(int now_page_id, char *now_addr, key_t key, const char *data, int data_size);
+    template <typename Page>
+    void insert_split_root(insert_ret ret);
+    template <typename Page, typename ChildPage>
+    insert_ret insert_post_process(int page_id, int child_page_id, int child_pos, insert_ret child_ret);
+    search_result lower_bound(int now_page_id, key_t key);
 };
 
 #endif
