@@ -1,5 +1,6 @@
 #include "../../include/btree/btree.h"
 #include "../../include/btree/search.h"
+#include "../../include/btree/comparer.h"
 
 // BTree()
 template <typename KeyType, typename Comparer, typename Copier>
@@ -174,8 +175,32 @@ BTree<KeyType, Comparer, Copier>::insert_post_process(int page_id,
 template <typename KeyType, typename Comparer, typename Copier>
 
 typename BTree<KeyType, Comparer, Copier>::search_result 
-BTree<KeyType, Comparer, Copier>::lower_bound(int now_page_id, key_t key)
+BTree<KeyType, Comparer, Copier>::upper_bound(int now_page_id, key_t key)
 {
-    // TODO
-    return {0, 0};
+    char *now_addr = pg_->ReadForWrite(now_page_id);
+    Page_Type now_page_type = GeneralPage::GetPageType(now_addr);
+    if (now_page_type == Page_Type::FIXED_PAGE)
+    {
+        interior_page page{now_addr, pg_};
+        int child_pos = Search::upper_bound(0, page.size(), [&](int id) {
+            return comparer_(page.keys(id), key) >= 0;
+        });
+        child_pos = std::min(page.size() - 1, child_pos);
+        return upper_bound(page.children(child_pos), key);
+    }
+    // else: INDEX_LEAF_PAGE, VARIANT_PAGE,
+    leaf_page page{now_addr, pg_};
+    int pos = Search::upper_bound(0, page.size(), [&](int id) {
+        return comparer_(page.keys(id), key) >= 0;
+    });
+    if (pos == page.size()) { return {0, 0}; }
+    return {now_page_id, pos};
+}
+
+/*
+ * IntBTree
+ */
+IntBTree::IntBTree(std::shared_ptr<Pager> pg, int root_page_id = 0) 
+    : BTree(pg, root_page_id, sizeof(int), integer_comparer, copy_int)
+{
 }

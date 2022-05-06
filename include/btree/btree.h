@@ -51,7 +51,16 @@ private:
     void insert_split_root(insert_ret ret);
     template <typename Page, typename ChildPage>
     insert_ret insert_post_process(int page_id, int child_page_id, int child_pos, insert_ret child_ret);
-    search_result lower_bound(int now_page_id, key_t key);
+    search_result upper_bound(int now_page_id, key_t key);
 };
+
+class IntBTree: public BTree<int, int(*)(const int &, const int &), int(*)(int)>
+{
+    static int copy_int(int x);
+public:
+    IntBTree(std::shared_ptr<Pager> pg, int root_page_id = 0);
+};
+
+inline int IntBTree::copy_int(int x) { return x; }
 
 #endif
