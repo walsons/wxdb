@@ -54,7 +54,7 @@ private:
     void set_free_block(int offset);
 
 public:
-    void Init();
+    void Init(int = 0);
     bool Underflow();
     bool UnderflowIfRemove(int pos);
     bool Insert(int pos, const char *data, int data_size);
