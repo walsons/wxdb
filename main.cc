@@ -45,11 +45,10 @@ int main()
 int main()
 {
     HelloInterface();
-    DBMS dbms;
 
     std::string db_name;
     std::cin >> db_name;
-    dbms.CreateDatabase(db_name);
+    DBMS::GetInstance().CreateDatabase(db_name);
     std::cout << "finish" << std::endl;
     std::cin >> db_name;
 }

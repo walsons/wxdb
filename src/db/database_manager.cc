@@ -1,59 +1,37 @@
 #include "../../include/db/database_manager.h"
-
+#include <cstring>
 #include <fstream>
 #include <iostream>
 
 void DatabaseManager::CreateDatabase(const std::string &db_name)
 {
-    db_name_ = db_name;
-    num_table_ = 0;
+    std::memcpy(&info_.db_name, db_name.c_str(), MAX_LENGTH_NAME);
+    info_.db_name[MAX_LENGTH_NAME - 1] = '\0';
+    info_.num_table = 0;
     Close();
 }
 
 void DatabaseManager::Open(const std::string &db_name)
 {
-    if (db_name == db_name_) { return; }
+    if (std::strcmp(db_name.c_str(), info_.db_name) == 0) { return; }
     if (is_open_)
     {
         Close();
         is_open_ = false;
     }
-    std::ifstream ifs(db_name + ".db", std::ios::in | std::ios::binary);
+    std::ifstream ifs(DB_DIR + db_name + ".db", std::ios::in | std::ios::binary);
     if (!ifs.is_open()) { std::cout << "Database \"" << db_name << "\" doesn't exist!"; }
     else
     {
-        char *name_buf = new char[NAME_MAX_LENGTH + 1];
-        char *unsigned_buf = new char[4];
-
-        ifs.read(name_buf, NAME_MAX_LENGTH + 1);
-        db_name_ = std::string(name_buf);
-        ifs.read(unsigned_buf, sizeof(num_table_));
-        num_table_ = reinterpret_cast<unsigned>(unsigned_buf);
-        table_name_.resize(num_table_);
-        table_manager_.resize(num_table_);
-        for (size_t i = 0; i < num_table_; ++i)
-        {
-            ifs.read(name_buf, NAME_MAX_LENGTH + 1);
-            table_name_[i] = std::string(name_buf);
-            table_manager_[i] = std::make_shared<TableManager>();
-        }
+        ifs.read(reinterpret_cast<char *>(&info_), sizeof(info_));
         is_open_ = true;
-        delete[] unsigned_buf;
-        delete[] name_buf;
     }
 }
 
 void DatabaseManager::Close()
 {
-    std::ofstream ofs(db_name_ + ".db", std::ios::out | std::ios::binary);
-    ofs.write(static_cast<const char *>(db_name_.c_str()), db_name_.size() + 1);
-    ofs.seekp(NAME_MAX_LENGTH + 1, std::ios::beg);
-    ofs.write(reinterpret_cast<const char *>(&num_table_), sizeof(num_table_));
-    for (size_t i = 0; i < num_table_; ++i)
-    {
-        ofs.seekp(NAME_MAX_LENGTH + 1 + sizeof(num_table_) + i * (NAME_MAX_LENGTH + 1));
-        ofs.write(table_name_[i].c_str(), table_name_.size() + 1);
-    }
+    std::ofstream ofs(DB_DIR + info_.db_name + ".db", std::ios::out | std::ios::binary);
+    ofs.write(reinterpret_cast<const char *>(&info_), sizeof(info_));
     is_open_ = false;
 }
 
@@ -65,18 +43,17 @@ void DatabaseManager::CreateTable(const std::shared_ptr<TableHeader> table_heade
     }
     else 
     {
-        for (size_t i = 0; i < num_table_; ++i)
+        for (size_t i = 0; i < info_.num_table; ++i)
         {
-            if (table_name_[i] == table_header->table_name_)
+            if (std::strcpy(info_.table_name[i], table_header->table_name) == 0)
             {
-                std::cout << "Table \"" << table_header->table_name_ << "\" has exist!" << std::endl;
+                std::cout << "Table \"" << table_header->table_name << "\" has exist!" << std::endl;
                 return;
             }
         }
-        ++num_table_;
-        table_name_.push_back(table_header->table_name_);
+        std::strncpy(info_.table_name[info_.num_table], table_header->table_name, MAX_LENGTH_NAME);
+        ++info_.num_table;
         table_manager_.emplace_back(std::make_shared<TableManager>());
         table_manager_.back()->CreateTable(table_header);
     }
 }
-

@@ -116,7 +116,7 @@ void VariantPage::set_free_block(int offset)
     free_block() = offset;
 }
 
-void VariantPage::Init()
+void VariantPage::Init(int)
 {
     page_type() = Page_Type::VARIANT_PAGE;
     free_block() = 0;

@@ -200,7 +200,7 @@ BTree<KeyType, Comparer, Copier>::upper_bound(int now_page_id, key_t key)
 /*
  * IntBTree
  */
-IntBTree::IntBTree(std::shared_ptr<Pager> pg, int root_page_id = 0) 
+IntBTree::IntBTree(std::shared_ptr<Pager> pg, int root_page_id) 
     : BTree(pg, root_page_id, sizeof(int), integer_comparer, copy_int)
 {
 }
