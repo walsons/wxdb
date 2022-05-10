@@ -1,8 +1,6 @@
 #ifndef SQL_STMT_H_
 #define SQL_STMT_H_
 
-#include "common.h"
-
 #include <string>
 #include <vector>
 #include <unordered_map>

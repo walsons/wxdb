@@ -21,13 +21,12 @@ enum class Token_Type
     TOKEN_GE,                      // >=  greater than or equal to
     TOKEN_IN,                      
     TOKEN_LIKE,                    
-    TOKEN_AND,
+    TOKEN_AND,                     
     TOKEN_OR,
     TOKEN_NOT,
     TOKEN_ASSIGNMENT,
     TOKEN_FUN,
     TOKEN_COMMA,
-
 
     // Invalid token 
     TOKEN_INVALID,
@@ -50,10 +49,7 @@ enum class Token_Type
     TOKEN_DECIMAL,
     TOKEN_ZERO,                    
 
-    TOKEN_NULL,
-    
-    /* No meaning, only for end */
-    TOKEN_END                   
+    TOKEN_NULL
 };
 
 class Token

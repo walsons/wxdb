@@ -1,7 +1,7 @@
 #ifndef TABLE_MANAGER_H_
 #define TABLE_MANAGER_H_
 
-#include "../sql/common.h"
+#include "../sql/table_info.h"
 #include "table_header.h"
 
 class TableManager

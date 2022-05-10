@@ -61,7 +61,7 @@ bool Parser::MatchToken(Token_Type type, const std::string &text)
  * and 
  * equality: equal | not equal 
  * comparison: GE | LE | GT | LT
- * expr: plus | mnus
+ * expr: plus | minus
  * term: mutiply | divide
  * power
  * unary: not | plus | minus (positive negative)
