@@ -50,3 +50,9 @@ Expression::Expression(Token_Type operator_type,
 }
 
 Expression::~Expression() = default;
+
+Expression *Expression::Eval()
+{
+    // TODO
+    return nullptr;   
+}

@@ -2,10 +2,10 @@
 #define TABLE_HEADER_H
 
 #include "../defs.h"
+#include "../sql/table_info.h"
 
-class TableHeader
+struct TableHeader
 {
-public:
     // The number of column
     uint8_t num_column;
     // The column which is main index for this table, 
@@ -20,7 +20,7 @@ public:
     uint32_t flag_not_null, flag_primary, flag_index, flag_unique, flag_default;
 
     // The type of each column
-    uint8_t column_type[MAX_NUM_COLUMN];
+    Data_Type column_type[MAX_NUM_COLUMN];
     // The length of each column
     unsigned column_length[MAX_NUM_COLUMN];
     // The offset of each column
@@ -32,6 +32,7 @@ public:
 
     char check_constraint[MAX_NUM_CHECK_CONSTRAINT][MAX_LENGTH_CHECK_CONSTRAINT];
     char default_value[MAX_NUM_COLUMN][MAX_LENGTH_DEFAULT_VALUE];
+    // Which column is foreign key
     unsigned foreign_key[MAX_NUM_COLUMN];
     char foreign_key_ref_table[MAX_NUM_COLUMN][MAX_LENGTH_NAME];
     char foreign_key_ref_column[MAX_NUM_COLUMN][MAX_LENGTH_NAME];

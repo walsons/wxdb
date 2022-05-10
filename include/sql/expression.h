@@ -3,6 +3,7 @@
 
 #include "token.h"
 #include "literal.h"
+#include <memory>
 
 enum class Func_Type
 {
@@ -11,28 +12,6 @@ enum class Func_Type
     FUNC_COUNT,
     FUNC_AVG,
     FUNC_SUM
-};
-
-class Expression;
-
-class Func
-{
-public:
-    Func() = default;
-    ~Func() = default;
-    // Function type
-    Func_Type type_;
-    std::shared_ptr<Expression> expr;
-};
-
-enum class Term_Type
-{
-    TERM_UNKNOWN,
-    TERM_LITERAL,
-    TERM_ID,
-    TERM_NULL,
-    TERM_COL_REF,
-    TERM_FUNC
 };
 
 class ColumnRef
@@ -44,6 +23,27 @@ public:
     std::string column_name_;
     std::string column_alias_;
     std::string all_name_;
+};
+
+class Func
+{
+public:
+    Func() = default;
+    ~Func() = default;
+    // Function type
+    Func_Type type_;
+    // std::shared_ptr<Expression> expr;
+    std::shared_ptr<ColumnRef> col_ref_;
+};
+
+enum class Term_Type
+{
+    TERM_UNKNOWN,
+    TERM_LITERAL,
+    TERM_ID,
+    TERM_NULL,
+    TERM_COL_REF,
+    TERM_FUNC
 };
 
 class TermExpr
@@ -79,6 +79,7 @@ public:
     std::string alias_;
     // Linking expression via link list
     std::shared_ptr<Expression> next_expr_;
+    static Expression *Eval();
 };
 
 #endif

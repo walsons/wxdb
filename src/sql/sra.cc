@@ -1,4 +1,5 @@
 #include "../../include/sql/sra.h"
+#include <memory>
 
 // TableRef
 TableRef::TableRef(const std::string &table_name, const std::string &alias)
