@@ -1,4 +1,6 @@
 #include "../../include/sql/expression.h"
+#include <cassert>
+#include <stack>
 
 ColumnRef::ColumnRef(const std::string &all_name)
     : all_name_(all_name)
@@ -50,3 +52,101 @@ ExprNode::ExprNode(Token_Type operator_type,
 }
 
 ExprNode::~ExprNode() = default;
+
+Expressin::Expressin(ExprNode *expr)
+{
+    Eval(expr);
+}
+
+void Expressin::Eval(ExprNode *expr)
+{
+    assert(expr != nullptr);
+    std::stack<ExprNode *> expr_stack;
+    expr_stack.push(expr);
+    expr = expr->next_expr_;
+    while (expr != nullptr)
+    {
+        // If not a operator exprnode
+        if (expr->term_ != nullptr)
+        {
+            expr_stack.push(expr);
+            expr = expr->next_expr_;
+        }
+        else
+        {
+            auto cur_expr = expr;
+            expr = expr->next_expr_;
+            auto expr2 = expr_stack.top();
+            expr_stack.pop();
+            // Unary operator
+            if (cur_expr->operator_type_ == Token_Type::TOKEN_NOT ||
+                cur_expr->operator_type_ == Token_Type::TOKEN_POSITIVE ||
+                cur_expr->operator_type_ == Token_Type::TOKEN_NEGATIVE)
+            {
+                cur_expr = EvalOperator(cur_expr, expr2);
+            }
+            // Binary operator
+            else
+            {
+                auto expr1 = expr_stack.top();
+                expr_stack.pop();
+                cur_expr = EvalOperator(cur_expr, expr1, expr2);
+            }
+            expr_stack.push(cur_expr);
+        }
+    }
+    expr = expr_stack.top();
+    // TODO:
+    // switch (expr->term_->term_type_)
+    // {
+    // case :
+    //     /* code */
+    //     break;
+    
+    // default:
+    //     break;
+    // }
+}
+
+ExprNode *Expressin::EvalOperator(ExprNode *op, ExprNode *expr1, ExprNode *expr2)
+{
+    switch (op->operator_type_)
+    {
+    // Unary operator
+    case Token_Type::TOKEN_NOT:
+        break;
+    case Token_Type::TOKEN_POSITIVE:
+        break;
+    case Token_Type::TOKEN_NEGATIVE:
+        break;
+    // Binary operator
+    case Token_Type::TOKEN_OR:
+        break;
+    case Token_Type::TOKEN_AND:
+        break;
+    case Token_Type::TOKEN_EQ:
+        break;
+    case Token_Type::TOKEN_NOT_EQ:
+        break;
+    case Token_Type::TOKEN_GE:
+        break;
+    case Token_Type::TOKEN_LE:
+        break;
+    case Token_Type::TOKEN_GT:
+        break;
+    case Token_Type::TOKEN_LT:
+        break;
+    case Token_Type::TOKEN_PLUS:
+        break;
+    case Token_Type::TOKEN_MINUS:
+        break;
+    case Token_Type::TOKEN_MULTIPLY:
+        break;
+    case Token_Type::TOKEN_DIVIDE:
+        break;
+    case Token_Type::TOKEN_POWER:
+        break;
+    default:
+        break;
+    }
+}
