@@ -42,17 +42,11 @@ TermExpr::~TermExpr()
     }
 }
 
-Expression::Expression(Token_Type operator_type, 
-                       std::shared_ptr<TermExpr> term, 
-                       std::shared_ptr<Expression> next_expr)
+ExprNode::ExprNode(Token_Type operator_type, 
+                   std::shared_ptr<TermExpr> term, 
+                   ExprNode *next_expr)
     : operator_type_(operator_type), term_(nullptr), next_expr_(next_expr)
 {
 }
 
-Expression::~Expression() = default;
-
-Expression *Expression::Eval()
-{
-    // TODO
-    return nullptr;   
-}
+ExprNode::~ExprNode() = default;

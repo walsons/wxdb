@@ -52,21 +52,21 @@ struct SRATable
 
 struct SRAProject
 {
-    SRAProject(std::shared_ptr<SRA> sra, std::vector<std::shared_ptr<Expression>> expr_list, bool distinct = false);
+    SRAProject(std::shared_ptr<SRA> sra, std::vector<ExprNode *> expr_list, bool distinct = false);
     ~SRAProject();
     std::shared_ptr<SRA> sra_;
-    std::vector<std::shared_ptr<Expression>> expr_list_;
+    std::vector<ExprNode *> expr_list_;
     bool distinct_;
-    std::vector<std::shared_ptr<Expression>> order_by_;
-    std::vector<std::shared_ptr<Expression>> group_by_;
+    std::vector<ExprNode *> order_by_;
+    std::vector<ExprNode *> group_by_;
 };
 
 struct SRASelect
 {
-    SRASelect(std::shared_ptr<SRA> sra, Expression *condition);
+    SRASelect(std::shared_ptr<SRA> sra, ExprNode *condition);
     ~SRASelect();
     std::shared_ptr<SRA> sra_;
-    Expression *condition_;
+    ExprNode *condition_;
 };
 
 enum Join_Condition_Type
@@ -89,7 +89,7 @@ struct JoinCondition
     // TODO: add destruction function to destruct StringList correctly
     union 
     {
-        Expression *on_;
+        ExprNode *on_;
         StringList *col_list_;  
     };
 };
@@ -132,4 +132,4 @@ struct SRA
 
 std::shared_ptr<SRA> SRAOfTable(TableRef *table_ref);
 std::shared_ptr<SRA> SRAOfJoin(std::shared_ptr<SRA> sra1, std::shared_ptr<SRA> sra2, JoinCondition *join_condition);
-std::shared_ptr<SRA> SRAOfProject(std::shared_ptr<SRA> sra, std::vector<std::shared_ptr<Expression>> expr_list);
+std::shared_ptr<SRA> SRAOfProject(std::shared_ptr<SRA> sra, std::vector<ExprNode *> expr_list);

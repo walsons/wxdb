@@ -45,7 +45,7 @@ struct TableInfo
     std::vector<CheckConstraint> check_constraint;
     // Which column is foreign key, have default value
     std::vector<std::pair<int, ForeignKeyRef>> foreign_key_ref;
-    std::vector<std::pair<int, Expression *>> default_value;
+    std::vector<std::pair<int, ExprNode *>> default_value;
 };
 
 struct InsertInfo

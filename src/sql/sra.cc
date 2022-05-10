@@ -17,7 +17,7 @@ SRATable::SRATable(TableRef *table_ref) : table_ref_(table_ref)
 SRATable::~SRATable() = default;
 
 // SRAProject
-SRAProject::SRAProject(std::shared_ptr<SRA> sra, std::vector<std::shared_ptr<Expression>> expr_list, bool distinct)
+SRAProject::SRAProject(std::shared_ptr<SRA> sra, std::vector<ExprNode *> expr_list, bool distinct)
     : sra_(sra), expr_list_(expr_list), distinct_(distinct)
 {
 }
@@ -25,7 +25,7 @@ SRAProject::SRAProject(std::shared_ptr<SRA> sra, std::vector<std::shared_ptr<Exp
 SRAProject::~SRAProject() = default;
 
 // SRASelect
-SRASelect::SRASelect(std::shared_ptr<SRA> sra, Expression *condition)
+SRASelect::SRASelect(std::shared_ptr<SRA> sra, ExprNode *condition)
     : sra_(sra), condition_(condition)
 {
 }
@@ -93,7 +93,7 @@ std::shared_ptr<SRA> SRAOfJoin(std::shared_ptr<SRA> sra1, std::shared_ptr<SRA> s
     return new_sra;
 }
 
-std::shared_ptr<SRA> SRAOfProject(std::shared_ptr<SRA> sra, std::vector<std::shared_ptr<Expression>> expr_list)
+std::shared_ptr<SRA> SRAOfProject(std::shared_ptr<SRA> sra, std::vector<ExprNode *> expr_list)
 {
     auto new_sra = std::make_shared<SRA>(SRA_Type::SRA_PROJECT);
     new (&new_sra->project_) SRAProject(sra, expr_list);
