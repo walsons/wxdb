@@ -1,6 +1,10 @@
 #include "../../include/sql/common.h"
 #include <cstring>
 
+DataValue::DataValue() : type_(Data_Type::DATA_TYPE_NULL)
+{
+}
+
 DataValue::DataValue(Data_Type type) : type_(type)
 {
 }
@@ -14,6 +18,9 @@ DataValue::DataValue(const DataValue &data_value)
         break;
     case Data_Type::DATA_TYPE_DOUBLE:
         this->SetDoubleValue(data_value.double_value_);
+        break;
+    case Data_Type::DATA_TYPE_BOOLEAN:
+        this->SetBoolValue(data_value.bool_value_);
         break;
     case Data_Type::DATA_TYPE_CHAR:
         this->SetCharValue(data_value.char_value_);
@@ -33,6 +40,9 @@ DataValue &DataValue::operator=(const DataValue &data_value)
         break;
     case Data_Type::DATA_TYPE_DOUBLE:
         this->SetDoubleValue(data_value.double_value_);
+        break;
+    case Data_Type::DATA_TYPE_BOOLEAN:
+        this->SetBoolValue(data_value.bool_value_);
         break;
     case Data_Type::DATA_TYPE_CHAR:
         this->SetCharValue(data_value.char_value_);
@@ -69,7 +79,16 @@ void DataValue::SetDoubleValue(const double &value)
         type_ = Data_Type::DATA_TYPE_DOUBLE;
     }
     double_value_ = value;
+}
 
+void DataValue::SetBoolValue(const bool &value)
+{
+    if (type_ == Data_Type::DATA_TYPE_CHAR) { char_value_.~basic_string(); }
+    if (type_ != Data_Type::DATA_TYPE_BOOLEAN) 
+    { 
+        type_ = Data_Type::DATA_TYPE_BOOLEAN;
+    }
+    bool_value_ = value;
 }
 
 void DataValue::SetCharValue(const std::string &value)
@@ -81,5 +100,7 @@ void DataValue::SetCharValue(const std::string &value)
 const int DataValue::int_value() { return int_value_; }
 
 const double DataValue::double_value() { return double_value_; }
+
+const bool DataValue::bool_value() { return bool_value_; }
 
 const std::string DataValue::char_value() { return char_value_; }

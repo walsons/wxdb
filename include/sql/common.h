@@ -18,6 +18,7 @@ enum class Data_Type : char
 class DataValue
 {
 public:
+    DataValue();
     DataValue(Data_Type type);
     DataValue(const DataValue &data_value);
     DataValue &operator=(const DataValue &data_value);
@@ -25,9 +26,11 @@ public:
     Data_Type GetDataType();
     void SetIntValue(const int &value);
     void SetDoubleValue(const double &value);
+    void SetBoolValue(const bool &value);
     void SetCharValue(const std::string &value);
     const int int_value();
     const double double_value();
+    const bool bool_value();
     const std::string char_value();
 
 private:
@@ -36,6 +39,7 @@ private:
     {
         int int_value_;
         double double_value_;
+        bool bool_value_;
         std::string char_value_;
     };
 };

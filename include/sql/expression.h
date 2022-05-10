@@ -3,6 +3,7 @@
 
 #include "token.h"
 #include "literal.h"
+#include "common.h"
 #include <memory>
 
 enum class Func_Type
@@ -78,7 +79,19 @@ public:
     // It might have alias when appears in select statement
     std::string alias_;
     // Linking expression via link list
-    std::shared_ptr<ExprNode> next_expr_;
+    ExprNode *next_expr_;
+};
+
+class Expressin
+{
+public:
+    //Evaluate Reverse Polish Notation 
+    Expressin(ExprNode *expr);
+    void Eval(ExprNode *expr);
+
+    DataValue value;
+private:
+    ExprNode *EvalOperator(ExprNode *op, ExprNode *expr1, ExprNode *expr2 = nullptr);
 };
 
 #endif

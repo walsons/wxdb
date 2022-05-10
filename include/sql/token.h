@@ -49,7 +49,11 @@ enum class Token_Type
     TOKEN_DECIMAL,
     TOKEN_ZERO,                    
 
-    TOKEN_NULL
+    TOKEN_NULL,
+
+    // Change plus and minus to positive and negative when paring unary token
+    TOKEN_POSITIVE,
+    TOKEN_NEGATIVE
 };
 
 class Token
