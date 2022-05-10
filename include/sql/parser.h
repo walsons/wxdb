@@ -47,6 +47,9 @@ public:
     std::shared_ptr<Token> curr_token_;
     Parser_State_Type parser_state_type_;
     std::string parser_message_;
+
+private:
+    ExprNode *concatenate_expr_node(ExprNode *expr1, ExprNode *expr2);
 };
 
 #endif

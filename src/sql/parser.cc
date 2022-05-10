@@ -79,143 +79,207 @@ ExprNode *Parser::ParseExpressionRD()
 
 ExprNode *Parser::ParseReadBooleanOr()
 {
-    ExprNode *expr0 = nullptr, *expr1 = nullptr, *expr2 = nullptr;
+    ExprNode *expr1 = nullptr, *expr2 = nullptr, *expr_op = nullptr;
     auto token = ParseNextToken();
-    expr0 = ParseReadBooleanAnd();
-    return expr0;
+    expr1 = ParseReadBooleanAnd();
+    token = ParseNextToken();
+    while (token != nullptr && token->type_ == Token_Type::TOKEN_OR)
+    {
+        ParseEatToken();
+        expr2 = ParseReadBooleanAnd();
+        expr1 = concatenate_expr_node(expr1, expr2);
+        expr_op = new ExprNode(token->type_);
+        expr1 = concatenate_expr_node(expr1, expr_op);
+        token = ParseNextToken();
+    }
+    return expr1;
 }
 
 ExprNode *Parser::ParseReadBooleanAnd()
 {
-    ExprNode *expr0 = nullptr, *expr1 = nullptr, *expr2 = nullptr;
+    ExprNode *expr1 = nullptr, *expr2 = nullptr, *expr_op = nullptr;
     auto token = ParseNextToken();
-    expr0 = ParseReadBooleanEquality();
-    return expr0;
+    expr1 = ParseReadBooleanEquality();
+    token = ParseNextToken();
+    while (token != nullptr && token->type_ == Token_Type::TOKEN_AND)
+    {
+        ParseEatToken();
+        expr2 = ParseReadBooleanEquality();
+        expr1 = concatenate_expr_node(expr1, expr2);
+        expr_op = new ExprNode(token->type_);
+        expr1 = concatenate_expr_node(expr1, expr_op);
+        token = ParseNextToken();
+    }
+    return expr1;
 }
 
 ExprNode *Parser::ParseReadBooleanEquality()
 {
-    ExprNode *expr0 = nullptr, *expr1 = nullptr, *expr2 = nullptr;
+    ExprNode *expr1 = nullptr, *expr2 = nullptr, *expr_op = nullptr;
     auto token = ParseNextToken();
-    expr0 = ParseReadBooleanComparison();
-    return expr0;
+    expr1 = ParseReadBooleanComparison();
+    token = ParseNextToken();
+    if (token != nullptr && (token->type_ == Token_Type::TOKEN_EQ ||
+                             token->type_ == Token_Type::TOKEN_NOT_EQ))
+    {
+        ParseEatToken();
+        expr2 = ParseReadBooleanComparison();
+        expr1 = concatenate_expr_node(expr1, expr2);
+        expr_op = new ExprNode(token->type_);
+        expr1 = concatenate_expr_node(expr1, expr_op);
+        token = ParseNextToken();
+    }
+    return expr1;
 }
 
 ExprNode *Parser::ParseReadBooleanComparison()
 {
-    ExprNode *expr0 = nullptr, *expr1 = nullptr, *expr2 = nullptr;
+    ExprNode *expr1 = nullptr, *expr2 = nullptr, *expr_op = nullptr;
     auto token = ParseNextToken();
-    expr0 = ParseReadExpr();
-    return expr0;
+    expr1 = ParseReadExpr();
+    token = ParseNextToken();
+    if (token != nullptr && (token->type_ == Token_Type::TOKEN_GT ||
+                             token->type_ == Token_Type::TOKEN_GE ||
+                             token->type_ == Token_Type::TOKEN_LT ||
+                             token->type_ == Token_Type::TOKEN_LE))
+    {
+        ParseEatToken();
+        expr2 = ParseReadExpr();
+        expr1 = concatenate_expr_node(expr1, expr2);
+        expr_op = new ExprNode(token->type_);
+        expr1 = concatenate_expr_node(expr1, expr_op);
+        token = ParseNextToken();
+    }
+    return expr1;
 }
 
 ExprNode *Parser::ParseReadExpr()
 {
-    ExprNode *expr0 = nullptr, *expr1 = nullptr, *expr2 = nullptr;
+    ExprNode *expr1 = nullptr, *expr2 = nullptr, *expr_op = nullptr;
     auto token = ParseNextToken();
-    if (token == nullptr)
-    {
-        ParseError("Syntax error!");
-        return nullptr;
-    }
-    // Processing + - 
-    // TODO: probably this form: '+'->'expression'->'expression'
-    if (token->type_ == Token_Type::TOKEN_PLUS || 
-        token->type_ == Token_Type::TOKEN_MINUS)
+    expr1 = ParseReadTerm();
+    token = ParseNextToken();
+    while (token != nullptr && (token->type_ == Token_Type::TOKEN_PLUS ||
+                                token->type_ == Token_Type::TOKEN_MINUS))
     {
         ParseEatToken();
-        expr0 = ParseReadTerm();
-        expr0 = new ExprNode(token->type_, nullptr, expr0);
+        expr2 = ParseReadTerm();
+        expr1 = concatenate_expr_node(expr1, expr2);
+        expr_op = new ExprNode(token->type_);
+        expr1 = concatenate_expr_node(expr1, expr_op);
+        token = ParseNextToken();
     }
-    else
-    {
-        expr0 = ParseReadTerm();
-    }
-    return expr0;
+    return expr1;
 }
 
 ExprNode *Parser::ParseReadTerm()
 {
-    ExprNode *expr0 = nullptr, *expr1 = nullptr, *expr2 = nullptr;
+    ExprNode *expr1 = nullptr, *expr2 = nullptr, *expr_op = nullptr;
     auto token = ParseNextToken();
-    expr0 = ParseReadPower();
-    return expr0;
+    expr1 = ParseReadPower();
+    token = ParseNextToken();
+    while (token != nullptr && (token->type_ == Token_Type::TOKEN_MULTIPLY ||
+                                token->type_ == Token_Type::TOKEN_MULTIPLY))
+    {
+        ParseEatToken();
+        expr2 = ParseReadPower();
+        expr1 = concatenate_expr_node(expr1, expr2);
+        expr_op = new ExprNode(token->type_);
+        expr1 = concatenate_expr_node(expr1, expr_op);
+        token = ParseNextToken();
+    }
+    return expr1;
 }
 
 ExprNode *Parser::ParseReadPower()
 {
-    ExprNode *expr0 = nullptr, *expr1 = nullptr;
+    ExprNode *expr1 = nullptr, *expr2 = nullptr, *expr_op = nullptr;
     auto token = ParseNextToken();
-    expr0 = ParseReadUnary();
-    return expr0;
+    expr1 = ParseReadUnary();
+    token = ParseNextToken();
+    while (token != nullptr && (token->type_ == Token_Type::TOKEN_POWER))
+    {
+        ParseEatToken();
+        expr2 = ParseReadUnary();
+        expr1 = concatenate_expr_node(expr1, expr2);
+        expr_op = new ExprNode(token->type_);
+        expr1 = concatenate_expr_node(expr1, expr_op);
+        token = ParseNextToken();
+    }
+    return expr1;
 }
 
 ExprNode *Parser::ParseReadUnary()
 {
-    ExprNode *expr0 = nullptr, *expr1 = nullptr;
+    ExprNode *expr = nullptr, *expr_op = nullptr;
     auto token = ParseNextToken();
     if (token == nullptr)
     {
         ParseError("Syntax error!");
         return nullptr;
     }
-    // Not, positive sign and minus sign
-    if (token != nullptr && 
-        (token->type_ == Token_Type::TOKEN_NOT ||
-         token->type_ == Token_Type::TOKEN_MINUS ||
-         token->type_ == Token_Type::TOKEN_PLUS))
+    if (token != nullptr && (token->type_ == Token_Type::TOKEN_NOT ||
+                             token->type_ == Token_Type::TOKEN_PLUS ||
+                             token->type_ == Token_Type::TOKEN_MINUS))
     {
-        ParseEatAndNextToken();
-        expr1 = ParseReadParen();
-        expr0 = new ExprNode(token->type_, nullptr, expr1);
+        switch (token->type_)
+        {
+        case Token_Type::TOKEN_PLUS:
+            token->type_ = Token_Type::TOKEN_POSITIVE;
+            break;
+        case Token_Type::TOKEN_MINUS:
+            token->type_ = Token_Type::TOKEN_NEGATIVE;
+            break;
+        default:
+            break;
+        }
+        ParseEatToken();
+        expr = ParseReadParen();
+        expr_op = new ExprNode(token->type_);
+        expr = concatenate_expr_node(expr, expr_op);
+        token = ParseNextToken();
     }
-    else
-    {
-        expr0 = ParseReadParen();
-    }
-    return expr0;
+    return expr;
 }
 
 ExprNode *Parser::ParseReadParen()
 {
-    ExprNode *expr0 = nullptr;
+    ExprNode *expr = nullptr;
     auto token = ParseNextToken();
     if (token == nullptr)
     {
         ParseError("Syntax error!");
         return nullptr;
     }
-    if (token->type_ == Token_Type::TOKEN_OPEN_PARENTHESIS)
+    if (token != nullptr && (token->type_ == Token_Type::TOKEN_OPEN_PARENTHESIS))
     {
-        ParseEatAndNextToken();
-        expr0 = ParseReadBooleanOr();
+        ParseEatToken();
+        expr = ParseReadBooleanOr();
         token = ParseNextToken();
-        if (token == nullptr || token->type_ != Token_Type::TOKEN_CLOSE_PARENTHESIS)
+        if (token == nullptr || (token->type_ != Token_Type::TOKEN_CLOSE_PARENTHESIS))
         {
-            ParseError("Syntax error: missing ')'!");
+            ParseError("Syntax error: missing \")\"!");
             return nullptr;
         }
-        else 
-        { 
-            ParseEatToken(); 
-        }
+        else { ParseEatToken(); }
     }
-    else 
+    else
     {
-        expr0 = ParseReadBuiltin();
+        expr = ParseReadBuiltin();
     }
-    return expr0;
+    return expr;
 }
 
 ExprNode *Parser::ParseReadBuiltin()
 {
-    ExprNode *expr0 = nullptr, *expr1 = nullptr;
+    ExprNode *expr = nullptr;
     auto token = ParseNextToken();
     if (token == nullptr)
     {
         ParseError("Syntax error!");
         return nullptr;
     }
+    // The difference between string and column ref is that string has ""
     if (token->type_ == Token_Type::TOKEN_WORD)
     {
         std::string text = token->text_;
@@ -231,7 +295,7 @@ ExprNode *Parser::ParseReadBuiltin()
             auto column_ref = new ColumnRef(text);
             auto term = std::make_shared<TermExpr>(Term_Type::TERM_COL_REF);
             term->ref_ = column_ref;
-            expr0 = new ExprNode(Token_Type::TOKEN_WORD, term, nullptr);
+            expr = new ExprNode(Token_Type::TOKEN_WORD, term);
         }
     }
     else if (token->type_ == Token_Type::TOKEN_MULTIPLY)
@@ -241,55 +305,65 @@ ExprNode *Parser::ParseReadBuiltin()
         ColumnRef *column_ref = new ColumnRef(text);
         auto term = std::make_shared<TermExpr>(Term_Type::TERM_COL_REF);
         term->ref_ = column_ref;
-        expr0 = new ExprNode(Token_Type::TOKEN_WORD, term, nullptr);
-        ParseEatAndNextToken();
+        expr = new ExprNode(Token_Type::TOKEN_WORD, term, nullptr);
     }
     else
     {
-        expr0 = ParseReadLiteral();
+        expr = ParseReadLiteral();
     }
-    return expr0;
+    return expr;
 }
 
 ExprNode *Parser::ParseReadLiteral()
 {
-    ExprNode *expr0 = nullptr;
+    ExprNode *expr = nullptr;
     auto token = ParseNextToken();
     if (token == nullptr)
     {
         ParseError("Syntax error: missing number!");
         return nullptr;
     }
-    if (token->type_ == Token_Type::TOKEN_FLOAT ||
-        token->type_ == Token_Type::TOKEN_DECIMAL ||
-        token->type_ == Token_Type::TOKEN_ZERO ||
-        token->type_ == Token_Type::TOKEN_EXP_FLOAT)
+    if (token->type_ == Token_Type::TOKEN_DECIMAL ||
+        token->type_ == Token_Type::TOKEN_ZERO)
     {
-        // TODO: support other numerical type
         Literal *literal = new IntLiteral(Data_Type::DATA_TYPE_INT, token->text_);
         auto term = std::make_shared<TermExpr>(Term_Type::TERM_LITERAL);
         term->val_ = literal;
-        expr0 = new ExprNode(token->type_, term, nullptr);
+        expr = new ExprNode(token->type_, term);
         ParseEatToken();
-        return expr0;
+        return expr;
     }
-    else if (token->type_ == Token_Type::TOKEN_STRING ||
-             token->type_ == Token_Type::TOKEN_CHAR)
+    else if (token->type_ == Token_Type::TOKEN_FLOAT ||
+             token->type_ == Token_Type::TOKEN_EXP_FLOAT)
     {
-        // Both string and char use DATA_TYPE_CHAR to process
-        // If it's string, remove double quotation
-        if (token->text_[0] == '"')
-        {
-            token->text_ = token->text_.substr(1, token->text_.size() - 2);
-        }
+        Literal *literal = new DoubleLiteral(Data_Type::DATA_TYPE_INT, token->text_);
+        auto term = std::make_shared<TermExpr>(Term_Type::TERM_LITERAL);
+        term->val_ = literal;
+        expr = new ExprNode(token->type_, term);
+        ParseEatToken();
+        return expr;
+    }
+    else if (token->type_ == Token_Type::TOKEN_STRING)
+    {
         Literal *literal = new Literal(Data_Type::DATA_TYPE_CHAR, token->text_);
         auto term = std::make_shared<TermExpr>(Term_Type::TERM_LITERAL);
         term->val_ = literal;
-        expr0 = new ExprNode(Token_Type::TOKEN_STRING, term, nullptr);
+        expr = new ExprNode(Token_Type::TOKEN_STRING, term);
         ParseEatToken();
-        return expr0;
+        return expr;
     }
-    // TODO: support other type
     ParseError("Syntax error: unenabled data type: " + token->text_ + "!");
     return nullptr;
+}
+
+ExprNode *Parser::concatenate_expr_node(ExprNode *expr1, ExprNode *expr2)
+{
+    if (expr1 == nullptr) { return expr2; }
+    ExprNode *p = expr1;
+    while (p->next_expr_ != nullptr)
+    {
+        p = p->next_expr_;
+    }
+    p->next_expr_ = expr2;
+    return expr1;
 }

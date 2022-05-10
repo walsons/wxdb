@@ -149,4 +149,5 @@ ExprNode *Expressin::EvalOperator(ExprNode *op, ExprNode *expr1, ExprNode *expr2
     default:
         break;
     }
+    return nullptr;
 }
