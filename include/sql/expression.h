@@ -70,8 +70,8 @@ class ExprNode
 {
 public:
     ExprNode(Token_Type operator_type, 
-             std::shared_ptr<TermExpr> term, 
-             ExprNode *next_expr);
+             std::shared_ptr<TermExpr> term = nullptr, 
+             ExprNode *next_expr = nullptr);
     ~ExprNode();
 
     Token_Type operator_type_;
