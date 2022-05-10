@@ -38,9 +38,9 @@ std::shared_ptr<SRA> SelectParser::ParseSQLStmtSelect()
 
 }
     
-std::vector<std::shared_ptr<Expression>> SelectParser::ParseFieldsExpr()
+std::vector<ExprNode *> SelectParser::ParseFieldsExpr()
 {
-    std::vector<std::shared_ptr<Expression>> exprs;
+    std::vector<ExprNode *> exprs;
     // Parsing statement:
     // table_name.column_name
     // * (wildcard)

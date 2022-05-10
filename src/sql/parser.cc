@@ -71,47 +71,47 @@ bool Parser::MatchToken(Token_Type type, const std::string &text)
  *      literal: float | decimal | exp_float | string | char 
  ******************************************************/ 
 
-std::shared_ptr<Expression> Parser::ParseExpressionRD()
+ExprNode *Parser::ParseExpressionRD()
 {
     auto expr = ParseReadBooleanOr();
     return expr;
 }
 
-std::shared_ptr<Expression> Parser::ParseReadBooleanOr()
+ExprNode *Parser::ParseReadBooleanOr()
 {
-    std::shared_ptr<Expression> expr0 = nullptr, expr1 = nullptr, expr2 = nullptr;
+    ExprNode *expr0 = nullptr, *expr1 = nullptr, *expr2 = nullptr;
     auto token = ParseNextToken();
     expr0 = ParseReadBooleanAnd();
     return expr0;
 }
 
-std::shared_ptr<Expression> Parser::ParseReadBooleanAnd()
+ExprNode *Parser::ParseReadBooleanAnd()
 {
-    std::shared_ptr<Expression> expr0 = nullptr, expr1 = nullptr, expr2 = nullptr;
+    ExprNode *expr0 = nullptr, *expr1 = nullptr, *expr2 = nullptr;
     auto token = ParseNextToken();
     expr0 = ParseReadBooleanEquality();
     return expr0;
 }
 
-std::shared_ptr<Expression> Parser::ParseReadBooleanEquality()
+ExprNode *Parser::ParseReadBooleanEquality()
 {
-    std::shared_ptr<Expression> expr0 = nullptr, expr1 = nullptr, expr2 = nullptr;
+    ExprNode *expr0 = nullptr, *expr1 = nullptr, *expr2 = nullptr;
     auto token = ParseNextToken();
     expr0 = ParseReadBooleanComparison();
     return expr0;
 }
 
-std::shared_ptr<Expression> Parser::ParseReadBooleanComparison()
+ExprNode *Parser::ParseReadBooleanComparison()
 {
-    std::shared_ptr<Expression> expr0 = nullptr, expr1 = nullptr, expr2 = nullptr;
+    ExprNode *expr0 = nullptr, *expr1 = nullptr, *expr2 = nullptr;
     auto token = ParseNextToken();
     expr0 = ParseReadExpr();
     return expr0;
 }
 
-std::shared_ptr<Expression> Parser::ParseReadExpr()
+ExprNode *Parser::ParseReadExpr()
 {
-    std::shared_ptr<Expression> expr0 = nullptr, expr1 = nullptr, expr2 = nullptr;
+    ExprNode *expr0 = nullptr, *expr1 = nullptr, *expr2 = nullptr;
     auto token = ParseNextToken();
     if (token == nullptr)
     {
@@ -125,7 +125,7 @@ std::shared_ptr<Expression> Parser::ParseReadExpr()
     {
         ParseEatToken();
         expr0 = ParseReadTerm();
-        expr0 = std::make_shared<Expression>(token->type_, nullptr, expr0);
+        expr0 = new ExprNode(token->type_, nullptr, expr0);
     }
     else
     {
@@ -134,25 +134,25 @@ std::shared_ptr<Expression> Parser::ParseReadExpr()
     return expr0;
 }
 
-std::shared_ptr<Expression> Parser::ParseReadTerm()
+ExprNode *Parser::ParseReadTerm()
 {
-    std::shared_ptr<Expression> expr0 = nullptr, expr1 = nullptr, expr2 = nullptr;
+    ExprNode *expr0 = nullptr, *expr1 = nullptr, *expr2 = nullptr;
     auto token = ParseNextToken();
     expr0 = ParseReadPower();
     return expr0;
 }
 
-std::shared_ptr<Expression> Parser::ParseReadPower()
+ExprNode *Parser::ParseReadPower()
 {
-    std::shared_ptr<Expression> expr0 = nullptr, expr1 = nullptr;
+    ExprNode *expr0 = nullptr, *expr1 = nullptr;
     auto token = ParseNextToken();
     expr0 = ParseReadUnary();
     return expr0;
 }
 
-std::shared_ptr<Expression> Parser::ParseReadUnary()
+ExprNode *Parser::ParseReadUnary()
 {
-    std::shared_ptr<Expression> expr0 = nullptr, expr1 = nullptr;
+    ExprNode *expr0 = nullptr, *expr1 = nullptr;
     auto token = ParseNextToken();
     if (token == nullptr)
     {
@@ -167,7 +167,7 @@ std::shared_ptr<Expression> Parser::ParseReadUnary()
     {
         ParseEatAndNextToken();
         expr1 = ParseReadParen();
-        expr0 = std::make_shared<Expression>(token->type_, nullptr, expr1);
+        expr0 = new ExprNode(token->type_, nullptr, expr1);
     }
     else
     {
@@ -176,9 +176,9 @@ std::shared_ptr<Expression> Parser::ParseReadUnary()
     return expr0;
 }
 
-std::shared_ptr<Expression> Parser::ParseReadParen()
+ExprNode *Parser::ParseReadParen()
 {
-    std::shared_ptr<Expression> expr0 = nullptr;
+    ExprNode *expr0 = nullptr;
     auto token = ParseNextToken();
     if (token == nullptr)
     {
@@ -207,9 +207,9 @@ std::shared_ptr<Expression> Parser::ParseReadParen()
     return expr0;
 }
 
-std::shared_ptr<Expression> Parser::ParseReadBuiltin()
+ExprNode *Parser::ParseReadBuiltin()
 {
-    std::shared_ptr<Expression> expr0 = nullptr, expr1 = nullptr;
+    ExprNode *expr0 = nullptr, *expr1 = nullptr;
     auto token = ParseNextToken();
     if (token == nullptr)
     {
@@ -231,7 +231,7 @@ std::shared_ptr<Expression> Parser::ParseReadBuiltin()
             auto column_ref = new ColumnRef(text);
             auto term = std::make_shared<TermExpr>(Term_Type::TERM_COL_REF);
             term->ref_ = column_ref;
-            expr0 = std::make_shared<Expression>(Token_Type::TOKEN_WORD, term, nullptr);
+            expr0 = new ExprNode(Token_Type::TOKEN_WORD, term, nullptr);
         }
     }
     else if (token->type_ == Token_Type::TOKEN_MULTIPLY)
@@ -241,7 +241,7 @@ std::shared_ptr<Expression> Parser::ParseReadBuiltin()
         ColumnRef *column_ref = new ColumnRef(text);
         auto term = std::make_shared<TermExpr>(Term_Type::TERM_COL_REF);
         term->ref_ = column_ref;
-        expr0 = std::make_shared<Expression>(Token_Type::TOKEN_WORD, term, nullptr);
+        expr0 = new ExprNode(Token_Type::TOKEN_WORD, term, nullptr);
         ParseEatAndNextToken();
     }
     else
@@ -251,9 +251,9 @@ std::shared_ptr<Expression> Parser::ParseReadBuiltin()
     return expr0;
 }
 
-std::shared_ptr<Expression> Parser::ParseReadLiteral()
+ExprNode *Parser::ParseReadLiteral()
 {
-    std::shared_ptr<Expression> expr0 = nullptr;
+    ExprNode *expr0 = nullptr;
     auto token = ParseNextToken();
     if (token == nullptr)
     {
@@ -269,7 +269,7 @@ std::shared_ptr<Expression> Parser::ParseReadLiteral()
         Literal *literal = new IntLiteral(Data_Type::DATA_TYPE_INT, token->text_);
         auto term = std::make_shared<TermExpr>(Term_Type::TERM_LITERAL);
         term->val_ = literal;
-        expr0 = std::make_shared<Expression>(token->type_, term, nullptr);
+        expr0 = new ExprNode(token->type_, term, nullptr);
         ParseEatToken();
         return expr0;
     }
@@ -285,7 +285,7 @@ std::shared_ptr<Expression> Parser::ParseReadLiteral()
         Literal *literal = new Literal(Data_Type::DATA_TYPE_CHAR, token->text_);
         auto term = std::make_shared<TermExpr>(Term_Type::TERM_LITERAL);
         term->val_ = literal;
-        expr0 = std::make_shared<Expression>(Token_Type::TOKEN_STRING, term, nullptr);
+        expr0 = new ExprNode(Token_Type::TOKEN_STRING, term, nullptr);
         ParseEatToken();
         return expr0;
     }

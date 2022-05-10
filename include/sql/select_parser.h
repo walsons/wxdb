@@ -14,7 +14,7 @@ public:
     std::shared_ptr<SRA> ParseSQLStmtSelect();
 
 private:
-    std::vector<std::shared_ptr<Expression>> ParseFieldsExpr();
+    std::vector<ExprNode *> ParseFieldsExpr();
     std::shared_ptr<SRA> ParseTablesExpr();
 };
 

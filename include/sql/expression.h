@@ -32,7 +32,7 @@ public:
     ~Func() = default;
     // Function type
     Func_Type type_;
-    // std::shared_ptr<Expression> expr;
+    // std::shared_ptr<ExprNode> expr;
     std::shared_ptr<ColumnRef> col_ref_;
 };
 
@@ -65,21 +65,20 @@ public:
     };
 };
 
-class Expression
+class ExprNode
 {
 public:
-    Expression(Token_Type operator_type, 
-               std::shared_ptr<TermExpr> term, 
-               std::shared_ptr<Expression> next_expr);
-    ~Expression();
+    ExprNode(Token_Type operator_type, 
+             std::shared_ptr<TermExpr> term, 
+             ExprNode *next_expr);
+    ~ExprNode();
 
     Token_Type operator_type_;
     std::shared_ptr<TermExpr> term_;
     // It might have alias when appears in select statement
     std::string alias_;
     // Linking expression via link list
-    std::shared_ptr<Expression> next_expr_;
-    static Expression *Eval();
+    std::shared_ptr<ExprNode> next_expr_;
 };
 
 #endif
