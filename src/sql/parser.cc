@@ -326,9 +326,8 @@ ExprNode *Parser::ParseReadLiteral()
     if (token->type_ == Token_Type::TOKEN_DECIMAL ||
         token->type_ == Token_Type::TOKEN_ZERO)
     {
-        Literal *literal = new IntLiteral(Data_Type::DATA_TYPE_INT, token->text_);
-        auto term = std::make_shared<TermExpr>(Term_Type::TERM_LITERAL);
-        term->val_ = literal;
+        auto term = std::make_shared<TermExpr>(Term_Type::TERM_INT);
+        term->ival_ = stoi(token->text_);
         expr = new ExprNode(token->type_, term);
         ParseEatToken();
         return expr;
@@ -336,18 +335,17 @@ ExprNode *Parser::ParseReadLiteral()
     else if (token->type_ == Token_Type::TOKEN_FLOAT ||
              token->type_ == Token_Type::TOKEN_EXP_FLOAT)
     {
-        Literal *literal = new DoubleLiteral(Data_Type::DATA_TYPE_INT, token->text_);
-        auto term = std::make_shared<TermExpr>(Term_Type::TERM_LITERAL);
-        term->val_ = literal;
+        auto term = std::make_shared<TermExpr>(Term_Type::TERM_DOUBLE);
+        term->dval_ = stod(token->text_);
         expr = new ExprNode(token->type_, term);
         ParseEatToken();
         return expr;
     }
     else if (token->type_ == Token_Type::TOKEN_STRING)
     {
-        Literal *literal = new Literal(Data_Type::DATA_TYPE_CHAR, token->text_);
+        Literal *literal = new Literal(token->text_);
         auto term = std::make_shared<TermExpr>(Term_Type::TERM_LITERAL);
-        term->val_ = literal;
+        term->literal_ = literal;
         expr = new ExprNode(Token_Type::TOKEN_STRING, term);
         ParseEatToken();
         return expr;

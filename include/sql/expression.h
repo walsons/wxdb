@@ -40,9 +40,12 @@ public:
 enum class Term_Type
 {
     TERM_UNKNOWN,
-    TERM_LITERAL,
-    TERM_ID,
     TERM_NULL,
+    TERM_INT,
+    TERM_DOUBLE,
+    TERM_BOOL,
+    TERM_ID,
+    TERM_LITERAL,
     TERM_COL_REF,
     TERM_FUNC
 };
@@ -55,10 +58,13 @@ public:
     Term_Type term_type_;
     union
     {
+        int ival_;
+        double dval_;
+        bool bval_;
         // Identifier, table name...
         std::string id_;
         // Literal
-        Literal *val_;
+        Literal *literal_;
         // Field variable
         ColumnRef *ref_;
         // Function
@@ -82,11 +88,11 @@ public:
     ExprNode *next_expr_;
 };
 
-class Expressin
+class Expression
 {
 public:
     //Evaluate Reverse Polish Notation 
-    Expressin(ExprNode *expr);
+    Expression(ExprNode *expr);
     void Eval(ExprNode *expr);
 
     DataValue value;
