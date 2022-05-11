@@ -31,7 +31,7 @@ TermExpr::~TermExpr()
         id_.~basic_string();
         break;
     case Term_Type::TERM_LITERAL:
-        delete val_;
+        delete literal_;
         break;
     case Term_Type::TERM_COL_REF:
         delete ref_;
@@ -53,13 +53,14 @@ ExprNode::ExprNode(Token_Type operator_type,
 
 ExprNode::~ExprNode() = default;
 
-Expressin::Expressin(ExprNode *expr)
+Expression::Expression(ExprNode *expr)
 {
     Eval(expr);
 }
 
-void Expressin::Eval(ExprNode *expr)
+void Expression::Eval(ExprNode *expr)
 {
+    // TODO: add type check
     assert(expr != nullptr);
     std::stack<ExprNode *> expr_stack;
     expr_stack.push(expr);
@@ -96,19 +97,24 @@ void Expressin::Eval(ExprNode *expr)
         }
     }
     expr = expr_stack.top();
-    // TODO:
-    // switch (expr->term_->term_type_)
-    // {
-    // case :
-    //     /* code */
-    //     break;
-    
-    // default:
-    //     break;
-    // }
+    switch (expr->term_->term_type_)
+    {
+    case Term_Type::TERM_INT:
+        value.SetIntValue(expr->term_->ival_);
+        break;
+    case Term_Type::TERM_DOUBLE:
+        value.SetDoubleValue(expr->term_->dval_);
+        break;
+    case Term_Type::TERM_BOOL:
+        value.SetBoolValue(expr->term_->bval_);
+        break;
+    default:
+        // TODO: other type processing
+        break;
+    }
 }
 
-ExprNode *Expressin::EvalOperator(ExprNode *op, ExprNode *expr1, ExprNode *expr2)
+ExprNode *Expression::EvalOperator(ExprNode *op, ExprNode *expr1, ExprNode *expr2)
 {
     switch (op->operator_type_)
     {
