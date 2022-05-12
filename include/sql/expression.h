@@ -5,6 +5,7 @@
 #include "literal.h"
 #include "common.h"
 #include <memory>
+#include <sstream>
 
 enum class Func_Type
 {
@@ -91,9 +92,13 @@ public:
 class Expression
 {
 public:
-    //Evaluate Reverse Polish Notation 
     Expression(ExprNode *expr);
+    //Evaluate Reverse Polish Notation 
     void Eval(ExprNode *expr);
+    // Store expr_node linklist in ostringstream
+    static void dump_expr_node(std::ostringstream &os, ExprNode *expr);
+    // Load expr_node linklist
+    static ExprNode *load_expr_node(std::istringstream &is);
 
     DataValue value;
 private:
