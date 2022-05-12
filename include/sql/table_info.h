@@ -21,7 +21,7 @@ enum class Constraint_Type
 
 struct CheckConstraint
 {
-    // TODO
+    ExprNode *check_condition;
 };
 
 struct ForeignKeyRef

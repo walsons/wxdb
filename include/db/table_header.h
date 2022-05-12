@@ -13,7 +13,7 @@ struct TableHeader
     // Is the main index auto increment
     bool is_main_index_auto_inc;
     // The number of records, primary keys, check constraints, foreign keys
-    unsigned num_record, num_primary_key, num_check_constraint, num_foreign_key_num;
+    unsigned num_record, num_primary_key, num_check_constraint, num_foreign_key;
     // Flags: not null, primary, index, unique, default
     // The column of primary and unique will be add index automatically
     // Each bit delegate a column
@@ -32,7 +32,7 @@ struct TableHeader
 
     char check_constraint[MAX_NUM_CHECK_CONSTRAINT][MAX_LENGTH_CHECK_CONSTRAINT];
     char default_value[MAX_NUM_COLUMN][MAX_LENGTH_DEFAULT_VALUE];
-    // Which column is foreign key
+    // Which column is foreign key, index from 0 to num_foreign_key - 1
     unsigned foreign_key[MAX_NUM_COLUMN];
     char foreign_key_ref_table[MAX_NUM_COLUMN][MAX_LENGTH_NAME];
     char foreign_key_ref_column[MAX_NUM_COLUMN][MAX_LENGTH_NAME];

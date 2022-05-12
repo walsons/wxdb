@@ -114,6 +114,128 @@ void Expression::Eval(ExprNode *expr)
     }
 }
 
+void Expression::dump_expr_node(std::ostringstream &os, ExprNode *expr)
+{
+    // is_operator Term_Type value is_operator Token_Type placeholder...
+    // TODO: currently support column_ref > >= == <= < int double bool
+    while (expr != nullptr)
+    {
+        if (expr->term_ == nullptr)
+        {
+            os << 1 << " " 
+               << static_cast<int>(expr->operator_type_) 
+               << " " << 0 << " ";
+        }
+        else
+        {
+            os << 0 << " "
+               << static_cast<int>(expr->term_->term_type_) << " ";
+            switch (expr->term_->term_type_)
+            {
+            case Term_Type::TERM_COL_REF:
+                if (expr->term_->ref_->table_name_.size() != 0)
+                {
+                    os << 2 << " " 
+                       << expr->term_->ref_->table_name_ << " "
+                       << expr->term_->ref_->column_name_ << " ";
+                }
+                else
+                {
+                    os << 1 << " " 
+                       << expr->term_->ref_->column_name_ << " ";
+                }
+                break;
+            case Term_Type::TERM_INT:
+                os << expr->term_->ival_ << " ";
+                break;
+            case Term_Type::TERM_DOUBLE:
+                os << expr->term_->ival_ << " ";
+                break;
+            case Term_Type::TERM_BOOL:
+                os << expr->term_->ival_ << " ";
+                break;
+            default:
+                break;
+            } 
+        }
+        expr = expr->next_expr_;
+    }
+}
+
+ExprNode *Expression::load_expr_node(std::istringstream &is)
+{
+    int is_operator;
+    ExprNode *head = new ExprNode(Token_Type::TOKEN_NULL);
+    ExprNode *expr = head;
+    while (is >> is_operator)
+    {
+        if (is_operator)
+        {
+            int type = 0;
+            is >> type;
+            expr->next_expr_ = new ExprNode(static_cast<Token_Type>(type));
+            // Remove placeholder
+            is >> type;
+        }
+        else
+        {
+            int type = 0;
+            is >> type;
+            switch (static_cast<Term_Type>(type))
+            {
+            case Term_Type::TERM_COL_REF:
+            {
+                auto term = std::make_shared<TermExpr>(Term_Type::TERM_COL_REF);
+                int count = 0;
+                is >> count;
+                if (count == 2)
+                {
+                    std::string table_name, column_name;
+                    is >> table_name >> column_name;
+                    term->ref_ = new ColumnRef(table_name + "." + column_name);
+                }
+                else
+                {
+                    std::string column_name;
+                    is >> column_name;
+                    term->ref_ = new ColumnRef(column_name);
+                }
+                expr->next_expr_ = new ExprNode(Token_Type::TOKEN_NULL, term);
+                break;
+            }
+            case Term_Type::TERM_INT:
+            {
+                auto term = std::make_shared<TermExpr>(Term_Type::TERM_INT);
+                is >> term->ival_;
+                expr->next_expr_ = new ExprNode(Token_Type::TOKEN_NULL, term);
+                break;
+            }
+            case Term_Type::TERM_DOUBLE:
+            {
+                auto term = std::make_shared<TermExpr>(Term_Type::TERM_DOUBLE);
+                is >> term->dval_;
+                expr->next_expr_ = new ExprNode(Token_Type::TOKEN_NULL, term);
+                break;
+            }
+            case Term_Type::TERM_BOOL:
+            {
+                auto term = std::make_shared<TermExpr>(Term_Type::TERM_BOOL);
+                is >> term->bval_;
+                expr->next_expr_ = new ExprNode(Token_Type::TOKEN_NULL, term);
+                break;
+            }
+            default:
+                // TODO: other type processing
+                break;
+            }
+        }
+        expr = expr->next_expr_;
+    }
+    auto tmp = head->next_expr_;
+    delete head;
+    return tmp;
+}
+
 ExprNode *Expression::EvalOperator(ExprNode *op, ExprNode *expr1, ExprNode *expr2)
 {
     switch (op->operator_type_)
