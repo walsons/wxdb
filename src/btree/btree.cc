@@ -42,6 +42,14 @@ void BTree<KeyType, Comparer, Copier>::Insert(key_t key, const char *data, int d
     }
 }
 
+// Erase
+template <typename KeyType, typename Comparer, typename Copier>
+bool BTree<KeyType, Comparer, Copier>::Erase(key_t key)
+{
+    // TODO
+    return true;
+}
+
 // insert_leaf()
 template <typename KeyType, typename Comparer, typename Copier>
 typename BTree<KeyType, Comparer, Copier>::insert_ret 
@@ -118,7 +126,7 @@ void BTree<KeyType, Comparer, Copier>::insert_split_root(insert_ret ret)
         Page lower{ret.lower_half, pg_};
         Page upper{ret.upper_half, pg_};
         page.Insert(0, lower.keys(lower.size() - 1), root_page_id_);
-        page.insert(1, upper.keys(upper.size() - 1), ret.upper_page_id);
+        page.Insert(1, upper.keys(upper.size() - 1), ret.upper_page_id);
         root_page_id_ = new_page_id;
     }
 }
@@ -141,7 +149,7 @@ BTree<KeyType, Comparer, Copier>::insert_post_process(int page_id,
         page.keys(child_pos) = lower_child.keys(lower_child.size() - 1);
         // Insert the new page to page
         key_t child_largest = copier_(upper_child.keys(upper_child.size() - 1));
-        bool succ = page.insert(child_pos + 1, child_largest, child_ret.upper_page_id);
+        bool succ = page.Insert(child_pos + 1, child_largest, child_ret.upper_page_id);
         if (!succ)
         {
             auto upper = page.Split(page_id);
