@@ -46,7 +46,36 @@ bool fill_table_header(std::shared_ptr<TableHeader> header, const TableInfo &tab
         Expression::dump_expr_node(os, item.check_condition);
         std::strncpy(header->check_constraint[header->num_check_constraint++], os.str().c_str(), MAX_LENGTH_CHECK_CONSTRAINT);
     }
-    // TODO
+
+    // Add "__rowid__" column (with highest index)
+    int col_num = header->num_column++;
+    std::strncpy(header->column_name[col_num], "__rowid__", MAX_LENGTH_NAME);
+    header->column_type[col_num] = Data_Type::DATA_TYPE_INT;
+    header->column_length[col_num] = sizeof(int);
+    header->column_offset[col_num] = 0;
+    header->main_index = col_num;
+    header->is_main_index_auto_inc = true;
+    // Add index for __rowid__
+    header->flag_index |= (1 << col_num);
+    // If table doesn't have primary key, set __rowid__ to primary key
+    if (!header->flag_primary) { header->flag_primary |= (1 << col_num); }
+    // Add index for unique column
+    header->flag_index |= header->flag_unique;
+    // Add not null for primary key column
+    header->flag_not_null |= header->flag_primary;
+    // Add index for the first primary key column
+    int first_primary = 0;
+    while (!(header->flag_primary & (1 << first_primary)))
+    {
+        ++first_primary;
+    }
+    header->flag_index |= (1 << first_primary);
+    header->auto_inc = 1;
+    header->num_primary_key = 0;
+    for (size_t i = 0; i != header->num_column; ++i)
+    {
+        if (header->flag_primary & (1 << i)) { ++header->num_primary_key; }
+    }
     
     return true;
 }
