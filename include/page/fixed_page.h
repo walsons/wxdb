@@ -65,7 +65,7 @@ template <typename T> inline
 int &FixedPage<T>::children(int index) { return *reinterpret_cast<int *>(buf_ + 16 + index * sizeof(int)); }
 
 template <typename T> inline
-T &FixedPage<T>::keys(int index) { return *reinterpret_cast<T *>(buf_ + begin() + index * field_size()); }
+T &FixedPage<T>::keys(int index) { return *reinterpret_cast<T *>(begin() + index * field_size()); }
 
 template <typename T> inline
 char *FixedPage<T>::begin() { return end() - size() * field_size(); }

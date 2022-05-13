@@ -1,7 +1,9 @@
 #ifndef BTREE_H_
 #define BTREE_H_
 
+#include <cstring>
 #include <memory>
+#include <functional>
 #include "../page/pager.h"
 #include "../page/fixed_page.h"
 #include "../page/index_leaf_page.h"
@@ -24,8 +26,10 @@ public:
     using search_result = std::pair<int, int>;  // (page_id, pos);
 
     BTree(std::shared_ptr<Pager> pg, int root_page_id, int field_size, Comparer compare, Copier copier);
-    ~BTree();
+    virtual ~BTree();
     void Insert(key_t key, const char *data, int data_size);
+    bool Erase(key_t key);
+    int root_page_id();
 
 private:
     struct insert_ret
@@ -54,13 +58,58 @@ private:
     search_result upper_bound(int now_page_id, key_t key);
 };
 
-class IntBTree: public BTree<int, int(*)(const int &, const int &), int(*)(int)>
+template <typename KeyType, typename Comparer, typename Copier> 
+inline int BTree<KeyType, Comparer, Copier>::root_page_id() { return root_page_id_; }
+
+/************************* IntBTree **************************/
+class IntBTree : public BTree<int, int(*)(const int &, const int &), int(*)(int)>
 {
     static int copy_int(int x);
 public:
     IntBTree(std::shared_ptr<Pager> pg, int root_page_id = 0);
+    ~IntBTree() = default;
 };
 
 inline int IntBTree::copy_int(int x) { return x; }
+
+/************************* IndexBTree **************************/
+template <typename T>
+struct ArrayDeleter
+{
+    void operator()(const T *p) { delete[] p; }
+};
+
+struct IndexBtreeCopier
+{
+    int size;
+    std::shared_ptr<char> buf;
+public: 
+    IndexBtreeCopier(int size)
+        : size(size), buf(new char[size], ArrayDeleter<char>()) {}
+    char *operator()(const char *src)
+    {
+        std::memcpy(buf.get(), src, size);
+        return buf.get();
+    }
+};
+
+class IndexBTree : public BTree<const char *, 
+                                std::function<int(const char *, const char *)>, 
+                                IndexBtreeCopier>
+{
+    using comparer = std::function<int(const char *, const char *)>;
+    using base_class = BTree<const char *, comparer, IndexBtreeCopier>;
+public:
+    IndexBTree(std::shared_ptr<Pager> pg, int root_page_id, int size, comparer compare)
+        : BTree(pg, root_page_id, size, compare, IndexBtreeCopier(size))
+    {
+    }
+    ~IndexBTree() = default;
+
+    void Insert(const char *key, int row_id)
+    {
+        base_class::Insert(key, reinterpret_cast<const char *>(&row_id), sizeof(row_id));
+    }
+};
 
 #endif
