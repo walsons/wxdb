@@ -1,5 +1,5 @@
-#ifndef DATA_PAGE_H_
-#define DATA_PAGE_H_
+#ifndef DATA_PAGE_HPP_
+#define DATA_PAGE_HPP_
 
 #include "variant_page.h"
 

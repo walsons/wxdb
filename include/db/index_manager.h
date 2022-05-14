@@ -2,7 +2,7 @@
 #define INDEXMANAGER_H_
 
 #include <memory>
-#include "../btree/btree.h"
+#include "../btree/btree.hpp"
 #include "../sql/common.h"
 
 class IndexManager

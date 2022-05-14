@@ -1,5 +1,5 @@
-#ifndef COMPARER_H_
-#define COMPARER_H_
+#ifndef COMPARER_HPP_
+#define COMPARER_HPP_
 
 #include <cstring>
 

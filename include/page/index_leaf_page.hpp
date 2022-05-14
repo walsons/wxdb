@@ -1,7 +1,7 @@
-#ifndef INDEX_LEAF_PAGE_H_
-#define INDEX_LEAF_PAGE_H_
+#ifndef INDEX_LEAF_PAGE_HPP_
+#define INDEX_LEAF_PAGE_HPP_
 
-#include "fixed_page.h"
+#include "fixed_page.hpp"
 
 template <typename T>
 class IndexLeafPage : public FixedPage<T>
