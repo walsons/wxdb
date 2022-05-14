@@ -96,9 +96,9 @@ public:
     //Evaluate Reverse Polish Notation 
     void Eval(ExprNode *expr);
     // Store expr_node linklist in ostringstream
-    static void dump_expr_node(std::ostringstream &os, ExprNode *expr);
+    static void DumpExprNode(std::ostringstream &os, ExprNode *expr);
     // Load expr_node linklist
-    static ExprNode *load_expr_node(std::istringstream &is);
+    static ExprNode *LoadExprNode(std::istringstream &is);
 
     DataValue value;
 private:

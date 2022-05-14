@@ -212,3 +212,22 @@ IntBTree::IntBTree(std::shared_ptr<Pager> pg, int root_page_id)
     : BTree(pg, root_page_id, sizeof(int), integer_comparer, copy_int)
 {
 }
+
+/*
+ * IndexBTree
+ */
+IndexBTree::IndexBTree(std::shared_ptr<Pager> pg, int root_page_id, int size, comparer compare)
+    : BTree(pg, root_page_id, size, compare, IndexBTreeCopier(size))
+{
+}
+
+void IndexBTree::Insert(const char *key, int row_id)
+{
+    // base_class::Insert(key, reinterpret_cast<const char *>(&row_id), sizeof(row_id));
+}
+
+bool IndexBTree::Erase(const char *key)
+{
+    // return base_class::Erase(key);
+    return true;
+}
