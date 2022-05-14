@@ -9,11 +9,11 @@
 
 class TableManager
 {
-    bool is_open_, is_mirror_;
     TableHeader table_header_;
+    std::string table_name_;
+    bool is_open_, is_mirror_;
     std::shared_ptr<IntBTree> btr_;
     std::shared_ptr<Pager> pg_;
-    std::string table_name_;
     int tmp_record_size_;
     char *tmp_record_, *tmp_cache_, *tmp_index_; 
     int *tmp_null_mark_;
@@ -25,11 +25,16 @@ public:
     ~TableManager() = default;
     bool CreateTable(const std::shared_ptr<TableHeader> table_header);
     bool OpenTable(const std::string &table_name);
+    void DropTable();
+    void CloseTable();
+    std::shared_ptr<TableManager> Mirror(const std::string &alias);
 
 private:
     void allocate_temp_record();
     void load_indices();
+    void free_indices();
     void load_check_constraints();
+    void free_check_constraints();
 };
 
 #endif
