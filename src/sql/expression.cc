@@ -114,7 +114,7 @@ void Expression::Eval(ExprNode *expr)
     }
 }
 
-void Expression::dump_expr_node(std::ostringstream &os, ExprNode *expr)
+void Expression::DumpExprNode(std::ostringstream &os, ExprNode *expr)
 {
     // is_operator Term_Type value is_operator Token_Type placeholder...
     // TODO: currently support column_ref > >= == <= < int double bool
@@ -162,7 +162,7 @@ void Expression::dump_expr_node(std::ostringstream &os, ExprNode *expr)
     }
 }
 
-ExprNode *Expression::load_expr_node(std::istringstream &is)
+ExprNode *Expression::LoadExprNode(std::istringstream &is)
 {
     int is_operator;
     ExprNode *head = new ExprNode(Token_Type::TOKEN_NULL);

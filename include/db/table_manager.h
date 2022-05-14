@@ -5,6 +5,7 @@
 #include "table_header.h"
 #include "../btree/btree.h"
 #include "../page/pager.h"
+#include "index_manager.h"
 
 class TableManager
 {
@@ -16,14 +17,19 @@ class TableManager
     int tmp_record_size_;
     char *tmp_record_, *tmp_cache_, *tmp_index_; 
     int *tmp_null_mark_;
+    std::shared_ptr<IndexManager> indices_[MAX_NUM_COLUMN];
+    ExprNode *check_constraint_[MAX_NUM_CHECK_CONSTRAINT];
 
 public:
     TableManager() = default;
     ~TableManager() = default;
     bool CreateTable(const std::shared_ptr<TableHeader> table_header);
+    bool OpenTable(const std::string &table_name);
 
 private:
     void allocate_temp_record();
+    void load_indices();
+    void load_check_constraints();
 };
 
 #endif

@@ -43,7 +43,7 @@ bool fill_table_header(std::shared_ptr<TableHeader> header, const TableInfo &tab
     for (auto item : table_info.check_constraint)
     {
         std::ostringstream os;
-        Expression::dump_expr_node(os, item.check_condition);
+        Expression::DumpExprNode(os, item.check_condition);
         std::strncpy(header->check_constraint[header->num_check_constraint++], os.str().c_str(), MAX_LENGTH_CHECK_CONSTRAINT);
     }
 

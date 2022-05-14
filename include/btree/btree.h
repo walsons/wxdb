@@ -79,13 +79,14 @@ struct ArrayDeleter
     void operator()(const T *p) { delete[] p; }
 };
 
-struct IndexBtreeCopier
+struct IndexBTreeCopier
 {
     int size;
     std::shared_ptr<char> buf;
 public: 
-    IndexBtreeCopier(int size)
+    IndexBTreeCopier(int size)
         : size(size), buf(new char[size], ArrayDeleter<char>()) {}
+    ~IndexBTreeCopier() = default;
     char *operator()(const char *src)
     {
         std::memcpy(buf.get(), src, size);
@@ -95,21 +96,15 @@ public:
 
 class IndexBTree : public BTree<const char *, 
                                 std::function<int(const char *, const char *)>, 
-                                IndexBtreeCopier>
+                                IndexBTreeCopier>
 {
-    using comparer = std::function<int(const char *, const char *)>;
-    using base_class = BTree<const char *, comparer, IndexBtreeCopier>;
 public:
-    IndexBTree(std::shared_ptr<Pager> pg, int root_page_id, int size, comparer compare)
-        : BTree(pg, root_page_id, size, compare, IndexBtreeCopier(size))
-    {
-    }
+    using comparer = std::function<int(const char *, const char *)>;
+    using base_class = BTree<const char *, comparer, IndexBTreeCopier>;
+    IndexBTree(std::shared_ptr<Pager> pg, int root_page_id, int size, comparer compare);
     ~IndexBTree() = default;
-
-    void Insert(const char *key, int row_id)
-    {
-        base_class::Insert(key, reinterpret_cast<const char *>(&row_id), sizeof(row_id));
-    }
+    void Insert(const char *key, int row_id);
+    bool Erase(const char *key);
 };
 
 #endif

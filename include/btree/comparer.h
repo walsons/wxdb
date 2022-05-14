@@ -15,7 +15,7 @@ inline int integer_comparer(const int &x, const int &y)
     return basic_type_comparer(x, y);
 }
 
-inline int float_comparer(const float &x, const float &y)
+inline int double_comparer(const double &x, const double &y)
 {
     return basic_type_comparer(x, y);
 }
@@ -25,9 +25,9 @@ inline int integer_cast_comparer(const char *x, const char *y)
     return basic_type_comparer(*reinterpret_cast<const int *>(x), *reinterpret_cast<const int *>(y));
 }
 
-inline int float_cast_comparer(const char *x, const char *y)
+inline int double_cast_comparer(const char *x, const char *y)
 {
-    return basic_type_comparer(*reinterpret_cast<const float *>(x), *reinterpret_cast<const float *>(y));
+    return basic_type_comparer(*reinterpret_cast<const double *>(x), *reinterpret_cast<const double *>(y));
 }
 
 inline int string_comparer(const char *x, const char *y)
