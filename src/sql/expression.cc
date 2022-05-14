@@ -279,3 +279,15 @@ ExprNode *Expression::EvalOperator(ExprNode *op, ExprNode *expr1, ExprNode *expr
     }
     return nullptr;
 }
+
+void Expression::FreeExprNode(ExprNode *expr)
+{
+    if (expr == nullptr) { return; }
+    while (expr->next_expr_ != nullptr)
+    {
+        auto tmp = expr;
+        expr = expr->next_expr_;
+        delete tmp;
+    }
+    delete expr;
+}

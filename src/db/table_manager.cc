@@ -38,6 +38,63 @@ bool TableManager::OpenTable(const std::string &table_name)
     return true;
 }
 
+void TableManager::DropTable()
+{
+    if (!is_open_) { return; }
+    CloseTable();
+    std::string header_path = DB_DIR + table_name_ + "thead";
+    std::string data_path = DB_DIR + table_name_ + "tdata";
+    std::remove(header_path.c_str());
+    std::remove(data_path.c_str());
+}
+
+void TableManager::CloseTable()
+{
+    if (!is_open_) { return; }
+    if (!is_mirror_)
+    {
+        std::string header_path = DB_DIR + table_name_ + "thead";
+        std::string data_path = DB_DIR + table_name_ + "tdata";
+        table_header_.index_root_page[table_header_.main_index] = btr_->root_page_id();
+        free_indices();
+        free_check_constraints();
+        std::ofstream ofs(header_path, std::ios::binary);
+        ofs.write(reinterpret_cast<const char *>(&table_header_), sizeof(table_header_));
+        pg_->Close();
+    }
+    btr_ = nullptr;
+    pg_ = nullptr;
+    delete[] tmp_record_;
+    delete[] tmp_cache_;
+    delete[] tmp_index_;
+    tmp_record_ = nullptr;
+    tmp_cache_ = nullptr;
+    tmp_index_ = nullptr;
+    is_open_ = false;
+    is_mirror_ = false;
+}
+
+std::shared_ptr<TableManager> TableManager::Mirror(const std::string &alias)
+{
+    auto table = std::make_shared<TableManager>();
+    table->table_header_ = table_header_;
+    std::strncpy(table->table_header_.table_name, alias.c_str(), MAX_LENGTH_NAME);
+    table->table_name_ = alias;
+    table->is_open_ = true; 
+    table->is_mirror_ = true;
+    // Share btr_ and pg_
+    table->btr_ = btr_;
+    table->pg_ = pg_;
+    table->allocate_temp_record();
+    // Share indices_, check_constraint_, 
+    for (int i = 0; i < MAX_NUM_COLUMN; ++i)
+    {
+        table->indices_[i] = indices_[i];
+    }
+    std::memcpy(table->check_constraint_, check_constraint_, sizeof(check_constraint_));
+    return table;
+}
+
 void TableManager::allocate_temp_record()
 {
     if (tmp_record_) delete[] tmp_record_;
@@ -68,6 +125,18 @@ void TableManager::load_indices()
     }
 }
 
+void TableManager::free_indices()
+{
+    for (int i = 0; i < table_header_.num_column; ++i)
+    {
+        if (i != table_header_.main_index && ((1 << i) & table_header_.flag_index))
+        {
+            table_header_.index_root_page[i] = indices_[i]->root_page_id();
+            indices_[i] = nullptr;
+        }
+    }
+}
+
 void TableManager::load_check_constraints()
 {
     std::memset(check_constraint_, 0, sizeof(check_constraint_));
@@ -75,5 +144,14 @@ void TableManager::load_check_constraints()
     {
         std::istringstream in(table_header_.check_constraint[i]);
         check_constraint_[i] = Expression::LoadExprNode(in);
+    }
+}
+
+void TableManager::free_check_constraints()
+{
+    for (int i = 0; i != table_header_.num_check_constraint; ++i)
+    {
+        Expression::FreeExprNode(check_constraint_[i]);
+        check_constraint_[i] = nullptr;
     }
 }

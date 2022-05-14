@@ -99,6 +99,8 @@ public:
     static void DumpExprNode(std::ostringstream &os, ExprNode *expr);
     // Load expr_node linklist
     static ExprNode *LoadExprNode(std::istringstream &is);
+    // Free expr_node linklist
+    static void FreeExprNode(ExprNode *expr);
 
     DataValue value;
 private:
