@@ -1,13 +1,70 @@
-#include "../../include/btree/btree.h"
-#include "../../include/btree/search.h"
-#include "../../include/btree/comparer.h"
+#ifndef BTREE_HPP_
+#define BTREE_HPP_
 
-// BTree()
+#include <cstring>
+#include <memory>
+#include <functional>
+#include "../page/pager.h"
+#include "../page/fixed_page.hpp"
+#include "../page/index_leaf_page.hpp"
+#include "../page/data_page.hpp"
+#include "comparer.hpp"
+#include "search.hpp"
+
+template <typename KeyType, typename Comparer, typename Copier>
+class BTree
+{
+    std::shared_ptr<Pager> pg_;
+    int root_page_id_;
+    int field_size_;
+    Comparer comparer_;
+    Copier copier_;
+public:
+    // using key_t = KeyType;
+    using interior_page = FixedPage<KeyType>;
+    using leaf_page = typename std::conditional<std::is_same<KeyType, const char *>::value,
+                                                IndexLeafPage<KeyType>,
+                                                DataPage<KeyType>>::type;
+    using search_result = std::pair<int, int>;  // (page_id, pos);
+
+    BTree(std::shared_ptr<Pager> pg, int root_page_id, int field_size, Comparer compare, Copier copier);
+    virtual ~BTree() = default;
+    void Insert(KeyType key, const char *data, int data_size);
+    bool Erase(KeyType key);
+    int root_page_id() { return root_page_id_; }
+
+private:
+    struct insert_ret
+    {
+        bool split;
+        int upper_page_id;
+        char *lower_half, *upper_half;
+    };
+    struct merge_ret
+    {
+        bool merged_left, merged_right;
+        int merged_page_id;
+    };
+    struct erase_ret
+    {
+        bool found;
+        merge_ret merge;
+        KeyType largest;
+    };
+    insert_ret insert_leaf(int now_page_id, char *now_addr, KeyType key, const char *data, int data_size);
+    insert_ret insert_interior(int now_page_id, char *now_addr, KeyType key, const char *data, int data_size);
+    template <typename Page>
+    void insert_split_root(insert_ret ret);
+    template <typename Page, typename ChildPage>
+    insert_ret insert_post_process(int page_id, int child_page_id, int child_pos, insert_ret child_ret);
+    search_result upper_bound(int now_page_id, KeyType key);
+};
+
 template <typename KeyType, typename Comparer, typename Copier>
 BTree<KeyType, Comparer, Copier>::BTree(std::shared_ptr<Pager> pg, 
-    int root_page_id, int field_size, Comparer compare, Copier copier)
+    int root_page_id, int field_size, Comparer comparer, Copier copier)
     : pg_(pg), root_page_id_(root_page_id), field_size_(field_size)
-    , comparer_(compare), copier_(copier)
+    , comparer_(comparer), copier_(copier)
 {
     if (root_page_id == 0)
     {
@@ -16,15 +73,8 @@ BTree<KeyType, Comparer, Copier>::BTree(std::shared_ptr<Pager> pg,
     }
 }
 
-// ~BTree()
 template <typename KeyType, typename Comparer, typename Copier>
-BTree<KeyType, Comparer, Copier>::~BTree()
-{
-}
-
-// Insert()
-template <typename KeyType, typename Comparer, typename Copier>
-void BTree<KeyType, Comparer, Copier>::Insert(key_t key, const char *data, int data_size)
+void BTree<KeyType, Comparer, Copier>::Insert(KeyType key, const char *data, int data_size)
 {
     char *addr = pg_->ReadForWrite(root_page_id_);
     Page_Type page_type = GeneralPage::GetPageType(addr);
@@ -42,19 +92,17 @@ void BTree<KeyType, Comparer, Copier>::Insert(key_t key, const char *data, int d
     }
 }
 
-// Erase
 template <typename KeyType, typename Comparer, typename Copier>
-bool BTree<KeyType, Comparer, Copier>::Erase(key_t key)
+bool BTree<KeyType, Comparer, Copier>::Erase(KeyType key)
 {
     // TODO
     return true;
 }
 
-// insert_leaf()
 template <typename KeyType, typename Comparer, typename Copier>
 typename BTree<KeyType, Comparer, Copier>::insert_ret 
 BTree<KeyType, Comparer, Copier>::insert_leaf(int now_page_id, 
-    char *now_addr, key_t key, const char *data, int data_size)
+    char *now_addr, KeyType key, const char *data, int data_size)
 {
     leaf_page page{now_addr, pg_};
     // Find the first pos of key int page greater or equal to key
@@ -87,11 +135,10 @@ BTree<KeyType, Comparer, Copier>::insert_leaf(int now_page_id,
     return ret;
 }
 
-// insert_interior()
 template <typename KeyType, typename Comparer, typename Copier>
 typename BTree<KeyType, Comparer, Copier>::insert_ret 
 BTree<KeyType, Comparer, Copier>::insert_interior(int now_page_id, 
-    char *now_addr, key_t key, const char *data, int data_size)
+    char *now_addr, KeyType key, const char *data, int data_size)
 {
     interior_page page{now_addr, pg_};
     int child_pos = Search::upper_bound(0, page.size(), [&](int id) {
@@ -113,7 +160,6 @@ BTree<KeyType, Comparer, Copier>::insert_interior(int now_page_id,
         child_page_id, child_pos, child_ret);
 }
 
-// insert_split_root()
 template <typename KeyType, typename Comparer, typename Copier>
 template <typename Page>
 void BTree<KeyType, Comparer, Copier>::insert_split_root(insert_ret ret)
@@ -131,7 +177,6 @@ void BTree<KeyType, Comparer, Copier>::insert_split_root(insert_ret ret)
     }
 }
 
-// insert_post_process()
 template <typename KeyType, typename Comparer, typename Copier>
 template <typename Page, typename ChildPage>
 typename BTree<KeyType, Comparer, Copier>::insert_ret 
@@ -148,7 +193,7 @@ BTree<KeyType, Comparer, Copier>::insert_post_process(int page_id,
         // Update the key of page
         page.keys(child_pos) = lower_child.keys(lower_child.size() - 1);
         // Insert the new page to page
-        key_t child_largest = copier_(upper_child.keys(upper_child.size() - 1));
+        KeyType child_largest = copier_(upper_child.keys(upper_child.size() - 1));
         bool succ = page.Insert(child_pos + 1, child_largest, child_ret.upper_page_id);
         if (!succ)
         {
@@ -181,9 +226,8 @@ BTree<KeyType, Comparer, Copier>::insert_post_process(int page_id,
 }
 
 template <typename KeyType, typename Comparer, typename Copier>
-
 typename BTree<KeyType, Comparer, Copier>::search_result 
-BTree<KeyType, Comparer, Copier>::upper_bound(int now_page_id, key_t key)
+BTree<KeyType, Comparer, Copier>::upper_bound(int now_page_id, KeyType key)
 {
     char *now_addr = pg_->ReadForWrite(now_page_id);
     Page_Type now_page_type = GeneralPage::GetPageType(now_addr);
@@ -205,29 +249,60 @@ BTree<KeyType, Comparer, Copier>::upper_bound(int now_page_id, key_t key)
     return {now_page_id, pos};
 }
 
-/*
- * IntBTree
- */
-IntBTree::IntBTree(std::shared_ptr<Pager> pg, int root_page_id) 
-    : BTree(pg, root_page_id, sizeof(int), integer_comparer, copy_int)
-{
-}
 
-/*
- * IndexBTree
- */
-IndexBTree::IndexBTree(std::shared_ptr<Pager> pg, int root_page_id, int size, comparer compare)
-    : BTree(pg, root_page_id, size, compare, IndexBTreeCopier(size))
+/************************* IntBTree **************************/
+class IntBTree : public BTree<int, int(*)(const int &, const int &), int(*)(int)>
 {
-}
+    static int copy_int(int x) { return x; }
+public:
+    IntBTree(std::shared_ptr<Pager> pg, int root_page_id = 0)
+        : BTree(pg, root_page_id, sizeof(int), integer_comparer, copy_int)
+    {
+    }
+    ~IntBTree() = default;
+};
 
-void IndexBTree::Insert(const char *key, int row_id)
-{
-    // base_class::Insert(key, reinterpret_cast<const char *>(&row_id), sizeof(row_id));
-}
 
-bool IndexBTree::Erase(const char *key)
+/************************* IndexBTree **************************/
+template <typename T>
+struct ArrayDeleter
 {
-    // return base_class::Erase(key);
-    return true;
-}
+    void operator()(const T *p) { delete[] p; }
+};
+
+struct IndexBTreeCopier
+{
+    int size;
+    std::shared_ptr<char> buf;
+public: 
+    IndexBTreeCopier(int size)
+        : size(size), buf(new char[size], ArrayDeleter<char>()) {}
+    ~IndexBTreeCopier() = default;
+    char *operator()(const char *src)
+    {
+        std::memcpy(buf.get(), src, size);
+        return buf.get();
+    }
+};
+
+class IndexBTree : public BTree<const char *, 
+                                std::function<int(const char *, const char *)>, 
+                                IndexBTreeCopier>
+{
+public:
+    using Comparer = std::function<int(const char *, const char *)>;
+    using BaseClass = BTree<const char *, Comparer, IndexBTreeCopier>;
+    IndexBTree(std::shared_ptr<Pager> pg, int root_page_id, int size, Comparer comparer)
+        : BTree(pg, root_page_id, size, comparer, IndexBTreeCopier(size)) {}
+    ~IndexBTree() = default;
+    void Insert(const char *key, int row_id)
+    {
+        BTree::Insert(key, reinterpret_cast<const char *>(&row_id), sizeof(row_id));
+    }
+    bool Erase(const char *key)
+    {
+        return BTree::Erase(key);
+    }
+};
+
+#endif

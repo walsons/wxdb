@@ -3,7 +3,7 @@
 
 #include "../sql/table_info.h"
 #include "table_header.h"
-#include "../btree/btree.h"
+#include "../btree/btree.hpp"
 #include "../page/pager.h"
 #include "index_manager.h"
 

@@ -1,5 +1,5 @@
-#ifndef SEARCH_H_
-#define SEARCH_H_
+#ifndef SEARCH_HPP_
+#define SEARCH_HPP_
 
 namespace Search
 {

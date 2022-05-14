@@ -1,6 +1,6 @@
 #include "../../include/db/index_manager.h"
 #include <cassert>
-#include "../../include/btree/comparer.h"
+#include "../../include/btree/comparer.hpp"
 
 void IndexManager::fill_buf(const char *key, int rid)
 {
