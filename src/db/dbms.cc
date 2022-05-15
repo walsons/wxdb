@@ -15,3 +15,8 @@ void DBMS::CreateTable(const std::shared_ptr<TableHeader> table_header)
 {
     db_manager_->CreateTable(table_header);
 }
+
+void DBMS::InsertRow(const std::shared_ptr<InsertInfo> insert_info)
+{
+    db_manager_->InsertRow(insert_info);
+}

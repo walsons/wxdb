@@ -18,6 +18,7 @@ public:
     void Open(const std::string &db_name);
     void Close();
     void CreateTable(const std::shared_ptr<TableHeader> table_header);
+    void InsertRow(const std::shared_ptr<InsertInfo> insert_info);
 
 private:
     // These infomation about database need to be stored in "database_name.db" file:

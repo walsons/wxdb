@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <unordered_map>
 #include "expression.h"
 #include "common.h"
 
@@ -51,7 +52,10 @@ struct TableInfo
 struct InsertInfo
 {
     std::string table_name;
-    std::vector<std::string> field_name;
+    // The key is field name, the value is the index of DataValue,
+    // if the map is empty, which means DataValue is stored according 
+    // to column order
+    std::unordered_map<std::string, int> field_name;
     std::vector<DataValue> value;
 };
 

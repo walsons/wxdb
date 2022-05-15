@@ -2,6 +2,7 @@
 #include <cstring>
 #include <fstream>
 #include <iostream>
+#include "../../include/db/type_cast.h"
 
 void DatabaseManager::CreateDatabase(const std::string &db_name)
 {
@@ -56,4 +57,55 @@ void DatabaseManager::CreateTable(const std::shared_ptr<TableHeader> table_heade
         table_manager_.emplace_back(std::make_shared<TableManager>());
         table_manager_.back()->CreateTable(table_header);
     }
+}
+
+void DatabaseManager::InsertRow(const std::shared_ptr<InsertInfo> insert_info)
+{
+    std::shared_ptr<TableManager> table;
+    for (auto & t : table_manager_)
+    {
+        if (t->table_name() == insert_info->table_name)
+        {
+            table = t;
+        }
+    }
+    if (table == nullptr) 
+    {
+        std::cerr << "table " << insert_info->table_name << " not found!" << std::endl;
+        return;
+    }
+    if (insert_info->field_name.empty())
+    {
+        if (insert_info->value.size() != table->number_of_column())
+        {
+            std::cerr << "column size not equal!" << std::endl;
+            return;
+        }
+        for (size_t i = 0; i < table->number_of_column(); ++i)
+        {
+            if (!TypeCast::check_type_compatible(insert_info->value[i].GetDataType(), table->column_type(i)))
+            {
+                std::cerr << "incompatible type!" << std::endl;
+                return;
+            }
+            table->SetTempRecord(i, insert_info->value[i]);
+        }
+    }
+    else
+    {
+        auto &field_map = insert_info->field_name;
+        DataValue null_value;
+        for (size_t i = 0; i < table->number_of_column(); ++i)
+        {
+            if (field_map.find(table->column_name(i)) != field_map.end())   
+            {
+                table->SetTempRecord(i, insert_info->value[field_map[table->column_name(i)]]);
+            }
+            else
+            {
+                table->SetTempRecord(i, null_value);
+            }
+        }
+    }
+    table->InsertRecord();
 }
