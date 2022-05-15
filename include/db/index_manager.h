@@ -7,6 +7,7 @@
 
 class IndexManager
 {
+    // rowid(4 bytes) null_mark(1 byte) index(x bytes)
     char *buf_;
     std::shared_ptr<IndexBTree> btr_;
     int size_;

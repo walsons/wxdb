@@ -29,12 +29,22 @@ public:
     void CloseTable();
     std::shared_ptr<TableManager> Mirror(const std::string &alias);
 
+    int InsertRecord();
+    bool SetTempRecord(int column_number, DataValue value);
+
 private:
     void allocate_temp_record();
     void load_indices();
     void free_indices();
     void load_check_constraints();
     void free_check_constraints();
+    bool validate_constraints();
+
+public:
+    std::string table_name() const { return table_name_; }
+    unsigned number_of_column() const { return table_header_.num_column; }
+    Data_Type column_type(int index) const { return table_header_.column_type[index]; }
+    std::string column_name(int index) const { return table_header_.column_name[index]; }
 };
 
 #endif

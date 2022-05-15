@@ -15,7 +15,7 @@ public:
 template <typename Key> inline    
 Key &DataPage<Key>::keys(int id)
 {
-    *reinterpret_cast<Key *>(GetBlock(id).second);
+    return *reinterpret_cast<Key *>(GetBlock(id).second);
 }
 
 template <typename Key> inline    

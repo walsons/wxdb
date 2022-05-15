@@ -163,7 +163,7 @@ std::shared_ptr<InsertInfo> TableParser::InsertTable()
         {
             while (token->type_ == Token_Type::TOKEN_WORD)
             {
-                insert_info->field_name.push_back(token->text_);
+                insert_info->field_name.insert({token->text_, insert_info->field_name.size()});
                 token = ParseEatAndNextToken();
                 if (!MatchToken(Token_Type::TOKEN_COMMA, ","))
                 {

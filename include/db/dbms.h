@@ -19,6 +19,7 @@ public:
     void CreateDatabase(const std::string &db_name);
     void UseDatabase(const std::string &db_name);
     void CreateTable(const std::shared_ptr<TableHeader> table_header);
+    void InsertRow(const std::shared_ptr<InsertInfo> insert_info);
 
 private:
     std::shared_ptr<DatabaseManager> db_manager_;

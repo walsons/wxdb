@@ -95,6 +95,69 @@ std::shared_ptr<TableManager> TableManager::Mirror(const std::string &alias)
     return table;
 }
 
+int TableManager::InsertRecord()
+{
+    int *row_id = reinterpret_cast<int *>(tmp_record_);   
+    // Increment auto_inc after insert successfully
+    if (table_header_.is_main_index_auto_inc) { *row_id = table_header_.auto_inc; }
+    if (table_header_.num_check_constraint != 0)
+    {
+        std::memcpy(tmp_cache_, tmp_record_, tmp_record_size_);
+    }
+    // auto_inc starts from 1, return 0 if failed
+    if (!validate_constraints()) { return 0; }
+    btr_->Insert(*row_id, tmp_record_, tmp_record_size_);
+    // Update other indices
+    for (int i = 0; i < table_header_.num_column; ++i)
+    {
+        if (i != table_header_.main_index && ((1 << i) & table_header_.flag_index))
+        {
+            if (*tmp_null_mark_ & (1 << i))
+            {
+                indices_[i]->Insert(nullptr, *row_id);
+            }
+            else
+            {
+                indices_[i]->Insert(tmp_record_ + table_header_.column_offset[i], *row_id);
+            }
+        }
+    }
+    if (table_header_.is_main_index_auto_inc)
+    {
+        ++table_header_.num_record;
+        ++table_header_.auto_inc;
+    }
+    return *row_id;
+}
+
+bool TableManager::SetTempRecord(int column_number, DataValue value)
+{
+    if (value.GetDataType() == Data_Type::DATA_TYPE_NULL)
+    {
+        *tmp_null_mark_ |= 1 << column_number;
+        return true;
+    }
+    *tmp_null_mark_ &= ~(1 << column_number);
+    switch (value.GetDataType())
+    {
+    case Data_Type::DATA_TYPE_INT:
+        *reinterpret_cast<int *>(tmp_record_ + table_header_.column_offset[column_number]) = value.int_value();
+        break;
+    case Data_Type::DATA_TYPE_DOUBLE:
+        *reinterpret_cast<double *>(tmp_record_ + table_header_.column_offset[column_number]) = value.double_value();
+        break;
+    case Data_Type::DATA_TYPE_VARCHAR:
+        std::strncpy(tmp_record_ + table_header_.column_offset[column_number], 
+                     value.char_value().c_str(), 
+                     table_header_.column_length[column_number]);
+        break;
+    // TODO: add other type
+    default:
+        break;
+    }
+    return true;
+}
+
 void TableManager::allocate_temp_record()
 {
     if (tmp_record_) delete[] tmp_record_;
@@ -154,4 +217,10 @@ void TableManager::free_check_constraints()
         Expression::FreeExprNode(check_constraint_[i]);
         check_constraint_[i] = nullptr;
     }
+}
+
+bool TableManager::validate_constraints()
+{
+    // TODO: validate all constraints
+    return true;
 }
