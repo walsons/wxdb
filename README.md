@@ -31,8 +31,8 @@ CREATE TABLE table_name (
 # example
 CREATE TABLE customers (
     id          int            
-    name        char(32)       NOT NULL ,
-    email       VARCHAR(255),  UNIQUE
+    name        char(32)       NOT NULL,
+    email       VARCHAR(255)   UNIQUE,
     age         int,
     height      DOUBLE,
     country     Char(32)       DEFAULT "China",

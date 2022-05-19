@@ -116,7 +116,9 @@ std::shared_ptr<FieldInfo> TableParser::parse_column_expr()
                 return nullptr;
             }
             // not null, unique, default
-            if (MatchToken(Token_Type::TOKEN_RESERVED_WORD, "unique"))
+            token = ParseNextToken();
+            if (token->type_ == Token_Type::TOKEN_COMMA || token->type_ == Token_Type::TOKEN_CLOSE_PARENTHESIS) {  }  // line end, Nothing to do
+            else if (MatchToken(Token_Type::TOKEN_RESERVED_WORD, "unique"))
             {
                 field_info->constraint.push_back(Constraint_Type::CONS_UNIQUE);
             }
