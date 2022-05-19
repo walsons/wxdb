@@ -40,4 +40,6 @@ struct TableHeader
     char table_name[MAX_LENGTH_NAME];
 };
 
+bool fill_table_header(std::shared_ptr<TableHeader> header, const TableInfo &table_info);
+
 #endif

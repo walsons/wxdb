@@ -2,7 +2,6 @@
 #define EXPRESSION_H_
 
 #include "token.h"
-#include "literal.h"
 #include "common.h"
 #include <memory>
 #include <sstream>
