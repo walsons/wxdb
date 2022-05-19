@@ -88,7 +88,7 @@ ExprNode *Parser::ParseReadBooleanOr()
         ParseEatToken();
         expr2 = ParseReadBooleanAnd();
         expr1 = concatenate_expr_node(expr1, expr2);
-        expr_op = new ExprNode(token->type_);
+        expr_op = new ExprNode(Operator_Type::OR);
         expr1 = concatenate_expr_node(expr1, expr_op);
         token = ParseNextToken();
     }
@@ -106,7 +106,7 @@ ExprNode *Parser::ParseReadBooleanAnd()
         ParseEatToken();
         expr2 = ParseReadBooleanEquality();
         expr1 = concatenate_expr_node(expr1, expr2);
-        expr_op = new ExprNode(token->type_);
+        expr_op = new ExprNode(Operator_Type::AND);
         expr1 = concatenate_expr_node(expr1, expr_op);
         token = ParseNextToken();
     }
@@ -125,7 +125,15 @@ ExprNode *Parser::ParseReadBooleanEquality()
         ParseEatToken();
         expr2 = ParseReadBooleanComparison();
         expr1 = concatenate_expr_node(expr1, expr2);
-        expr_op = new ExprNode(token->type_);
+        switch (token->type_)
+        {
+        case Token_Type::TOKEN_EQ:
+            expr_op = new ExprNode(Operator_Type::EQ);
+            break;
+        case Token_Type::TOKEN_NOT_EQ:
+            expr_op = new ExprNode(Operator_Type::NOT_EQ);
+            break;
+        }
         expr1 = concatenate_expr_node(expr1, expr_op);
         token = ParseNextToken();
     }
@@ -146,7 +154,21 @@ ExprNode *Parser::ParseReadBooleanComparison()
         ParseEatToken();
         expr2 = ParseReadExpr();
         expr1 = concatenate_expr_node(expr1, expr2);
-        expr_op = new ExprNode(token->type_);
+        switch (token->type_)
+        {
+        case Token_Type::TOKEN_GT:
+            expr_op = new ExprNode(Operator_Type::GT);
+            break;
+        case Token_Type::TOKEN_GE:
+            expr_op = new ExprNode(Operator_Type::GE);
+            break;
+        case Token_Type::TOKEN_LT:
+            expr_op = new ExprNode(Operator_Type::LT);
+            break;
+        case Token_Type::TOKEN_LE:
+            expr_op = new ExprNode(Operator_Type::LE);
+            break;
+        }
         expr1 = concatenate_expr_node(expr1, expr_op);
         token = ParseNextToken();
     }
@@ -165,7 +187,15 @@ ExprNode *Parser::ParseReadExpr()
         ParseEatToken();
         expr2 = ParseReadTerm();
         expr1 = concatenate_expr_node(expr1, expr2);
-        expr_op = new ExprNode(token->type_);
+        switch (token->type_)
+        {
+        case Token_Type::TOKEN_PLUS:
+            expr_op = new ExprNode(Operator_Type::PLUS);
+            break;
+        case Token_Type::TOKEN_MINUS:
+            expr_op = new ExprNode(Operator_Type::MINUS);
+            break;
+        }
         expr1 = concatenate_expr_node(expr1, expr_op);
         token = ParseNextToken();
     }
@@ -179,12 +209,20 @@ ExprNode *Parser::ParseReadTerm()
     expr1 = ParseReadPower();
     token = ParseNextToken();
     while (token != nullptr && (token->type_ == Token_Type::TOKEN_MULTIPLY ||
-                                token->type_ == Token_Type::TOKEN_MULTIPLY))
+                                token->type_ == Token_Type::TOKEN_DIVIDE))
     {
         ParseEatToken();
         expr2 = ParseReadPower();
         expr1 = concatenate_expr_node(expr1, expr2);
-        expr_op = new ExprNode(token->type_);
+        switch (token->type_)
+        {
+        case Token_Type::TOKEN_MULTIPLY:
+            expr_op = new ExprNode(Operator_Type::MULTIPLY);
+            break;
+        case Token_Type::TOKEN_DIVIDE:
+            expr_op = new ExprNode(Operator_Type::DIVIDE);
+            break;
+        }
         expr1 = concatenate_expr_node(expr1, expr_op);
         token = ParseNextToken();
     }
@@ -202,7 +240,7 @@ ExprNode *Parser::ParseReadPower()
         ParseEatToken();
         expr2 = ParseReadUnary();
         expr1 = concatenate_expr_node(expr1, expr2);
-        expr_op = new ExprNode(token->type_);
+        expr_op = new ExprNode(Operator_Type::POWER);
         expr1 = concatenate_expr_node(expr1, expr_op);
         token = ParseNextToken();
     }
@@ -222,20 +260,20 @@ ExprNode *Parser::ParseReadUnary()
                              token->type_ == Token_Type::TOKEN_PLUS ||
                              token->type_ == Token_Type::TOKEN_MINUS))
     {
-        switch (token->type_)
-        {
-        case Token_Type::TOKEN_PLUS:
-            token->type_ = Token_Type::TOKEN_POSITIVE;
-            break;
-        case Token_Type::TOKEN_MINUS:
-            token->type_ = Token_Type::TOKEN_NEGATIVE;
-            break;
-        default:
-            break;
-        }
         ParseEatToken();
         expr = ParseReadParen();
-        expr_op = new ExprNode(token->type_);
+        switch (token->type_)
+        {
+        case Token_Type::TOKEN_NOT:
+            expr_op = new ExprNode(Operator_Type::NOT);
+            break;
+        case Token_Type::TOKEN_PLUS:
+            expr_op = new ExprNode(Operator_Type::POSITIVE);
+            break;
+        case Token_Type::TOKEN_MINUS:
+            expr_op = new ExprNode(Operator_Type::NEGATIVE);
+            break;
+        }
         expr = concatenate_expr_node(expr, expr_op);
         token = ParseNextToken();
     }
@@ -280,6 +318,7 @@ ExprNode *Parser::ParseReadBuiltin()
         return nullptr;
     }
     // The difference between string and column ref is that string has ""
+    // Currently word in expression must be column ref
     if (token->type_ == Token_Type::TOKEN_WORD)
     {
         std::string text = token->text_;
@@ -295,7 +334,7 @@ ExprNode *Parser::ParseReadBuiltin()
             auto column_ref = new ColumnRef(text);
             auto term = std::make_shared<TermExpr>(Term_Type::TERM_COL_REF);
             term->ref_ = column_ref;
-            expr = new ExprNode(Token_Type::TOKEN_WORD, term);
+            expr = new ExprNode(Operator_Type::NONE, term);
         }
     }
     else if (token->type_ == Token_Type::TOKEN_MULTIPLY)
@@ -305,7 +344,7 @@ ExprNode *Parser::ParseReadBuiltin()
         ColumnRef *column_ref = new ColumnRef(text);
         auto term = std::make_shared<TermExpr>(Term_Type::TERM_COL_REF);
         term->ref_ = column_ref;
-        expr = new ExprNode(Token_Type::TOKEN_WORD, term, nullptr);
+        expr = new ExprNode(Operator_Type::NONE, term);
     }
     else
     {
@@ -328,7 +367,7 @@ ExprNode *Parser::ParseReadLiteral()
     {
         auto term = std::make_shared<TermExpr>(Term_Type::TERM_INT);
         term->ival_ = stoi(token->text_);
-        expr = new ExprNode(token->type_, term);
+        expr = new ExprNode(Operator_Type::NONE, term);
         ParseEatToken();
         return expr;
     }
@@ -337,16 +376,15 @@ ExprNode *Parser::ParseReadLiteral()
     {
         auto term = std::make_shared<TermExpr>(Term_Type::TERM_DOUBLE);
         term->dval_ = stod(token->text_);
-        expr = new ExprNode(token->type_, term);
+        expr = new ExprNode(Operator_Type::NONE, term);
         ParseEatToken();
         return expr;
     }
     else if (token->type_ == Token_Type::TOKEN_STRING)
     {
-        Literal *literal = new Literal(token->text_);
-        auto term = std::make_shared<TermExpr>(Term_Type::TERM_LITERAL);
-        term->literal_ = literal;
-        expr = new ExprNode(Token_Type::TOKEN_STRING, term);
+        auto term = std::make_shared<TermExpr>(Term_Type::TERM_STRING);
+        term->sval_ = token->text_;
+        expr = new ExprNode(Operator_Type::NONE, term);
         ParseEatToken();
         return expr;
     }

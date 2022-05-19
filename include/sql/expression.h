@@ -38,23 +38,24 @@ public:
     std::shared_ptr<ColumnRef> col_ref_;
 };
 
-enum class Term_Type
+enum class Term_Type : char
 {
-    TERM_UNKNOWN,
-    TERM_NULL,
     TERM_INT,
     TERM_DOUBLE,
     TERM_BOOL,
-    TERM_ID,
-    TERM_LITERAL,
+    TERM_DATE,
     TERM_COL_REF,
-    TERM_FUNC
+    TERM_STRING,
+    TERM_NULL
+    // TERM_ID,
+    // TERM_LITERAL,
+    // TERM_FUNC
 };
 
 class TermExpr
 {
 public:
-    TermExpr(Term_Type term_type);
+    TermExpr(Term_Type term_type = Term_Type::TERM_NULL) : term_type_(term_type) {}
     ~TermExpr();
     Term_Type term_type_;
     union
@@ -62,29 +63,31 @@ public:
         int ival_;
         double dval_;
         bool bval_;
+        int tval_;  // TERM_DATE
+        std::string sval_;  // TERM_STRING
         // Identifier, table name...
-        std::string id_;
+        // std::string id_;
         // Literal
-        Literal *literal_;
+        // Literal *literal_;
         // Field variable
         ColumnRef *ref_;
+        void *null_;
         // Function
-        Func func_;
+        // Func func_;
     };
 };
 
 class ExprNode
 {
 public:
-    ExprNode(Token_Type operator_type, 
+    ExprNode(Operator_Type operator_type, 
              std::shared_ptr<TermExpr> term = nullptr, 
-             ExprNode *next_expr = nullptr);
-    ~ExprNode();
+             ExprNode *next_expr = nullptr)
+        : operator_type_(operator_type), term_(term), next_expr_(next_expr) {}
+    ~ExprNode() = default;
 
-    Token_Type operator_type_;
+    Operator_Type operator_type_;
     std::shared_ptr<TermExpr> term_;
-    // It might have alias when appears in select statement
-    std::string alias_;
     // Linking expression via link list
     ExprNode *next_expr_;
 };
@@ -102,9 +105,12 @@ public:
     // Free expr_node linklist
     static void FreeExprNode(ExprNode *expr);
 
-    DataValue value;
+    // DataValue value;
+    std::shared_ptr<TermExpr> term_;
 private:
-    ExprNode *EvalOperator(ExprNode *op, ExprNode *expr1, ExprNode *expr2 = nullptr);
+    std::shared_ptr<TermExpr> EvalOperator(ExprNode *op, std::shared_ptr<TermExpr> term1,
+                                                   std::shared_ptr<TermExpr> term2 = nullptr);
+    // ExprNode *EvalOperator(ExprNode *op, ExprNode *expr1, ExprNode *expr2 = nullptr);
 };
 
 #endif

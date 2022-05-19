@@ -30,13 +30,15 @@ CREATE TABLE table_name (
 );
 # example
 CREATE TABLE customers (
-    id          int            PRIMARY KEY AUTO_INCREMENT,
+    id          int            
     name        char(32)       NOT NULL ,
     email       VARCHAR(255),  UNIQUE
     age         int,
     height      DOUBLE,
-    Country     Char(32)       DEFAULT "China",
-    CHECK (age>=18)
+    country     Char(32)       DEFAULT "China",
+    sign_up     Date,
+    PRIMARY KET (id),
+    CHECK(age>=18 AND age<= 60)
 );
 ```
 
