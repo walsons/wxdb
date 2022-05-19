@@ -51,7 +51,6 @@ std::shared_ptr<TableInfo> TableParser::CreateTable()
         ParseError("invalid SQL: missing \";\"!");
         return nullptr;
     }
-    // TODO: add constrains
     return table_info;
 }
 
@@ -116,6 +115,30 @@ std::shared_ptr<FieldInfo> TableParser::parse_column_expr()
                 ParseError("invalid SQL: wrong data type: " + token->text_ + "!");
                 return nullptr;
             }
+            // not null, unique, default
+            if (MatchToken(Token_Type::TOKEN_RESERVED_WORD, "unique"))
+            {
+                field_info->constraint.push_back(Constraint_Type::CONS_UNIQUE);
+            }
+            else if (MatchToken(Token_Type::TOKEN_RESERVED_WORD, "not"))
+            {
+                if (MatchToken(Token_Type::TOKEN_RESERVED_WORD, "null"))
+                {
+                    field_info->constraint.push_back(Constraint_Type::CONS_NOT_NULL);
+                }
+                else
+                {
+                    ParseError("invalid SQL: wrong constraint!");
+                }
+            }
+            else if (MatchToken(Token_Type::TOKEN_RESERVED_WORD, "default"))
+            {
+                field_info->expr = ParseExpressionRD();
+            }
+            else 
+            {
+                ParseError("invalid SQL: wrong constraint!");
+            }
         }
         else
         {
@@ -123,9 +146,39 @@ std::shared_ptr<FieldInfo> TableParser::parse_column_expr()
             return nullptr;
         }
     }
-    else if (false)
+    // primary 
+    else if (MatchToken(Token_Type::TOKEN_RESERVED_WORD, "primary"))
     {
-        // TODO: other sql statement
+        if (MatchToken(Token_Type::TOKEN_OPEN_PARENTHESIS, "("))
+        {
+            field_info->constraint.push_back(Constraint_Type::CONS_PRIMARY_KEY);
+            field_info->expr = ParseExpressionRD();
+            if (!MatchToken(Token_Type::TOKEN_OPEN_PARENTHESIS, ")"))
+            {
+                ParseError("invalid SQL: missing \")\"!");
+            }
+        }
+        else 
+        {
+            ParseError("invalid SQL: missing \"(\"!");
+        }
+    }
+    // check
+    else if (MatchToken(Token_Type::TOKEN_RESERVED_WORD, "constraint"))
+    {
+        if (MatchToken(Token_Type::TOKEN_OPEN_PARENTHESIS, "("))
+        {
+            field_info->constraint.push_back(Constraint_Type::CONS_CHECK);
+            field_info->expr = ParseExpressionRD();
+            if (!MatchToken(Token_Type::TOKEN_OPEN_PARENTHESIS, ")"))
+            {
+                ParseError("invalid SQL: missing \")\"!");
+            }
+        }
+        else 
+        {
+            ParseError("invalid SQL: missing \"(\"!");
+        }
     }
     else
     {

@@ -36,6 +36,8 @@ struct FieldInfo
     std::string field_name;
     Data_Type type;
     int length;
+    std::vector<Constraint_Type> constraint;
+    ExprNode* expr;  // for default(default value) or primary(column reference) or check(expression)
 };
 
 struct TableInfo

@@ -122,8 +122,8 @@ std::shared_ptr<Token> Tokenizer::word()
         else if (word == "or") { return MakeToken(Token_Type::TOKEN_OR); }
         else if (word == "not") { return MakeToken(Token_Type::TOKEN_NOT); }
         else if (word == "null") { return MakeToken(Token_Type::TOKEN_NULL); }
-        else if (word == "like") { return MakeToken(Token_Type::TOKEN_LIKE); }
-        else if (word == "in") { return MakeToken(Token_Type::TOKEN_IN); }
+        // else if (word == "like") { return MakeToken(Token_Type::TOKEN_LIKE); }
+        // else if (word == "in") { return MakeToken(Token_Type::TOKEN_IN); }
         // Other reserved word 
         return MakeToken(Token_Type::TOKEN_RESERVED_WORD);
     }
@@ -347,15 +347,7 @@ std::shared_ptr<Token> Tokenizer::lt()
 
 std::shared_ptr<Token> Tokenizer::equal()
 {
-    if (NextChar())
-    {
-        if (input_stream_[input_iter_] == '=')
-        {
-            NextChar();
-            return MakeToken(Token_Type::TOKEN_EQ);
-        }
-    }
-    return MakeToken(Token_Type::TOKEN_ASSIGNMENT);
+    return MakeToken(Token_Type::TOKEN_EQ);
 }
 
 std::shared_ptr<Token> Tokenizer::gt()
