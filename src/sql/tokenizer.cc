@@ -16,8 +16,9 @@ Tokenizer::Tokenizer(std::string statement)
 {
     std::vector<std::string> reserved_word{
         "select", "from", "where", "order", "by", "group", "create", "table", "index", "and", "not", "or", "null",
-        "like", "in", "grant", "int", "integer", "double", "char", "values", "insert", "into", "update", "delete", 
-        "set", "on", "user", "view", "rule", "default", "check", "between", "trigger", "primary", "key", "foreign"
+        "like", "in", "grant", "int", "integer", "double", "char", "varchar", "values", "insert", "into", "update", 
+        "delete", "set", "on", "user", "view", "rule", "default", "check", "between", "trigger", "unique", "primary", 
+        "key", "foreign", "check"
     };
     for (const auto &word : reserved_word)
     {
@@ -30,6 +31,7 @@ Tokenizer::~Tokenizer() = default;
 inline
 std::shared_ptr<Token> Tokenizer::MakeToken(Token_Type token_type)
 {
+    std::for_each(token_buffer_.begin(), token_buffer_.end(), [&](char &c){c = tolower(c); });
     return std::make_shared<Token>(token_buffer_, token_type);
 }
 

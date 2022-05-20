@@ -30,7 +30,7 @@ CREATE TABLE table_name (
 );
 # example
 CREATE TABLE customers (
-    id          int            
+    id          int,            
     name        char(32)       NOT NULL,
     email       VARCHAR(255)   UNIQUE,
     age         int,

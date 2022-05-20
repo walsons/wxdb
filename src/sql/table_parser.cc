@@ -15,7 +15,7 @@ std::shared_ptr<TableInfo> TableParser::CreateTable()
         ParseError("invalid SQL: missing table name!");
         return nullptr;
     }
-    token = ParseEatToken();
+    ParseEatToken();
     // ( 
     if (!MatchToken(Token_Type::TOKEN_OPEN_PARENTHESIS, "("))
     {
@@ -122,9 +122,9 @@ std::shared_ptr<FieldInfo> TableParser::parse_column_expr()
             {
                 field_info->constraint.push_back(Constraint_Type::CONS_UNIQUE);
             }
-            else if (MatchToken(Token_Type::TOKEN_RESERVED_WORD, "not"))
+            else if (MatchToken(Token_Type::TOKEN_NOT, "not"))
             {
-                if (MatchToken(Token_Type::TOKEN_RESERVED_WORD, "null"))
+                if (MatchToken(Token_Type::TOKEN_NULL, "null"))
                 {
                     field_info->constraint.push_back(Constraint_Type::CONS_NOT_NULL);
                 }

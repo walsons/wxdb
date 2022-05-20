@@ -81,7 +81,7 @@ TEST_CASE("TC-PARSER", "[parser test]")
     SECTION("create parser with constraints")
     {
         std::string statement = "CREATE TABLE customers ( \            
-                                 id          int \ 
+                                 id          int, \ 
                                  name        char(32)       NOT NULL , \
                                  email       VARCHAR(255)   UNIQUE, \
                                  age         int, \
