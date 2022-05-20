@@ -109,6 +109,11 @@ std::shared_ptr<FieldInfo> TableParser::parse_column_expr()
                     return nullptr;
                 }
             }
+            else if (token->text_ == "date")
+            {
+                field_info->type = Data_Type::DATA_TYPE_DATE;
+                ParseEatToken();
+            }
             // TODO: support other data type
             else
             {
@@ -135,6 +140,7 @@ std::shared_ptr<FieldInfo> TableParser::parse_column_expr()
             }
             else if (MatchToken(Token_Type::TOKEN_RESERVED_WORD, "default"))
             {
+                field_info->constraint.push_back(Constraint_Type::CONS_DEFAULT);
                 field_info->expr = ParseExpressionRD();
             }
             else 
@@ -151,35 +157,44 @@ std::shared_ptr<FieldInfo> TableParser::parse_column_expr()
     // primary 
     else if (MatchToken(Token_Type::TOKEN_RESERVED_WORD, "primary"))
     {
+        if (!MatchToken(Token_Type::TOKEN_RESERVED_WORD, "key"))
+        {
+            ParseError("invalid SQL: missing \"key\"!");
+            return nullptr;
+        }
         if (MatchToken(Token_Type::TOKEN_OPEN_PARENTHESIS, "("))
         {
             field_info->constraint.push_back(Constraint_Type::CONS_PRIMARY_KEY);
             field_info->expr = ParseExpressionRD();
-            if (!MatchToken(Token_Type::TOKEN_OPEN_PARENTHESIS, ")"))
+            if (!MatchToken(Token_Type::TOKEN_CLOSE_PARENTHESIS, ")"))
             {
                 ParseError("invalid SQL: missing \")\"!");
+                return nullptr;
             }
         }
         else 
         {
             ParseError("invalid SQL: missing \"(\"!");
+            return nullptr;
         }
     }
     // check
-    else if (MatchToken(Token_Type::TOKEN_RESERVED_WORD, "constraint"))
+    else if (MatchToken(Token_Type::TOKEN_RESERVED_WORD, "check"))
     {
         if (MatchToken(Token_Type::TOKEN_OPEN_PARENTHESIS, "("))
         {
             field_info->constraint.push_back(Constraint_Type::CONS_CHECK);
             field_info->expr = ParseExpressionRD();
-            if (!MatchToken(Token_Type::TOKEN_OPEN_PARENTHESIS, ")"))
+            if (!MatchToken(Token_Type::TOKEN_CLOSE_PARENTHESIS, ")"))
             {
                 ParseError("invalid SQL: missing \")\"!");
+                return nullptr;
             }
         }
         else 
         {
             ParseError("invalid SQL: missing \"(\"!");
+            return nullptr;
         }
     }
     else

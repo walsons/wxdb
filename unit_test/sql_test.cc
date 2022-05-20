@@ -88,7 +88,7 @@ TEST_CASE("TC-PARSER", "[parser test]")
                                  height      DOUBLE, \
                                  country     Char(32)       DEFAULT \"China\", \
                                  sign_up     Date, \
-                                 PRIMARY KET (id), \
+                                 PRIMARY KEY (id), \
                                  CHECK(age>=18 AND age<= 60) \
                                  );";
         auto tokenizer = std::make_shared<Tokenizer>(statement);
