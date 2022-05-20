@@ -69,7 +69,8 @@ int main()
         std::istringstream in(one_sql);
         std::string tmp;
         in >> tmp;
-        if (tolower(tmp) == "create")
+        if (tolower(tmp) == ".exit") { break; }
+        else if (tolower(tmp) == "create")
         {
             in >> tmp;
             tmp = tolower(tmp);
