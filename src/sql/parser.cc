@@ -1,7 +1,5 @@
 #include "../../include/sql/parser.h"
-#include <cctype>
 #include <memory>
-#include <algorithm>
 
 Parser::Parser(std::shared_ptr<Tokenizer> tokenizer)
     : tokenizer_(tokenizer)
@@ -48,9 +46,7 @@ void Parser::ParseError(const std::string &message)
 bool Parser::MatchToken(Token_Type type, const std::string &text)
 {
     std::shared_ptr<Token> token = ParseNextToken();
-    std::string tmp;
-    std::for_each(text.begin(), text.end(), [&](char c) { tmp.push_back(std::tolower(c)); });
-    if (token && token->type_ == type && token->text_ == tmp)
+    if (token && token->type_ == type && token->text_ == text)
     {
         ParseEatAndNextToken();
         return true;
@@ -280,6 +276,10 @@ ExprNode *Parser::ParseReadUnary()
         }
         expr = concatenate_expr_node(expr, expr_op);
         token = ParseNextToken();
+    }
+    else
+    {
+        expr = ParseReadParen();
     }
     return expr;
 }
