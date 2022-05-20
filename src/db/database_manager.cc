@@ -6,8 +6,7 @@
 
 void DatabaseManager::CreateDatabase(const std::string &db_name)
 {
-    std::memcpy(&info_.db_name, db_name.c_str(), MAX_LENGTH_NAME);
-    info_.db_name[MAX_LENGTH_NAME - 1] = '\0';
+    std::strncpy(info_.db_name, db_name.c_str(), MAX_LENGTH_NAME);
     info_.num_table = 0;
     Close();
 }
