@@ -387,7 +387,8 @@ ExprNode *Parser::ParseReadLiteral()
     else if (token->type_ == Token_Type::TOKEN_STRING)
     {
         auto term = std::make_shared<TermExpr>(Term_Type::TERM_STRING);
-        term->sval_ = token->text_;
+        // TODO: make TermExpr to no memory leak
+        new(&term->sval_) std::string(token->text_);
         expr = new ExprNode(Operator_Type::NONE, term);
         ParseEatToken();
         return expr;

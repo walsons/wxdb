@@ -22,8 +22,8 @@ ColumnRef::~ColumnRef() = default;
 
 TermExpr::~TermExpr()
 {
-    switch (term_type_)
-    {
+    // switch (term_type_)
+    // {
     // TODO
     // case Term_Type::TERM_ID:
     //     id_.~basic_string();
@@ -39,7 +39,7 @@ TermExpr::~TermExpr()
     //     break;
     // default:
     //     break;
-    }
+    // }
 }
 
 Expression::Expression(ExprNode *expr)
