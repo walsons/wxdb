@@ -11,4 +11,9 @@ constexpr unsigned MAX_LENGTH_CHECK_CONSTRAINT = 1024;
 constexpr unsigned MAX_NUM_COLUMN = 32;
 constexpr unsigned MAX_LENGTH_DEFAULT_VALUE = 256;
 
+struct Date
+{
+    int timestamp;
+};
+
 #endif

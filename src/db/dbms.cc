@@ -2,8 +2,7 @@
 
 void DBMS::CreateDatabase(const std::string &db_name)
 {
-    DatabaseManager db_manager;
-    db_manager.CreateDatabase(db_name);
+    db_manager_->CreateDatabase(db_name);
 }
 
 void DBMS::UseDatabase(const std::string &db_name)

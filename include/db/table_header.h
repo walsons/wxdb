@@ -6,38 +6,44 @@
 
 struct TableHeader
 {
+    char column_name[MAX_NUM_COLUMN][MAX_LENGTH_NAME];
+    char table_name[MAX_LENGTH_NAME];
+
     // The number of column
     uint8_t num_column;
     // The column which is main index for this table, 
     uint8_t main_index;
     // Is the main index auto increment
     bool is_main_index_auto_inc;
-    // The number of records, primary keys, check constraints, foreign keys
-    unsigned num_record, num_primary_key, num_check_constraint, num_foreign_key;
-    // Flags: not null, primary, index, unique, default
+    // The number of records
+    unsigned num_record;
+
+    // Flags: not null, unique, primary, default, index
     // The column of primary and unique will be add index automatically
     // Each bit delegate a column
-    uint32_t flag_not_null, flag_primary, flag_index, flag_unique, flag_default;
+    uint32_t flag_not_null, flag_unique, flag_primary, flag_foreign;
+    uint32_t flag_default, flag_index;
+    // reference table
+    char foreign_key_ref_table[MAX_NUM_COLUMN][MAX_LENGTH_NAME];
+    // reference column
+    char foreign_key_ref_column[MAX_NUM_COLUMN][MAX_LENGTH_NAME];
+    // store default value, which has been eval;
+    char default_value[MAX_NUM_COLUMN][MAX_LENGTH_DEFAULT_VALUE];
+    // The root page of index for each column, 0 if no index
+    unsigned index_root_page[MAX_NUM_COLUMN];
+    // The number of check constraints, foreign keys
+    unsigned num_check_constraint;
+    // store check expression
+    char check_constraint[MAX_NUM_CHECK_CONSTRAINT][MAX_LENGTH_CHECK_CONSTRAINT];
 
     // The type of each column
-    Data_Type column_type[MAX_NUM_COLUMN];
+    Col_Type column_type[MAX_NUM_COLUMN];
     // The length of each column
     unsigned column_length[MAX_NUM_COLUMN];
     // The offset of each column
     unsigned column_offset[MAX_NUM_COLUMN];
-    // The root page of index for each column, 0 if no index
-    unsigned index_root_page[MAX_NUM_COLUMN];
     // The auto increment counter;
     uint64_t auto_inc;
-
-    char check_constraint[MAX_NUM_CHECK_CONSTRAINT][MAX_LENGTH_CHECK_CONSTRAINT];
-    char default_value[MAX_NUM_COLUMN][MAX_LENGTH_DEFAULT_VALUE];
-    // Which column is foreign key, index from 0 to num_foreign_key - 1
-    unsigned foreign_key[MAX_NUM_COLUMN];
-    char foreign_key_ref_table[MAX_NUM_COLUMN][MAX_LENGTH_NAME];
-    char foreign_key_ref_column[MAX_NUM_COLUMN][MAX_LENGTH_NAME];
-    char column_name[MAX_NUM_COLUMN][MAX_LENGTH_NAME];
-    char table_name[MAX_LENGTH_NAME];
 };
 
 bool fill_table_header(std::shared_ptr<TableHeader> header, const TableInfo &table_info);

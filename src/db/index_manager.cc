@@ -17,17 +17,17 @@ void IndexManager::fill_buf(const char *key, int rid)
     }
 }
 
-IndexManager::comparer IndexManager::GetIndexComparer(Data_Type type)
+IndexManager::comparer IndexManager::GetIndexComparer(Col_Type type)
 {
     switch (type)
     {
-    case Data_Type::DATA_TYPE_INT:
+    case Col_Type::COL_TYPE_INT:
         return integer_cast_comparer;
         break;
-    case Data_Type::DATA_TYPE_DOUBLE:
+    case Col_Type::COL_TYPE_DOUBLE:
         return double_cast_comparer;
         break;
-    case Data_Type::DATA_TYPE_VARCHAR:
+    case Col_Type::COL_TYPE_VARCHAR:
         return string_comparer;
         break;
     default:

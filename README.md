@@ -1,6 +1,6 @@
 # wxdb
 
-This is a simple relational database aims to implement this sql statement:
+This is a simple relational database aims to implement this sql statement(keywords is not case sensitive):
 
 ```sql
 CREATE DATABASE database_name;
@@ -20,6 +20,10 @@ USE database_name;
 USE mydb;
 ```
 
+Support constraint type: **not null**, **unique**, **primary key**, **foreigh key**, **check** 
+
+these constraint must write in a single line except **not null**.
+
 ```sql
 CREATE TABLE table_name (
     column1 datatype constraint,
@@ -29,17 +33,26 @@ CREATE TABLE table_name (
     ....
 );
 # example
-CREATE TABLE customers (
-    id          int,            
-    name        char(32)       NOT NULL,
-    email       VARCHAR(255)   UNIQUE,
-    age         int,
+CREATE TABLE users (
+    id          INT,            
+    name        CHAR(32)       NOT NULL,
+    email       VARCHAR(255),
+    age         INT,
     height      DOUBLE,
-    country     Char(32)       DEFAULT "China",
-    sign_up     Date,
-    PRIMARY KET (id),
+    country     CHAR(32)       DEFAULT "China",
+    sign_up     DATE,
+    UNIQUE (email),
+    PRIMARY KEY (id),
     CHECK(age>=18 AND age<= 60)
+);
+
+CREATE TABLE comments (
+    id          INT,
+    user_id     INT        NOT NULL, 
+    time        DATE       NOT NULL,
+    contents    VARCHAR,
+    PRIMARY KEY (id),
+    FOREIGN KEY (user_id) REFERENCES users (id)
 );
 ```
 
-keywords is not case sensitive.

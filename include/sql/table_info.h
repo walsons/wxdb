@@ -6,23 +6,15 @@
 #include <memory>
 #include <unordered_map>
 #include "expression.h"
-#include "common.h"
+#include "../db/col_val.h"
+#include "../defs.h"
 
 enum class Constraint_Type
 {
-    CONS_NOT_NULL,
     CONS_UNIQUE,
     CONS_PRIMARY_KEY,
     CONS_FOREIGN_KEY,
-    CONS_DEFAULT,
-    OONS_AUTO_INCREMENT,
     CONS_CHECK,
-    CONS_SIZE
-};
-
-struct CheckConstraint
-{
-    ExprNode *check_condition;
 };
 
 struct ForeignKeyRef
@@ -34,31 +26,36 @@ struct ForeignKeyRef
 struct FieldInfo
 {
     std::string field_name;
-    Data_Type type;
+    Col_Type type;
     int length;
-    std::vector<Constraint_Type> constraint;
-    ExprNode* expr;  // for default(default value) or primary(column reference) or check(expression)
+    bool is_not_null;
+    bool has_default;
+    ExprNode *expr;
+};
+
+struct ConstraintInfo
+{
+    Constraint_Type type;
+    ColumnRef col_ref;
+    ForeignKeyRef fk_ref;
+    ExprNode *expr;
 };
 
 struct TableInfo
 {
     std::string table_name;
     std::vector<FieldInfo> field_info;
-    uint32_t flag_not_null, flag_primary, flag_index, flag_unique, flag_default;
-    std::vector<CheckConstraint> check_constraint;
-    // Which column is foreign key, have default value
-    std::vector<std::pair<int, ForeignKeyRef>> foreign_key_ref;
-    std::vector<std::pair<int, ExprNode *>> default_value;
+    std::vector<ConstraintInfo> constraint_info;
 };
 
 struct InsertInfo
 {
     std::string table_name;
-    // The key is field name, the value is the index of DataValue,
-    // if the map is empty, which means DataValue is stored according 
+    // The key is field name, the value is the index of value,
+    // if the map is empty, which means value is stored according 
     // to column order
     std::unordered_map<std::string, int> field_name;
-    std::vector<DataValue> value;
+    std::vector<ColVal> col_val;
 };
 
 #endif

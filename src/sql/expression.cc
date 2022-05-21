@@ -3,43 +3,168 @@
 #include <cassert>
 #include <stack>
 
-ColumnRef::ColumnRef(const std::string &all_name)
-    : all_name_(all_name)
+TermExpr::TermExpr() : term_type_(Term_Type::TERM_NULL) {}
+
+TermExpr::TermExpr(const int &ival) 
+    : term_type_(Term_Type::TERM_INT), ival_(ival) {}
+
+TermExpr::TermExpr(const double &dval)
+    : term_type_(Term_Type::TERM_DOUBLE), dval_(dval) {}
+
+TermExpr::TermExpr(const bool &bval)
+    : term_type_(Term_Type::TERM_BOOL), bval_(bval) {}
+
+TermExpr::TermExpr(const Date &tval)
+    : term_type_(Term_Type::TERM_DATE), tval_(tval) {}
+
+TermExpr::TermExpr(const std::string &sval)
+    : term_type_(Term_Type::TERM_STRING)
 {
-    std::string::size_type pos = all_name.find(".");
-    if (pos != std::string::npos) 
-    { 
-        table_name_ = all_name.substr(0, pos);
-        column_name_ = all_name.substr(pos + 1);
-    }
-    else
+    new (&sval_) std::string(sval);
+}
+
+TermExpr::TermExpr(const ColumnRef &ref)
+    : term_type_(Term_Type::TERM_COL_REF)
+{
+    new (&ref_) ColumnRef(ref.table_name, ref.column_name);
+}
+
+TermExpr::TermExpr(const TermExpr &term)
+{
+    if (this != &term)
     {
-        column_name_ = all_name;
+        this->term_type_ = term.term_type_;
+        switch (term.term_type_)
+        {
+        case Term_Type::TERM_NULL:
+            // Nothing need to do
+            break;
+        case Term_Type::TERM_INT:
+            ival_ = term.ival_;
+            break;
+        case Term_Type::TERM_DOUBLE:
+            dval_ = term.dval_;
+            break;
+        case Term_Type::TERM_BOOL:
+            bval_ = term.bval_;
+            break;
+        case Term_Type::TERM_DATE:
+            tval_ = term.tval_;
+            break;
+        case Term_Type::TERM_STRING:
+            new (&this->sval_) std::string(term.sval_);
+            break;
+        case Term_Type::TERM_COL_REF:
+            new (&this->ref_) ColumnRef(term.ref_.column_name, term.ref_.table_name);
+            break;
+        }
     }
 }
 
-ColumnRef::~ColumnRef() = default;
+void TermExpr::set_null()
+{
+    destory_class_member();
+    term_type_ = Term_Type::TERM_NULL;
+}
+
+TermExpr &TermExpr::operator=(const int &ival)
+{
+    destory_class_member();
+    term_type_ = Term_Type::TERM_INT;
+    ival_ = ival;
+    return *this;
+}
+
+TermExpr &TermExpr::operator=(const double &dval)
+{
+    destory_class_member();
+    term_type_ = Term_Type::TERM_DOUBLE;
+    dval_ = dval;
+    return *this;
+}
+
+TermExpr &TermExpr::operator=(const bool &bval)
+{
+    destory_class_member();
+    term_type_ = Term_Type::TERM_BOOL;
+    bval_ = bval;
+    return *this;
+}
+
+TermExpr &TermExpr::operator=(const Date &tval)
+{
+    destory_class_member();
+    term_type_ = Term_Type::TERM_DATE;
+    tval_ = tval;
+    return *this;
+}
+
+TermExpr &TermExpr::operator=(const std::string &sval)
+{
+    destory_class_member();
+    term_type_ = Term_Type::TERM_STRING;
+    new (&sval_) std::string(sval);
+    return *this;
+}
+
+TermExpr &TermExpr::operator=(const ColumnRef &ref)
+{
+    destory_class_member();
+    term_type_ = Term_Type::TERM_COL_REF;
+    new (&ref_) ColumnRef(ref.column_name, ref.table_name);
+    return *this;
+}
+
+TermExpr &TermExpr::operator=(const TermExpr &term)
+{
+    if (this != &term)
+    {
+        switch (term.term_type_)
+        {
+        case Term_Type::TERM_NULL:
+            // Nothing need to do
+            break;
+        case Term_Type::TERM_INT:
+            *this = term.ival_;
+            break;
+        case Term_Type::TERM_DOUBLE:
+            *this = term.dval_;
+            break;
+        case Term_Type::TERM_BOOL:
+            *this = term.bval_;
+            break;
+        case Term_Type::TERM_DATE:
+            *this = term.tval_;
+            break;
+        case Term_Type::TERM_STRING:
+            *this = term.sval_;
+            break;
+        case Term_Type::TERM_COL_REF:
+            *this = term.ref_;
+            break;
+        }
+    }
+    return *this;
+}
 
 TermExpr::~TermExpr()
 {
-    // switch (term_type_)
-    // {
-    // TODO
-    // case Term_Type::TERM_ID:
-    //     id_.~basic_string();
-    //     break;
-    // case Term_Type::TERM_LITERAL:
-    //     delete literal_;
-    //     break;
-    // case Term_Type::TERM_COL_REF:
-    //     delete ref_;
-    //     break;
-    // case Term_Type::TERM_FUNC:
-    //     func_.~Func();
-    //     break;
-    // default:
-    //     break;
-    // }
+    destory_class_member();
+}
+
+void TermExpr::destory_class_member()
+{
+    switch (term_type_)
+    {
+    case Term_Type::TERM_STRING:
+        sval_.~basic_string();
+        break;
+    case Term_Type::TERM_COL_REF:
+        ref_.~ColumnRef();
+        break;
+    default:
+        break;
+    }
 }
 
 Expression::Expression(ExprNode *expr)
@@ -84,7 +209,7 @@ void Expression::Eval(ExprNode *expr)
             }
         }
     }
-    term_ = term_stack.top();
+    term_ = *term_stack.top();
 }
 
 void Expression::DumpExprNode(std::ostringstream &os, ExprNode *expr)
@@ -110,19 +235,19 @@ void Expression::DumpExprNode(std::ostringstream &os, ExprNode *expr)
                 os << expr->term_->ival_ << " ";
                 break;
             case Term_Type::TERM_DATE:
-                os << expr->term_->tval_ << " ";
+                os << expr->term_->tval_.timestamp << " ";
                 break;
             case Term_Type::TERM_COL_REF:
-                if (expr->term_->ref_->table_name_.size() != 0)
+                if (expr->term_->ref_.table_name.size() != 0)
                 {
                     os << 2 << " " 
-                       << expr->term_->ref_->table_name_ << " "
-                       << expr->term_->ref_->column_name_ << " ";
+                       << expr->term_->ref_.table_name << " "
+                       << expr->term_->ref_.column_name << " ";
                 }
                 else
                 {
                     os << 1 << " " 
-                       << expr->term_->ref_->column_name_ << " ";
+                       << expr->term_->ref_.column_name << " ";
                 }
                 break;
             case Term_Type::TERM_STRING:
@@ -163,7 +288,7 @@ ExprNode *Expression::LoadExprNode(std::istringstream &is)
                 is >> expr->term_->ival_;
                 break;
             case Term_Type::TERM_DATE:
-                is >> expr->term_->tval_;
+                is >> expr->term_->tval_.timestamp;
                 break;
             case Term_Type::TERM_COL_REF:
             {
@@ -171,12 +296,12 @@ ExprNode *Expression::LoadExprNode(std::istringstream &is)
                 is >> tmp;
                 if (tmp == 2)
                 {
-                    is >> expr->term_->ref_->table_name_;
-                    is >> expr->term_->ref_->column_name_;
+                    is >> expr->term_->ref_.table_name;
+                    is >> expr->term_->ref_.column_name;
                 }
                 else
                 {
-                    is >> expr->term_->ref_->column_name_;
+                    is >> expr->term_->ref_.column_name;
                 }
                 break;
             }
@@ -208,21 +333,18 @@ std::shared_ptr<TermExpr> Expression::EvalOperator(ExprNode *op, std::shared_ptr
     // Unary operator
     case Operator_Type::NOT:
     {
-        res = std::make_shared<TermExpr>(Term_Type::TERM_BOOL);
-        res->bval_ = !term1->bval_;
+        res = std::make_shared<TermExpr>(!term1->bval_);
         break;
     }
     case Operator_Type::POSITIVE:
     {
         if (term1->term_type_ == Term_Type::TERM_INT)
         {
-            res = std::make_shared<TermExpr>(Term_Type::TERM_INT);
-            res->ival_ = term1->ival_;
+            res = std::make_shared<TermExpr>(term1->ival_);
         }
         else if (term1->term_type_ == Term_Type::TERM_DOUBLE)
         {
-            res = std::make_shared<TermExpr>(Term_Type::TERM_DOUBLE);
-            res->dval_ = res->dval_;
+            res = std::make_shared<TermExpr>(res->dval_);
         }
         break;
     }
@@ -230,103 +352,84 @@ std::shared_ptr<TermExpr> Expression::EvalOperator(ExprNode *op, std::shared_ptr
     {
         if (term1->term_type_ == Term_Type::TERM_INT)
         {
-            res = std::make_shared<TermExpr>(Term_Type::TERM_INT);
-            res->ival_ = -term1->ival_;
+            res = std::make_shared<TermExpr>(-term1->ival_);
         }
         else if (term1->term_type_ == Term_Type::TERM_DOUBLE)
         {
-            res = std::make_shared<TermExpr>(Term_Type::TERM_DOUBLE);
-            res->dval_ = -res->dval_;
+            res = std::make_shared<TermExpr>(-res->dval_);
         }
         break;
     }
     // Binary operator
     case Operator_Type::OR:
-        res = std::make_shared<TermExpr>(Term_Type::TERM_BOOL);
-        res->bval_ = (term1->bval_ || term2->bval_);
+        res = std::make_shared<TermExpr>(term1->bval_ || term2->bval_);
         break;
     case Operator_Type::AND:
-        res = std::make_shared<TermExpr>(Term_Type::TERM_BOOL);
-        res->bval_ = (term1->bval_ && term2->bval_);
+        res = std::make_shared<TermExpr>(term1->bval_ && term2->bval_);
         break;
     case Operator_Type::EQ:
-        res = std::make_shared<TermExpr>(Term_Type::TERM_BOOL);
-        res->bval_ = (term1->bval_ == term2->bval_);
+        res = std::make_shared<TermExpr>(term1->bval_ == term2->bval_);
         break;
     case Operator_Type::NOT_EQ:
-        res = std::make_shared<TermExpr>(Term_Type::TERM_BOOL);
-        res->bval_ = (term1->bval_ != term2->bval_);
+        res = std::make_shared<TermExpr>(term1->bval_ != term2->bval_);
         break;
     case Operator_Type::GE:
-        res = std::make_shared<TermExpr>(Term_Type::TERM_BOOL);
-        res->bval_ = (term1->bval_ >= term2->bval_);
+        res = std::make_shared<TermExpr>(term1->bval_ >= term2->bval_);
         break;
     case Operator_Type::LE:
-        res = std::make_shared<TermExpr>(Term_Type::TERM_BOOL);
-        res->bval_ = (term1->bval_ <= term2->bval_);
+        res = std::make_shared<TermExpr>(term1->bval_ <= term2->bval_);
         break;
     case Operator_Type::GT:
-        res = std::make_shared<TermExpr>(Term_Type::TERM_BOOL);
-        res->bval_ = (term1->bval_ > term2->bval_);
+        res = std::make_shared<TermExpr>(term1->bval_ > term2->bval_);
         break;
     case Operator_Type::LT:
-        res = std::make_shared<TermExpr>(Term_Type::TERM_BOOL);
-        res->bval_ = (term1->bval_ < term2->bval_);
+        res = std::make_shared<TermExpr>(term1->bval_ < term2->bval_);
         break;
     case Operator_Type::PLUS:
         if (term1->term_type_ == Term_Type::TERM_INT || term2->term_type_ == Term_Type::TERM_INT)
         {
-            res = std::make_shared<TermExpr>(Term_Type::TERM_INT);
-            res->ival_ = term1->ival_ + term2->ival_;
+            res = std::make_shared<TermExpr>(term1->ival_ + term2->ival_);
         }
         else if (term1->term_type_ == Term_Type::TERM_DOUBLE || term2->term_type_ == Term_Type::TERM_DOUBLE)
         {
-            res = std::make_shared<TermExpr>(Term_Type::TERM_DOUBLE);
-            res->dval_ = term1->dval_ + term2->dval_;
+            res = std::make_shared<TermExpr>(term1->dval_ + term2->dval_);
         }
         // TODO: int plus double
         break;
     case Operator_Type::MINUS:
         if (term1->term_type_ == Term_Type::TERM_INT || term2->term_type_ == Term_Type::TERM_INT)
         {
-            res = std::make_shared<TermExpr>(Term_Type::TERM_INT);
-            res->ival_ = term1->ival_ - term2->ival_;
+            res = std::make_shared<TermExpr>(term1->ival_ - term2->ival_);
         }
         else if (term1->term_type_ == Term_Type::TERM_DOUBLE || term2->term_type_ == Term_Type::TERM_DOUBLE)
         {
-            res = std::make_shared<TermExpr>(Term_Type::TERM_DOUBLE);
-            res->dval_ = term1->dval_ - term2->dval_;
+            res = std::make_shared<TermExpr>(term1->dval_ - term2->dval_);
         }
         break;
     case Operator_Type::MULTIPLY:
         if (term1->term_type_ == Term_Type::TERM_INT || term2->term_type_ == Term_Type::TERM_INT)
         {
-            res = std::make_shared<TermExpr>(Term_Type::TERM_INT);
-            res->ival_ = term1->ival_ * term2->ival_;
+            res = std::make_shared<TermExpr>(term1->ival_ * term2->ival_);
         }
         else if (term1->term_type_ == Term_Type::TERM_DOUBLE || term2->term_type_ == Term_Type::TERM_DOUBLE)
         {
-            res = std::make_shared<TermExpr>(Term_Type::TERM_DOUBLE);
-            res->dval_ = term1->dval_ * term2->dval_;
+            res = std::make_shared<TermExpr>(term1->dval_ * term2->dval_);
         }
         break;
     case Operator_Type::DIVIDE:
         if (term1->term_type_ == Term_Type::TERM_INT || term2->term_type_ == Term_Type::TERM_INT)
         {
-            res = std::make_shared<TermExpr>(Term_Type::TERM_INT);
-            res->ival_ = term1->ival_ / term2->ival_;
+            res = std::make_shared<TermExpr>(term1->ival_ / term2->ival_);
         }
         else if (term1->term_type_ == Term_Type::TERM_DOUBLE || term2->term_type_ == Term_Type::TERM_DOUBLE)
         {
-            res = std::make_shared<TermExpr>(Term_Type::TERM_DOUBLE);
-            res->dval_ = term1->dval_ / term2->dval_;
+            res = std::make_shared<TermExpr>(term1->dval_ / term2->dval_);
         }
         break;
     case Operator_Type::POWER:
         if (term1->term_type_ == Term_Type::TERM_INT || term2->term_type_ == Term_Type::TERM_INT)
         {
-            res = std::make_shared<TermExpr>(Term_Type::TERM_INT);
-            res->ival_ = std::pow(term1->ival_, term2->ival_);
+            res = std::make_shared<TermExpr>(std::pow(term1->ival_, term2->ival_));
         }
         break;
     }

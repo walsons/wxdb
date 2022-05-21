@@ -30,7 +30,7 @@ public:
     std::shared_ptr<TableManager> Mirror(const std::string &alias);
 
     int InsertRecord();
-    bool SetTempRecord(int column_number, DataValue value);
+    bool SetTempRecord(int column_number, ColVal value);
 
 private:
     void allocate_temp_record();
@@ -43,7 +43,7 @@ private:
 public:
     std::string table_name() const { return table_name_; }
     unsigned number_of_column() const { return table_header_.num_column; }
-    Data_Type column_type(int index) const { return table_header_.column_type[index]; }
+    Col_Type column_type(int index) const { return table_header_.column_type[index]; }
     std::string column_name(int index) const { return table_header_.column_name[index]; }
 };
 
