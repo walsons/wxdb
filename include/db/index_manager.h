@@ -2,8 +2,9 @@
 #define INDEXMANAGER_H_
 
 #include <memory>
+#include "../defs.h"
 #include "../btree/btree.hpp"
-#include "../sql/common.h"
+#include "../db/col_val.h"
 
 class IndexManager
 {
@@ -16,7 +17,7 @@ class IndexManager
 public:
     // using comparer = int(*)(const char *, const char  *);
     using comparer = std::function<int(const char *, const char *)>;
-    static comparer GetIndexComparer(Data_Type type);
+    static comparer GetIndexComparer(Col_Type type);
     IndexManager(std::shared_ptr<Pager> pg, int root_page_id, int size, comparer compare);
     ~IndexManager();
     int root_page_id();

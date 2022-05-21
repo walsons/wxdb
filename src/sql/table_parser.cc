@@ -24,19 +24,32 @@ std::shared_ptr<TableInfo> TableParser::CreateTable()
     }
     // column expression
     token = ParseNextToken();
-    while (token->type_ != Token_Type::TOKEN_CLOSE_PARENTHESIS)
+    // while (token->type_ != Token_Type::TOKEN_CLOSE_PARENTHESIS)
+    while (true)
     {
-        auto field = parse_column_expr();
-        if (field == nullptr) { return nullptr; }
-        else 
+        switch (token->type_)
         {
-            table_info->field_info.push_back(*field);
-        }
-        token = ParseNextToken();
-        if (!MatchToken(Token_Type::TOKEN_COMMA, ","))
+        case Token_Type::TOKEN_WORD:  // Field info
         {
+            auto field = parse_field_expr();
+            if (field == nullptr) { return nullptr; }
+            else { table_info->field_info.push_back(*field); }
             break;
         }
+        case Token_Type::TOKEN_RESERVED_WORD:  // Constraint info
+        {
+            auto constraint = parse_constraint_expr();
+            if (constraint == nullptr) { return nullptr; }
+            else { table_info->constraint_info.push_back(*constraint); }
+            break;
+        }
+        default:
+            ParseError("invalid SQL: missing field name or constraint!");
+            return nullptr;
+            break;
+        }
+        token = ParseNextToken();
+        if (!MatchToken(Token_Type::TOKEN_COMMA, ",")) { break; }
     }
     // )
     token = this->ParseNextToken();
@@ -54,103 +67,151 @@ std::shared_ptr<TableInfo> TableParser::CreateTable()
     return table_info;
 }
 
-std::shared_ptr<FieldInfo> TableParser::parse_column_expr()
+std::shared_ptr<FieldInfo> TableParser::parse_field_expr()
 {
     auto field_info = std::make_shared<FieldInfo>();
     std::shared_ptr<Token> token = ParseNextToken();
-    if (token->type_ == Token_Type::TOKEN_WORD) 
-    { 
-        field_info->field_name = token->text_; 
-        token = ParseEatAndNextToken();
-        if (token->type_ == Token_Type::TOKEN_RESERVED_WORD)
+    field_info->field_name = token->text_; 
+    token = ParseEatAndNextToken();
+    if (token->type_ == Token_Type::TOKEN_RESERVED_WORD)
+    {
+        if (token->text_ == "int" || token->text_ == "integer") 
         {
-            if (token->text_ == "int" || token->text_ == "integer") 
+            field_info->type = Col_Type::COL_TYPE_INT;
+            field_info->length = sizeof(int);
+            token = ParseEatAndNextToken();
+        }
+        else if (token->text_ == "double")
+        {
+            field_info->type = Col_Type::COL_TYPE_DOUBLE;
+            field_info->length = sizeof(double);
+            token = ParseEatAndNextToken();
+        }
+        else if (token->text_ == "bool")
+        {
+            field_info->type = Col_Type::COL_TYPE_BOOL;
+            field_info->length = sizeof(bool);
+            token = ParseEatAndNextToken();
+        }
+        else if (token->text_ == "date")
+        {
+            field_info->type = Col_Type::COL_TYPE_DATE;
+            field_info->length = sizeof(Date);
+            token = ParseEatAndNextToken();
+        }
+        else if (token->text_ == "varchar" || token->text_ == "char")
+        {
+            if (token->text_ == "varchar")
             {
-                field_info->type = Data_Type::DATA_TYPE_INT;
-                field_info->length = sizeof(int);
-                token = ParseEatAndNextToken();
+                field_info->type = Col_Type::COL_TYPE_VARCHAR;
             }
-            else if (token->text_ == "double")
+            else if (token->text_ == "char")
             {
-                field_info->type = Data_Type::DATA_TYPE_DOUBLE;
-                field_info->length = sizeof(double);
-                token = ParseEatAndNextToken();
+                field_info->type = Col_Type::COL_TYPE_CHAR;
             }
-            else if (token->text_ == "varchar" || token->text_ == "char")
+            token = ParseEatAndNextToken();
+            if (MatchToken(Token_Type::TOKEN_OPEN_PARENTHESIS, "("))
             {
-                field_info->type = Data_Type::DATA_TYPE_VARCHAR;
-                token = ParseEatAndNextToken();
-                if (MatchToken(Token_Type::TOKEN_OPEN_PARENTHESIS, "("))
+                token = ParseNextToken();
+                if (token->type_ == Token_Type::TOKEN_DECIMAL)
                 {
-                    token = ParseNextToken();
-                    if (token->type_ == Token_Type::TOKEN_DECIMAL)
+                    field_info->length = std::stoi(token->text_);
+                    token = ParseEatAndNextToken();
+                    if (MatchToken(Token_Type::TOKEN_CLOSE_PARENTHESIS, ")"))
                     {
-                        field_info->length = std::stoi(token->text_);
-                        token = ParseEatAndNextToken();
-                        if (MatchToken(Token_Type::TOKEN_CLOSE_PARENTHESIS, ")"))
-                        {
-                            token = ParseNextToken();
-                        }
-                        else
-                        {
-                            ParseError("invalid SQL: missing \")\"!");
-                            return nullptr;
-                        }
+                        token = ParseNextToken();
                     }
                     else
                     {
-                        ParseError("invalid SQL: missing char length!");
+                        ParseError("invalid SQL: missing \")\"!");
                         return nullptr;
                     }
                 }
                 else
                 {
-                    ParseError("invalid SQL: missing \"(\"!");
+                    ParseError("invalid SQL: missing char length!");
                     return nullptr;
                 }
             }
-            else if (token->text_ == "date")
-            {
-                field_info->type = Data_Type::DATA_TYPE_DATE;
-                ParseEatToken();
-            }
-            // TODO: support other data type
             else
             {
-                ParseError("invalid SQL: wrong data type: " + token->text_ + "!");
+                ParseError("invalid SQL: missing \"(\"!");
                 return nullptr;
-            }
-            // not null, unique, default
-            token = ParseNextToken();
-            if (token->type_ == Token_Type::TOKEN_COMMA || token->type_ == Token_Type::TOKEN_CLOSE_PARENTHESIS) {  }  // line end, Nothing to do
-            else if (MatchToken(Token_Type::TOKEN_RESERVED_WORD, "unique"))
-            {
-                field_info->constraint.push_back(Constraint_Type::CONS_UNIQUE);
-            }
-            else if (MatchToken(Token_Type::TOKEN_NOT, "not"))
-            {
-                if (MatchToken(Token_Type::TOKEN_NULL, "null"))
-                {
-                    field_info->constraint.push_back(Constraint_Type::CONS_NOT_NULL);
-                }
-                else
-                {
-                    ParseError("invalid SQL: wrong constraint!");
-                }
-            }
-            else if (MatchToken(Token_Type::TOKEN_RESERVED_WORD, "default"))
-            {
-                field_info->constraint.push_back(Constraint_Type::CONS_DEFAULT);
-                field_info->expr = ParseExpressionRD();
-            }
-            else 
-            {
-                ParseError("invalid SQL: wrong constraint!");
             }
         }
         else
         {
-            ParseError("invalid SQL: missing field type!");
+            ParseError("invalid SQL: wrong data type: " + token->text_ + "!");
+            return nullptr;
+        }
+        // not null, default
+        token = ParseNextToken();
+        if (token->type_ == Token_Type::TOKEN_COMMA || token->type_ == Token_Type::TOKEN_CLOSE_PARENTHESIS) {  }  // line end, Nothing to do
+        else if (MatchToken(Token_Type::TOKEN_NOT, "not"))
+        {
+            if (MatchToken(Token_Type::TOKEN_NULL, "null"))
+            {
+                field_info->is_not_null = true;
+            }
+            else
+            {
+                ParseError("invalid SQL: wrong constraint!");
+            }
+        }
+        else if (MatchToken(Token_Type::TOKEN_RESERVED_WORD, "default"))
+        {
+            if (!MatchToken(Token_Type::TOKEN_OPEN_PARENTHESIS, "("))
+            {
+                ParseError("invalid SQL: missing \"(\"!");
+                return nullptr;
+            }
+            field_info->has_default = true;
+            field_info->expr = ParseExpressionRD();
+            if (!MatchToken(Token_Type::TOKEN_CLOSE_PARENTHESIS, ")"))
+            {
+                ParseError("invalid SQL: missing \")\"!");
+                return nullptr;
+            }
+        }
+        else 
+        {
+            ParseError("invalid SQL: wrong constraint!");
+        }
+    }
+    else
+    {
+        ParseError("invalid SQL: missing field type!");
+        return nullptr;
+    }
+    return field_info;
+}
+
+std::shared_ptr<ConstraintInfo> TableParser::parse_constraint_expr()
+{
+    auto constraint_info = std::make_shared<ConstraintInfo>();
+    std::shared_ptr<Token> token = ParseNextToken();
+    // unique
+    if (MatchToken(Token_Type::TOKEN_RESERVED_WORD, "unique"))
+    {
+        if (!MatchToken(Token_Type::TOKEN_OPEN_PARENTHESIS, "("))
+        {
+            ParseError("invalid SQL: missing \"(\"!");
+            return nullptr;
+        }
+        token = ParseNextToken();
+        if (token->type_ == Token_Type::TOKEN_WORD)
+        {
+            constraint_info->type = Constraint_Type::CONS_UNIQUE;
+            constraint_info->col_ref.column_name = token->text_;
+        }
+        else
+        {
+            ParseError("invalid SQL: expect a column name!");
+            return nullptr;
+        }
+        if (!MatchToken(Token_Type::TOKEN_CLOSE_PARENTHESIS, ")"))
+        {
+            ParseError("invalid SQL: missing \")\"!");
             return nullptr;
         }
     }
@@ -162,10 +223,84 @@ std::shared_ptr<FieldInfo> TableParser::parse_column_expr()
             ParseError("invalid SQL: missing \"key\"!");
             return nullptr;
         }
-        if (MatchToken(Token_Type::TOKEN_OPEN_PARENTHESIS, "("))
+        if (!MatchToken(Token_Type::TOKEN_OPEN_PARENTHESIS, "("))
         {
-            field_info->constraint.push_back(Constraint_Type::CONS_PRIMARY_KEY);
-            field_info->expr = ParseExpressionRD();
+            ParseError("invalid SQL: missing \"(\"!");
+            return nullptr;
+        }
+        token = ParseNextToken();
+        if (token->type_ == Token_Type::TOKEN_WORD)
+        {
+            constraint_info->type = Constraint_Type::CONS_PRIMARY_KEY;
+            constraint_info->col_ref.column_name = token->text_;
+        }
+        else
+        {
+            ParseError("invalid SQL: expect a column name!");
+            return nullptr;
+        }
+        if (!MatchToken(Token_Type::TOKEN_CLOSE_PARENTHESIS, ")"))
+        {
+            ParseError("invalid SQL: missing \")\"!");
+            return nullptr;
+        }
+    }
+    // foreign key
+    else if (MatchToken(Token_Type::TOKEN_RESERVED_WORD, "foreign"))
+    {
+        if (!MatchToken(Token_Type::TOKEN_RESERVED_WORD, "key"))
+        {
+            ParseError("invalid SQL: missing \"key\"!");
+            return nullptr;
+        }
+        if (!MatchToken(Token_Type::TOKEN_OPEN_PARENTHESIS, "("))
+        {
+            ParseError("invalid SQL: missing \"(\"!");
+            return nullptr;
+        }
+        token = ParseNextToken();
+        if (token->type_ == Token_Type::TOKEN_WORD)
+        {
+            constraint_info->type = Constraint_Type::CONS_FOREIGN_KEY;
+            constraint_info->col_ref.column_name = token->text_;
+            ParseEatToken();
+        }
+        else
+        {
+            ParseError("invalid SQL: missing a column name!");
+            return nullptr;
+        }
+        if (!MatchToken(Token_Type::TOKEN_CLOSE_PARENTHESIS, ")"))
+        {
+            ParseError("invalid SQL: missing \")\"!");
+            return nullptr;
+        }
+        if (!MatchToken(Token_Type::TOKEN_RESERVED_WORD, "references"))
+        {
+            ParseError("invalid SQL: missing \"references\"!");
+            return nullptr;
+        }
+        token = ParseNextToken();
+        if (token->type_ == Token_Type::TOKEN_WORD)
+        {
+            constraint_info->fk_ref.table_name = token->text_;
+            ParseEatToken();
+            if (!MatchToken(Token_Type::TOKEN_OPEN_PARENTHESIS, "("))
+            {
+                ParseError("invalid SQL: missing \"(\"!");
+                return nullptr;
+            }
+            token = ParseNextToken();
+            if (token->type_ == Token_Type::TOKEN_WORD)
+            {
+                constraint_info->fk_ref.column_name = token->text_;
+                ParseEatToken();
+            }
+            else 
+            {
+                ParseError("invalid SQL: missing a column name!");
+                return nullptr;
+            }
             if (!MatchToken(Token_Type::TOKEN_CLOSE_PARENTHESIS, ")"))
             {
                 ParseError("invalid SQL: missing \")\"!");
@@ -174,7 +309,7 @@ std::shared_ptr<FieldInfo> TableParser::parse_column_expr()
         }
         else 
         {
-            ParseError("invalid SQL: missing \"(\"!");
+            ParseError("invalid SQL: missing a table name!");
             return nullptr;
         }
     }
@@ -183,27 +318,170 @@ std::shared_ptr<FieldInfo> TableParser::parse_column_expr()
     {
         if (MatchToken(Token_Type::TOKEN_OPEN_PARENTHESIS, "("))
         {
-            field_info->constraint.push_back(Constraint_Type::CONS_CHECK);
-            field_info->expr = ParseExpressionRD();
-            if (!MatchToken(Token_Type::TOKEN_CLOSE_PARENTHESIS, ")"))
-            {
-                ParseError("invalid SQL: missing \")\"!");
-                return nullptr;
-            }
-        }
-        else 
-        {
             ParseError("invalid SQL: missing \"(\"!");
             return nullptr;
         }
+        constraint_info->type = Constraint_Type::CONS_CHECK;
+        constraint_info->expr = ParseExpressionRD();
+        if (!MatchToken(Token_Type::TOKEN_CLOSE_PARENTHESIS, ")"))
+        {
+            ParseError("invalid SQL: missing \")\"!");
+            return nullptr;
+        }
     }
-    else
-    {
-        ParseError("invalid SQL: missing field name or constraint!");
-        return nullptr;
-    }
-    return field_info;
+    return constraint_info;
 }
+
+// std::shared_ptr<FieldInfo> TableParser::parse_column_expr()
+// {
+//     auto field_info = std::make_shared<FieldInfo>();
+//     std::shared_ptr<Token> token = ParseNextToken();
+//     if (token->type_ == Token_Type::TOKEN_WORD) 
+//     { 
+//         field_info->field_name = token->text_; 
+//         token = ParseEatAndNextToken();
+//         if (token->type_ == Token_Type::TOKEN_RESERVED_WORD)
+//         {
+//             if (token->text_ == "int" || token->text_ == "integer") 
+//             {
+//                 field_info->type = Data_Type::DATA_TYPE_INT;
+//                 field_info->length = sizeof(int);
+//                 token = ParseEatAndNextToken();
+//             }
+//             else if (token->text_ == "double")
+//             {
+//                 field_info->type = Data_Type::DATA_TYPE_DOUBLE;
+//                 field_info->length = sizeof(double);
+//                 token = ParseEatAndNextToken();
+//             }
+//             else if (token->text_ == "varchar" || token->text_ == "char")
+//             {
+//                 field_info->type = Data_Type::DATA_TYPE_VARCHAR;
+//                 token = ParseEatAndNextToken();
+//                 if (MatchToken(Token_Type::TOKEN_OPEN_PARENTHESIS, "("))
+//                 {
+//                     token = ParseNextToken();
+//                     if (token->type_ == Token_Type::TOKEN_DECIMAL)
+//                     {
+//                         field_info->length = std::stoi(token->text_);
+//                         token = ParseEatAndNextToken();
+//                         if (MatchToken(Token_Type::TOKEN_CLOSE_PARENTHESIS, ")"))
+//                         {
+//                             token = ParseNextToken();
+//                         }
+//                         else
+//                         {
+//                             ParseError("invalid SQL: missing \")\"!");
+//                             return nullptr;
+//                         }
+//                     }
+//                     else
+//                     {
+//                         ParseError("invalid SQL: missing char length!");
+//                         return nullptr;
+//                     }
+//                 }
+//                 else
+//                 {
+//                     ParseError("invalid SQL: missing \"(\"!");
+//                     return nullptr;
+//                 }
+//             }
+//             else if (token->text_ == "date")
+//             {
+//                 field_info->type = Data_Type::DATA_TYPE_DATE;
+//                 ParseEatToken();
+//             }
+//             // TODO: support other data type
+//             else
+//             {
+//                 ParseError("invalid SQL: wrong data type: " + token->text_ + "!");
+//                 return nullptr;
+//             }
+//             // not null, unique, default
+//             token = ParseNextToken();
+//             if (token->type_ == Token_Type::TOKEN_COMMA || token->type_ == Token_Type::TOKEN_CLOSE_PARENTHESIS) {  }  // line end, Nothing to do
+//             else if (MatchToken(Token_Type::TOKEN_RESERVED_WORD, "unique"))
+//             {
+//                 field_info->constraint.push_back(Constraint_Type::CONS_UNIQUE);
+//             }
+//             else if (MatchToken(Token_Type::TOKEN_NOT, "not"))
+//             {
+//                 if (MatchToken(Token_Type::TOKEN_NULL, "null"))
+//                 {
+//                     field_info->constraint.push_back(Constraint_Type::CONS_NOT_NULL);
+//                 }
+//                 else
+//                 {
+//                     ParseError("invalid SQL: wrong constraint!");
+//                 }
+//             }
+//             else if (MatchToken(Token_Type::TOKEN_RESERVED_WORD, "default"))
+//             {
+//                 field_info->constraint.push_back(Constraint_Type::CONS_DEFAULT);
+//                 field_info->expr = ParseExpressionRD();
+//             }
+//             else 
+//             {
+//                 ParseError("invalid SQL: wrong constraint!");
+//             }
+//         }
+//         else
+//         {
+//             ParseError("invalid SQL: missing field type!");
+//             return nullptr;
+//         }
+//     }
+//     // primary 
+//     else if (MatchToken(Token_Type::TOKEN_RESERVED_WORD, "primary"))
+//     {
+//         if (!MatchToken(Token_Type::TOKEN_RESERVED_WORD, "key"))
+//         {
+//             ParseError("invalid SQL: missing \"key\"!");
+//             return nullptr;
+//         }
+//         if (MatchToken(Token_Type::TOKEN_OPEN_PARENTHESIS, "("))
+//         {
+//             field_info->constraint.push_back(Constraint_Type::CONS_PRIMARY_KEY);
+//             field_info->expr = ParseExpressionRD();
+//             if (!MatchToken(Token_Type::TOKEN_CLOSE_PARENTHESIS, ")"))
+//             {
+//                 ParseError("invalid SQL: missing \")\"!");
+//                 return nullptr;
+//             }
+//         }
+//         else 
+//         {
+//             ParseError("invalid SQL: missing \"(\"!");
+//             return nullptr;
+//         }
+//     }
+//     // check
+//     else if (MatchToken(Token_Type::TOKEN_RESERVED_WORD, "check"))
+//     {
+//         if (MatchToken(Token_Type::TOKEN_OPEN_PARENTHESIS, "("))
+//         {
+//             field_info->constraint.push_back(Constraint_Type::CONS_CHECK);
+//             field_info->expr = ParseExpressionRD();
+//             if (!MatchToken(Token_Type::TOKEN_CLOSE_PARENTHESIS, ")"))
+//             {
+//                 ParseError("invalid SQL: missing \")\"!");
+//                 return nullptr;
+//             }
+//         }
+//         else 
+//         {
+//             ParseError("invalid SQL: missing \"(\"!");
+//             return nullptr;
+//         }
+//     }
+//     else
+//     {
+//         ParseError("invalid SQL: missing field name or constraint!");
+//         return nullptr;
+//     }
+//     return field_info;
+// }
 
 std::shared_ptr<InsertInfo> TableParser::InsertTable()
 {
@@ -256,7 +534,7 @@ std::shared_ptr<InsertInfo> TableParser::InsertTable()
         {
             auto value = parse_value_expr();
             if (value == nullptr) { return nullptr; }
-            insert_info->value = std::move(*value);
+            insert_info->col_val = std::move(*value);
         }
     }
     // values
@@ -264,7 +542,7 @@ std::shared_ptr<InsertInfo> TableParser::InsertTable()
     {
         auto value = parse_value_expr();
         if (value == nullptr) { return nullptr; }
-        insert_info->value = std::move(*value);
+        insert_info->col_val = std::move(*value);
     }
     else
     {
@@ -280,9 +558,9 @@ std::shared_ptr<InsertInfo> TableParser::InsertTable()
     return insert_info;
 }
 
-std::shared_ptr<std::vector<DataValue>> TableParser::parse_value_expr()
+std::shared_ptr<std::vector<ColVal>> TableParser::parse_value_expr()
 {
-    auto value = std::shared_ptr<std::vector<DataValue>>();
+    auto value = std::shared_ptr<std::vector<ColVal>>();
     if (!MatchToken(Token_Type::TOKEN_OPEN_PARENTHESIS, "("))   
     {
         ParseError("invalid SQL: missing \"(\"!");
@@ -303,27 +581,25 @@ std::shared_ptr<std::vector<DataValue>> TableParser::parse_value_expr()
         {
             if (token->type_ == Token_Type::TOKEN_STRING)
             {
-                DataValue data_value(Data_Type::DATA_TYPE_CHAR);
-                data_value.SetCharValue(token->text_);
+                ColVal data_value(token->text_);
+                data_value.type_ = Col_Type::COL_TYPE_CHAR;
                 value->push_back(data_value);
             }
             else if (token->type_ == Token_Type::TOKEN_DECIMAL ||
                      token->type_ == Token_Type::TOKEN_ZERO)
             {
-                DataValue data_value(Data_Type::DATA_TYPE_INT);
-                data_value.SetIntValue(std::stoi(token->text_));
+                ColVal data_value(std::stoi(token->text_));
                 value->push_back(data_value);
             }
             else if (token->type_ == Token_Type::TOKEN_FLOAT ||
                      token->type_ == Token_Type::TOKEN_EXP_FLOAT)
             {
-                DataValue data_value(Data_Type::DATA_TYPE_DOUBLE);
-                data_value.SetDoubleValue(std::stod(token->text_));
+                ColVal data_value(std::stod(token->text_));
                 value->push_back(data_value);
             }
             else if (token->type_ == Token_Type::TOKEN_NULL)
             {
-                DataValue data_value(Data_Type::DATA_TYPE_NULL);
+                ColVal data_value();
                 value->push_back(data_value);
             }
             token = ParseEatToken();
@@ -346,5 +622,4 @@ std::shared_ptr<std::vector<DataValue>> TableParser::parse_value_expr()
         return nullptr;
     }
     return value;
-
 }

@@ -13,8 +13,10 @@ public:
     std::shared_ptr<TableInfo> CreateTable();
     std::shared_ptr<InsertInfo> InsertTable();
 private:
-    std::shared_ptr<FieldInfo> parse_column_expr();
-    std::shared_ptr<std::vector<DataValue>> parse_value_expr();
+    std::shared_ptr<FieldInfo> parse_field_expr();
+    std::shared_ptr<ConstraintInfo> parse_constraint_expr();
+    // std::shared_ptr<FieldInfo> parse_column_expr();
+    std::shared_ptr<std::vector<ColVal>> parse_value_expr();
 };
 
 #endif

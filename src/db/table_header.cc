@@ -7,50 +7,68 @@ bool fill_table_header(std::shared_ptr<TableHeader> header, const TableInfo &tab
 {
     std::memset(header.get(), 0, sizeof(TableHeader));
     std::strncpy(header->table_name, table_info.table_name.c_str(), MAX_LENGTH_NAME);
+    // Field info
     int offset = 8;  // 4 bytes for __rowid__, and 4 bytes for not null
     auto field_info = table_info.field_info;
     for (auto field = field_info.begin(); field != field_info.end(); ++field)
     {
-        // Field info
         int col_num = header->num_column++;
         std::strncpy(header->column_name[col_num], field->field_name.c_str(), MAX_LENGTH_NAME);
         header->column_type[col_num] = field->type;
         header->column_length[col_num] = field->length;
         header->column_offset[col_num] =  offset;
         offset += header->column_length[col_num];
+        if (field->is_not_null) { header->flag_not_null |= (1 << col_num); }
+        if (field->has_default)
+        {
+            header->flag_default |= (1 << col_num);
+            Expression exprssion{field->expr};
+            std::memcpy(header->default_value[col_num], reinterpret_cast<char *>(&exprssion), sizeof(exprssion));
+        }
     }
-    // Constraint
-    header->flag_not_null = table_info.flag_not_null;
-    header->flag_primary = table_info.flag_primary;
-    header->flag_unique = table_info.flag_unique;
-    header->flag_default = table_info.flag_default;
-    for (auto item : table_info.default_value)
+    // Constraint info
+    auto constraint_info = table_info.constraint_info;
+    auto set_flag = [&](std::vector<ConstraintInfo>::iterator cons, uint32_t &flag) -> int {
+        int i = 0;
+        for (; i < header->num_column; ++i)
+        {
+            if (cons->col_ref.column_name == header->column_name[i])
+            {
+                flag |= (1 << i);
+            }
+        }
+        return i;
+    };
+    for (auto cons = constraint_info.begin(); cons != constraint_info.end(); ++cons)
     {
-        Expression expression{item.second};
-        std::memcpy(header->default_value[item.first], reinterpret_cast<char *>(&expression), sizeof(expression));
-    }
-    // Foreign key
-    for (auto item : table_info.foreign_key_ref)
-    {
-        header->foreign_key[header->num_foreign_key] = item.first;
-        std::strncpy(header->foreign_key_ref_table[header->num_foreign_key], 
-                     item.second.table_name.c_str(), MAX_LENGTH_NAME);
-        std::strncpy(header->foreign_key_ref_column[header->num_foreign_key], 
-                     item.second.column_name.c_str(), MAX_LENGTH_NAME);
-        ++header->num_foreign_key;
-    }
-    // Check constraint
-    for (auto item : table_info.check_constraint)
-    {
-        std::ostringstream os;
-        Expression::DumpExprNode(os, item.check_condition);
-        std::strncpy(header->check_constraint[header->num_check_constraint++], os.str().c_str(), MAX_LENGTH_CHECK_CONSTRAINT);
-    }
+        switch (cons->type)
+        {
+        case Constraint_Type::CONS_UNIQUE:
+            set_flag(cons, header->flag_unique);
+            break;
+        case Constraint_Type::CONS_PRIMARY_KEY:
+            set_flag(cons, header->flag_primary);
+            break;
+        case Constraint_Type::CONS_FOREIGN_KEY:
+        {
+            int index = set_flag(cons, header->flag_foreign);
+            strncpy(header->foreign_key_ref_table[index], cons->fk_ref.table_name.c_str(), MAX_LENGTH_NAME);
+            strncpy(header->foreign_key_ref_column[index], cons->fk_ref.column_name.c_str(), MAX_LENGTH_NAME);
+            break;
+        }
+        case Constraint_Type::CONS_CHECK:
+        {
+            std::ostringstream os;
+            Expression::DumpExprNode(os, cons->expr);
+            std::strncpy(header->check_constraint[header->num_check_constraint++], os.str().c_str(), MAX_LENGTH_CHECK_CONSTRAINT);
+        }
+        }
 
+    }
     // Add "__rowid__" column (with highest index)
     int col_num = header->num_column++;
     std::strncpy(header->column_name[col_num], "__rowid__", MAX_LENGTH_NAME);
-    header->column_type[col_num] = Data_Type::DATA_TYPE_INT;
+    header->column_type[col_num] = Col_Type::COL_TYPE_INT;
     header->column_length[col_num] = sizeof(int);
     header->column_offset[col_num] = 0;
     header->main_index = col_num;
@@ -70,12 +88,8 @@ bool fill_table_header(std::shared_ptr<TableHeader> header, const TableInfo &tab
         ++first_primary;
     }
     header->flag_index |= (1 << first_primary);
+    // __rowid__ starts from 1
     header->auto_inc = 1;
-    header->num_primary_key = 0;
-    for (size_t i = 0; i != header->num_column; ++i)
-    {
-        if (header->flag_primary & (1 << i)) { ++header->num_primary_key; }
-    }
     
     return true;
 }

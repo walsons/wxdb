@@ -130,25 +130,25 @@ int TableManager::InsertRecord()
     return *row_id;
 }
 
-bool TableManager::SetTempRecord(int column_number, DataValue value)
+bool TableManager::SetTempRecord(int column_number, ColVal value)
 {
-    if (value.GetDataType() == Data_Type::DATA_TYPE_NULL)
+    if (value.type_ == Col_Type::COL_TYPE_NULL)
     {
         *tmp_null_mark_ |= 1 << column_number;
         return true;
     }
     *tmp_null_mark_ &= ~(1 << column_number);
-    switch (value.GetDataType())
+    switch (value.type_)
     {
-    case Data_Type::DATA_TYPE_INT:
-        *reinterpret_cast<int *>(tmp_record_ + table_header_.column_offset[column_number]) = value.int_value();
+    case Col_Type::COL_TYPE_INT:
+        *reinterpret_cast<int *>(tmp_record_ + table_header_.column_offset[column_number]) = value.ival_;
         break;
-    case Data_Type::DATA_TYPE_DOUBLE:
-        *reinterpret_cast<double *>(tmp_record_ + table_header_.column_offset[column_number]) = value.double_value();
+    case Col_Type::COL_TYPE_DOUBLE:
+        *reinterpret_cast<double *>(tmp_record_ + table_header_.column_offset[column_number]) = value.dval_;
         break;
-    case Data_Type::DATA_TYPE_VARCHAR:
+    case Col_Type::COL_TYPE_VARCHAR:
         std::strncpy(tmp_record_ + table_header_.column_offset[column_number], 
-                     value.char_value().c_str(), 
+                     value.sval_.c_str(), 
                      table_header_.column_length[column_number]);
         break;
     // TODO: add other type

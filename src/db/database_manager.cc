@@ -3,6 +3,7 @@
 #include <fstream>
 #include <iostream>
 #include "../../include/db/type_cast.h"
+#include "../../include/db/col_val.h"
 
 void DatabaseManager::CreateDatabase(const std::string &db_name)
 {
@@ -75,30 +76,30 @@ void DatabaseManager::InsertRow(const std::shared_ptr<InsertInfo> insert_info)
     }
     if (insert_info->field_name.empty())
     {
-        if (insert_info->value.size() != table->number_of_column())
+        if (insert_info->col_val.size() != table->number_of_column())
         {
             std::cerr << "column size not equal!" << std::endl;
             return;
         }
         for (size_t i = 0; i < table->number_of_column(); ++i)
         {
-            if (!TypeCast::check_type_compatible(insert_info->value[i].GetDataType(), table->column_type(i)))
+            if (!TypeCast::check_type_compatible(insert_info->col_val[i].type_, table->column_type(i)))
             {
                 std::cerr << "incompatible type!" << std::endl;
                 return;
             }
-            table->SetTempRecord(i, insert_info->value[i]);
+            table->SetTempRecord(i, insert_info->col_val[i]);
         }
     }
     else
     {
         auto &field_map = insert_info->field_name;
-        DataValue null_value;
+        ColVal null_value;
         for (size_t i = 0; i < table->number_of_column(); ++i)
         {
             if (field_map.find(table->column_name(i)) != field_map.end())   
             {
-                table->SetTempRecord(i, insert_info->value[field_map[table->column_name(i)]]);
+                table->SetTempRecord(i, insert_info->col_val[field_map[table->column_name(i)]]);
             }
             else
             {

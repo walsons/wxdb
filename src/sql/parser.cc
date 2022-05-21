@@ -336,8 +336,7 @@ ExprNode *Parser::ParseReadBuiltin()
             // Identifier: there are three forms of column_ref:
             // student.*, student.sno, sno
             auto column_ref = new ColumnRef(text);
-            auto term = std::make_shared<TermExpr>(Term_Type::TERM_COL_REF);
-            term->ref_ = column_ref;
+            auto term = std::make_shared<TermExpr>(column_ref);
             expr = new ExprNode(Operator_Type::NONE, term);
         }
     }
@@ -346,8 +345,7 @@ ExprNode *Parser::ParseReadBuiltin()
         // Select statement wildcard *
         std::string text = token->text_;
         ColumnRef *column_ref = new ColumnRef(text);
-        auto term = std::make_shared<TermExpr>(Term_Type::TERM_COL_REF);
-        term->ref_ = column_ref;
+        auto term = std::make_shared<TermExpr>(column_ref);
         expr = new ExprNode(Operator_Type::NONE, term);
     }
     else
@@ -369,8 +367,7 @@ ExprNode *Parser::ParseReadLiteral()
     if (token->type_ == Token_Type::TOKEN_DECIMAL ||
         token->type_ == Token_Type::TOKEN_ZERO)
     {
-        auto term = std::make_shared<TermExpr>(Term_Type::TERM_INT);
-        term->ival_ = stoi(token->text_);
+        auto term = std::make_shared<TermExpr>(stoi(token->text_));
         expr = new ExprNode(Operator_Type::NONE, term);
         ParseEatToken();
         return expr;
@@ -378,17 +375,14 @@ ExprNode *Parser::ParseReadLiteral()
     else if (token->type_ == Token_Type::TOKEN_FLOAT ||
              token->type_ == Token_Type::TOKEN_EXP_FLOAT)
     {
-        auto term = std::make_shared<TermExpr>(Term_Type::TERM_DOUBLE);
-        term->dval_ = stod(token->text_);
+        auto term = std::make_shared<TermExpr>(stod(token->text_));
         expr = new ExprNode(Operator_Type::NONE, term);
         ParseEatToken();
         return expr;
     }
     else if (token->type_ == Token_Type::TOKEN_STRING)
     {
-        auto term = std::make_shared<TermExpr>(Term_Type::TERM_STRING);
-        // TODO: make TermExpr to no memory leak
-        new(&term->sval_) std::string(token->text_);
+        auto term = std::make_shared<TermExpr>(token->text_);
         expr = new ExprNode(Operator_Type::NONE, term);
         ParseEatToken();
         return expr;

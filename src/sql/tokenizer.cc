@@ -15,7 +15,9 @@ Tokenizer::Tokenizer(std::string statement)
       curr_token_type_(Token_Type::TOKEN_INVALID)
 {
     std::vector<std::string> reserved_word{
-        "select", "from", "where", "order", "by", "group", "create", "table", "index", "and", "not", "or", "null",
+        "create", "use", "select", "from",
+        "database", "table",
+        "where", "order", "by", "group", "index", "and", "not", "or", "null", "references",
         "like", "in", "grant", "values", "insert", "into", "update", 
         "delete", "set", "on", "user", "view", "rule", "default", "check", "between", "trigger", "unique", "primary", 
         "key", "foreign", "check",
