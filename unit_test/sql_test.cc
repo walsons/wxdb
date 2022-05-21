@@ -38,94 +38,157 @@ TEST_CASE( "TC-TOKENIZER", "[tokenizer test]" )
     }
 }
 
-void same_insert_stmt_test(const std::string &statement)
-{
-}
-
 TEST_CASE("TC-PARSER", "[parser test]")
 {
-    SECTION("create parser")
+    SECTION("create parser example 1")
     {
-        std::string statement = "create table customers \
-                                 ( cust_id int, \
-                                   cust_name char(50), \
-                                   cust_address char(50) \
+        std::string statement = "CREATE TABLE users (                              \
+                                     id          INT,                              \ 
+                                     name        CHAR(32)       NOT NULL,          \
+                                     email       VARCHAR(255),                     \
+                                     age         INT,                              \
+                                     height      DOUBLE,                           \
+                                     country     CHAR(32)       DEFAULT \"China\", \
+                                     sign_up     DATE,                             \
+                                     UNIQUE (email),                               \
+                                     PRIMARY KEY (id),                             \
+                                     CHECK(age>=18 AND age<= 60)                   \
                                  );";
         auto tokenizer = std::make_shared<Tokenizer>(statement);
         TableParser table_parser(tokenizer);
         auto table_info = table_parser.CreateTable();
         REQUIRE(table_info != nullptr);
 
-        // # TableInfo
-        CHECK(table_info->table_name == "customers");
+        // TableInfo
+        CHECK(table_info->table_name == "users");
+        CHECK(table_info->field_info.size() == 7);
+        CHECK(table_info->constraint_info.size() == 3);
+        
+        // FieldInfo
+        auto field = table_info->field_info[0];
+        CHECK(field.field_name == "id");
+        CHECK(field.type == Col_Type::COL_TYPE_INT);
+        CHECK(field.length == sizeof(int));
+        CHECK(field.is_not_null == false);  
+        CHECK(field.has_default == false);
 
-        // ## FieldInfo
-        CHECK(table_info->field_info[0].field_name == "cust_id");
-        CHECK(table_info->field_info[1].field_name == "cust_name");
-        CHECK(table_info->field_info[2].field_name == "cust_address");
+        field = table_info->field_info[1];
+        CHECK(field.field_name == "name");
+        CHECK(field.type == Col_Type::COL_TYPE_CHAR);
+        CHECK(field.length == 32);
+        CHECK(field.is_not_null == true);  
+        CHECK(field.has_default == false);
 
-        auto field_info = table_info->field_info[0];
-        CHECK(field_info.field_name == "cust_id");
-        CHECK(field_info.type == Data_Type::DATA_TYPE_INT);
-        CHECK(field_info.length == sizeof(int));
-        field_info = table_info->field_info[1];
-        CHECK(field_info.field_name == "cust_name");
-        CHECK(field_info.type == Data_Type::DATA_TYPE_VARCHAR);
-        CHECK(field_info.length == 50);
-        field_info = table_info->field_info[2];
-        CHECK(field_info.field_name == "cust_address");
-        CHECK(field_info.type == Data_Type::DATA_TYPE_VARCHAR);
-        CHECK(field_info.length == 50);
+        field = table_info->field_info[2];
+        CHECK(field.field_name == "email");
+        CHECK(field.type == Col_Type::COL_TYPE_VARCHAR);
+        CHECK(field.length == 255);
+        CHECK(field.is_not_null == false);  
+        CHECK(field.has_default == false);
+
+        field = table_info->field_info[3];
+        CHECK(field.field_name == "age");
+        CHECK(field.type == Col_Type::COL_TYPE_INT);
+        CHECK(field.length == sizeof(int));
+        CHECK(field.is_not_null == false);  
+        CHECK(field.has_default == false);
+
+        field = table_info->field_info[4];
+        CHECK(field.field_name == "height");
+        CHECK(field.type == Col_Type::COL_TYPE_DOUBLE);
+        CHECK(field.length == sizeof(double));
+        CHECK(field.is_not_null == false);  
+        CHECK(field.has_default == false);
+
+        field = table_info->field_info[5];
+        CHECK(field.field_name == "country");
+        CHECK(field.type == Col_Type::COL_TYPE_CHAR);
+        CHECK(field.length == 32);
+        CHECK(field.is_not_null == false);  
+        CHECK(field.has_default == true);
+        CHECK(field.expr != nullptr);
+        Expression expression(field.expr);
+        CHECK(expression.term_.sval_ == "China");
+
+        field = table_info->field_info[6];
+        CHECK(field.field_name == "sign_up");
+        CHECK(field.type == Col_Type::COL_TYPE_DATE);
+        CHECK(field.length == sizeof(Date));
+        CHECK(field.is_not_null == false);  
+        CHECK(field.has_default == false);
+
+        // Constraint info
+        auto cons = table_info->constraint_info[0];
+        CHECK(cons.type == Constraint_Type::CONS_UNIQUE);
+        CHECK(cons.col_ref.column_name == "email");
+
+        cons = table_info->constraint_info[1];
+        CHECK(cons.type == Constraint_Type::CONS_PRIMARY_KEY);
+        CHECK(cons.col_ref.column_name == "id");
+
+        cons = table_info->constraint_info[2];
+        CHECK(cons.type == Constraint_Type::CONS_CHECK);
+        CHECK(cons.expr != nullptr);
     }
 
-    SECTION("create parser with constraints")
+    SECTION("create parser example 2")
     {
-        std::string statement = "CREATE TABLE customers ( \            
-                                 id          int, \ 
-                                 name        char(32)       NOT NULL , \
-                                 email       VARCHAR(255)   UNIQUE, \
-                                 age         int, \
-                                 height      DOUBLE, \
-                                 country     Char(32)       DEFAULT \"China\", \
-                                 sign_up     Date, \
-                                 PRIMARY KEY (id), \
-                                 CHECK(age>=18 AND age<= 60) \
+        std::string statement = "CREATE TABLE comments (                           \
+                                     id          INT,                              \
+                                     user_id     INT        NOT NULL,              \
+                                     time        DATE       NOT NULL,              \
+                                     contents    VARCHAR(255),                     \
+                                     PRIMARY KEY (id),                             \
+                                     FOREIGN KEY (user_id) REFERENCES users (id)   \
                                  );";
         auto tokenizer = std::make_shared<Tokenizer>(statement);
         TableParser table_parser(tokenizer);
         auto table_info = table_parser.CreateTable();
         REQUIRE(table_info != nullptr);
 
-        // # TableInfo
-        CHECK(table_info->table_name == "customers");
-        CHECK(table_info->field_info.size() == 9);
+        // TableInfo
+        CHECK(table_info->table_name == "comments");
+        CHECK(table_info->field_info.size() == 4);
+        CHECK(table_info->constraint_info.size() == 2);
         
-        // ## FieldInfo
-        CHECK(table_info->field_info[0].field_name == "id");
-        CHECK(table_info->field_info[1].field_name == "name");
-        CHECK(table_info->field_info[1].constraint[0] == Constraint_Type::CONS_NOT_NULL);
-        CHECK(table_info->field_info[2].field_name == "email");
-        CHECK(table_info->field_info[2].constraint[0] == Constraint_Type::CONS_UNIQUE);
-        CHECK(table_info->field_info[3].field_name == "age");
-        CHECK(table_info->field_info[4].field_name == "height");
-        CHECK(table_info->field_info[5].field_name == "country");
-        CHECK(table_info->field_info[5].constraint[0] == Constraint_Type::CONS_DEFAULT);
-        CHECK(table_info->field_info[6].field_name == "sign_up");
-        CHECK(table_info->field_info[7].constraint[0] == Constraint_Type::CONS_PRIMARY_KEY);
-        CHECK(table_info->field_info[8].constraint[0] == Constraint_Type::CONS_CHECK);
+        // FieldInfo
+        auto field = table_info->field_info[0];
+        CHECK(field.field_name == "id");
+        CHECK(field.type == Col_Type::COL_TYPE_INT);
+        CHECK(field.length == sizeof(int));
+        CHECK(field.is_not_null == false);  
+        CHECK(field.has_default == false);
 
-        // auto field_info = table_info->field_info[0];
-        // CHECK(field_info.field_name == "cust_id");
-        // CHECK(field_info.type == Data_Type::DATA_TYPE_INT);
-        // CHECK(field_info.length == sizeof(int));
-        // field_info = table_info->field_info[1];
-        // CHECK(field_info.field_name == "cust_name");
-        // CHECK(field_info.type == Data_Type::DATA_TYPE_VARCHAR);
-        // CHECK(field_info.length == 50);
-        // field_info = table_info->field_info[2];
-        // CHECK(field_info.field_name == "cust_address");
-        // CHECK(field_info.type == Data_Type::DATA_TYPE_VARCHAR);
-        // CHECK(field_info.length == 50);
+        field = table_info->field_info[1];
+        CHECK(field.field_name == "user_id");
+        CHECK(field.type == Col_Type::COL_TYPE_INT);
+        CHECK(field.length == sizeof(int));
+        CHECK(field.is_not_null == true);  
+        CHECK(field.has_default == false);
+
+        field = table_info->field_info[2];
+        CHECK(field.field_name == "time");
+        CHECK(field.type == Col_Type::COL_TYPE_DATE);
+        CHECK(field.length == sizeof(Date));
+        CHECK(field.is_not_null == true);  
+        CHECK(field.has_default == false);
+
+        field = table_info->field_info[3];
+        CHECK(field.field_name == "contents");
+        CHECK(field.type == Col_Type::COL_TYPE_VARCHAR);
+        CHECK(field.length == 255);
+        CHECK(field.is_not_null == false);  
+        CHECK(field.has_default == false);
+
+        // Constraint info
+        auto cons = table_info->constraint_info[0];
+        CHECK(cons.type == Constraint_Type::CONS_PRIMARY_KEY);
+        CHECK(cons.col_ref.column_name == "id");
+
+        cons = table_info->constraint_info[1];
+        CHECK(cons.type == Constraint_Type::CONS_FOREIGN_KEY);
+        CHECK(cons.fk_ref.table_name == "users");
+        CHECK(cons.fk_ref.column_name == "id");
     }
 
     // SECTION("insert parser")

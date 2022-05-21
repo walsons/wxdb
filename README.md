@@ -50,7 +50,7 @@ CREATE TABLE comments (
     id          INT,
     user_id     INT        NOT NULL, 
     time        DATE       NOT NULL,
-    contents    VARCHAR,
+    contents    VARCHAR(255),
     PRIMARY KEY (id),
     FOREIGN KEY (user_id) REFERENCES users (id)
 );
