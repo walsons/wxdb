@@ -103,9 +103,9 @@ public:
 class Expression
 {
 public:
-    Expression(ExprNode *expr);
+    Expression(ExprNode *expr, std::shared_ptr<TermExpr> col_real_term = nullptr);
     //Evaluate Reverse Polish Notation 
-    void Eval(ExprNode *expr);
+    void Eval(ExprNode *expr, std::shared_ptr<TermExpr> col_real_term = nullptr);
     // Store expr_node linklist in ostringstream
     static void DumpExprNode(std::ostringstream &os, ExprNode *expr);
     // Load expr_node linklist
