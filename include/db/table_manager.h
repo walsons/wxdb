@@ -41,6 +41,7 @@ private:
     bool validate_constraints();
 
 public:
+    TableHeader table_header() const { return table_header_; }
     std::string table_name() const { return table_name_; }
     bool is_open() const { return is_open_; }
     unsigned number_of_column() const { return table_header_.num_column; }
