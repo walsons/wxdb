@@ -271,7 +271,7 @@ ExprNode *Expression::LoadExprNode(std::istringstream &is)
     {
         if (static_cast<Operator_Type>(operator_type) == Operator_Type::NONE)
         {
-            expr->next_expr_ = new ExprNode(Operator_Type::NONE);
+            expr->next_expr_ = new ExprNode(Operator_Type::NONE, std::make_shared<TermExpr>());
             expr = expr->next_expr_;
             int term_type = 0;
             is >> term_type;

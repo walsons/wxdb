@@ -6,8 +6,17 @@
 
 struct TableHeader
 {
-    char column_name[MAX_NUM_COLUMN][MAX_LENGTH_NAME];
     char table_name[MAX_LENGTH_NAME];
+    // The name of each column
+    char column_name[MAX_NUM_COLUMN][MAX_LENGTH_NAME];
+    // The type of each column
+    Col_Type column_type[MAX_NUM_COLUMN];
+    // The length of each column
+    unsigned column_length[MAX_NUM_COLUMN];
+    // The offset of each column
+    unsigned column_offset[MAX_NUM_COLUMN];
+    // The auto increment counter;
+    uint64_t auto_inc;
 
     // The number of column
     uint8_t num_column;
@@ -35,15 +44,6 @@ struct TableHeader
     unsigned num_check_constraint;
     // store check expression
     char check_constraint[MAX_NUM_CHECK_CONSTRAINT][MAX_LENGTH_CHECK_CONSTRAINT];
-
-    // The type of each column
-    Col_Type column_type[MAX_NUM_COLUMN];
-    // The length of each column
-    unsigned column_length[MAX_NUM_COLUMN];
-    // The offset of each column
-    unsigned column_offset[MAX_NUM_COLUMN];
-    // The auto increment counter;
-    uint64_t auto_inc;
 };
 
 bool fill_table_header(std::shared_ptr<TableHeader> header, const TableInfo &table_info);
