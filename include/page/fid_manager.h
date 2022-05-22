@@ -8,7 +8,7 @@ class FidManager
 {
     int free_fid_num_;
     int free_fid_[MAX_NUM_FILE_ID];
-    bool fid_used_[MAX_NUM_FILE_ID];
+    bool fid_used_[MAX_NUM_FILE_ID + 1];
 
 public:
     FidManager();
