@@ -26,7 +26,7 @@ TermExpr::TermExpr(const std::string &sval)
 TermExpr::TermExpr(const ColumnRef &ref)
     : term_type_(Term_Type::TERM_COL_REF)
 {
-    new (&ref_) ColumnRef(ref.table_name, ref.column_name);
+    new (&ref_) ColumnRef(ref.column_name, ref.table_name);
 }
 
 TermExpr::TermExpr(const TermExpr &term)
@@ -167,24 +167,41 @@ void TermExpr::destory_class_member()
     }
 }
 
-Expression::Expression(ExprNode *expr)
+Expression::Expression(ExprNode *expr, std::shared_ptr<TermExpr> col_real_term)
 {
-    Eval(expr);
+    Eval(expr, col_real_term);
 }
 
-void Expression::Eval(ExprNode *expr)
+void Expression::Eval(ExprNode *expr, std::shared_ptr<TermExpr> col_real_term)
 {
     // TODO: add type check
     assert(expr != nullptr);
     std::stack<std::shared_ptr<TermExpr>> term_stack;
-    term_stack.push(expr->term_);
-    expr = expr->next_expr_;
+    bool is_col_ref = false;
+    std::shared_ptr<TermExpr> tmp_store;
+    auto set_col = [&]() {
+        if (expr->term_->term_type_ == Term_Type::TERM_COL_REF)
+        {
+            tmp_store = expr->term_;
+            expr->term_ = col_real_term;
+            is_col_ref = true;
+        }
+    };
+    auto restore_col = [&]() {
+        if (is_col_ref)
+        {
+            expr->term_ = tmp_store;
+            is_col_ref = false;
+        }
+    };
     while (expr != nullptr)
     {
         // If not a operator exprnode
         if (expr->operator_type_ == Operator_Type::NONE)
         {
+            set_col();
             term_stack.push(expr->term_);
+            restore_col();
             expr = expr->next_expr_;
         }
         else
@@ -214,8 +231,8 @@ void Expression::Eval(ExprNode *expr)
 
 void Expression::DumpExprNode(std::ostringstream &os, ExprNode *expr)
 {
-    // is_operator Term_Type value is_operator Token_Type placeholder...
-    // Operator_Type(if not a operator) Term_Type value Operator_Type(if is a operator) 
+    // Operator_Type(if not a operator) Term_Type value 
+    // Operator_Type(if is a operator) 
     // TODO: currently support column_ref > >= == <= < int double bool
     while (expr != nullptr)
     {
@@ -292,22 +309,21 @@ ExprNode *Expression::LoadExprNode(std::istringstream &is)
                 break;
             case Term_Type::TERM_COL_REF:
             {
+                ColumnRef ref;
                 int tmp = 0;
                 is >> tmp;
-                if (tmp == 2)
-                {
-                    is >> expr->term_->ref_.table_name;
-                    is >> expr->term_->ref_.column_name;
-                }
-                else
-                {
-                    is >> expr->term_->ref_.column_name;
-                }
+                if (tmp == 2) { is >> ref.table_name >> ref.column_name; }
+                else { is >> ref.column_name; }
+                *expr->term_ = ref;
                 break;
             }
             case Term_Type::TERM_STRING:
-                is >> expr->term_->sval_;
+            {
+                std::string tmp;
+                is >> tmp;
+                *expr->term_ = tmp;
                 break;
+            }
             case Term_Type::TERM_NULL:
                 // No need add any bytes
                 break;
@@ -315,7 +331,8 @@ ExprNode *Expression::LoadExprNode(std::istringstream &is)
         }
         else
         {
-            expr->operator_type_ = static_cast<Operator_Type>(operator_type);
+            expr->next_expr_ = new ExprNode(static_cast<Operator_Type>(operator_type));
+            expr = expr->next_expr_;
         }
     }
     auto tmp = head->next_expr_;
