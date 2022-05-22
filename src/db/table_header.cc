@@ -22,8 +22,10 @@ bool fill_table_header(std::shared_ptr<TableHeader> header, const TableInfo &tab
         if (field->has_default)
         {
             header->flag_default |= (1 << col_num);
-            Expression exprssion{field->expr};
-            std::memcpy(header->default_value[col_num], reinterpret_cast<char *>(&exprssion), sizeof(exprssion));
+            // Expression exprssion{field->expr};
+            std::ostringstream os;
+            Expression::DumpExprNode(os, field->expr);
+            std::strncpy(header->default_value[col_num], os.str().c_str(), MAX_LENGTH_CHECK_CONSTRAINT);
         }
     }
     // Constraint info
