@@ -75,7 +75,7 @@ PageFileSystem::PageFileSystem()
 {
     // file id and page id both start from 1, if they are 0, 
     // which means this page of cache is not used
-    for (int i = 0; i < CACHE_CAPACITY; ++i)
+    for (size_t i = 0; i < CACHE_CAPACITY; ++i)
     {
         index2page_[0] = {0, 0};
     }
@@ -91,7 +91,7 @@ PageFileSystem &PageFileSystem::GetInstance()
 inline
 PageFileSystem::~PageFileSystem()
 {
-    for (int i = 1; i <= MAX_NUM_FILE_ID; ++i)
+    for (size_t i = 1; i <= MAX_NUM_FILE_ID; ++i)
     {
         if (fid_manager_.IsUsed(i)) { Close(i); }
     }

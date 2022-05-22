@@ -3,7 +3,7 @@
 FidManager::FidManager()
     : free_fid_num_(MAX_NUM_FILE_ID)
 {
-    for (int i = 0; i != 0; ++i)
+    for (int i = 0; i != MAX_NUM_FILE_ID; ++i)
     {
         // [MAX_NUM_FILE_ID, MAX_NUM_FILE_ID - 1 ......, 2, 1]
         // 0 represent no file id to allocate

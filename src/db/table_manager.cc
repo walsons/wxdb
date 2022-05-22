@@ -42,8 +42,8 @@ void TableManager::DropTable()
 {
     if (!is_open_) { return; }
     CloseTable();
-    std::string header_path = DB_DIR + table_name_ + "thead";
-    std::string data_path = DB_DIR + table_name_ + "tdata";
+    std::string header_path = DB_DIR + table_name_ + ".thead";
+    std::string data_path = DB_DIR + table_name_ + ".tdata";
     std::remove(header_path.c_str());
     std::remove(data_path.c_str());
 }
@@ -53,8 +53,8 @@ void TableManager::CloseTable()
     if (!is_open_) { return; }
     if (!is_mirror_)
     {
-        std::string header_path = DB_DIR + table_name_ + "thead";
-        std::string data_path = DB_DIR + table_name_ + "tdata";
+        std::string header_path = DB_DIR + table_name_ + ".thead";
+        // std::string data_path = DB_DIR + table_name_ + ".tdata";
         table_header_.index_root_page[table_header_.main_index] = btr_->root_page_id();
         free_indices();
         free_check_constraints();
@@ -180,10 +180,8 @@ void TableManager::load_indices()
         // It's index column except main index
         if (i != table_header_.main_index && ((1 << i) & table_header_.flag_index))
         {
-            indices_[i] = std::make_shared<IndexManager>(pg_,
-                table_header_.column_length[i], 
-                table_header_.index_root_page[i],
-                IndexManager::GetIndexComparer(table_header_.column_type[i]));
+            indices_[i] = std::make_shared<IndexManager>(table_header_.column_length[i],
+                pg_, table_header_.index_root_page[i], IndexManager::GetIndexComparer(table_header_.column_type[i]));
         }
     }
 }

@@ -14,7 +14,11 @@ void DatabaseManager::CreateDatabase(const std::string &db_name)
 
 void DatabaseManager::Open(const std::string &db_name)
 {
-    if (std::strcmp(db_name.c_str(), info_.db_name) == 0) { return; }
+    if (std::strcmp(db_name.c_str(), info_.db_name) == 0) 
+    { 
+        is_open_ = true;
+        return; 
+    }
     if (is_open_)
     {
         Close();
@@ -34,6 +38,11 @@ void DatabaseManager::Close()
     std::ofstream ofs(DB_DIR + info_.db_name + ".db", std::ios::out | std::ios::binary);
     ofs.write(reinterpret_cast<const char *>(&info_), sizeof(info_));
     is_open_ = false;
+    // Close table
+    for (size_t i = 0; i < info_.num_table; ++i)
+    {
+        table_manager_[i]->CloseTable();
+    }
 }
 
 void DatabaseManager::CreateTable(const std::shared_ptr<TableHeader> table_header)

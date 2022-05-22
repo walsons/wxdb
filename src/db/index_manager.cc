@@ -37,9 +37,9 @@ IndexManager::comparer IndexManager::GetIndexComparer(Col_Type type)
     return string_comparer;
 }
 
-IndexManager::IndexManager(std::shared_ptr<Pager> pg, int root_page_id, int size, comparer compare)
-    : pg_(pg), size_(size), buf_(new char[sizeof(int) + 1 + size_])
-    , btr_(std::make_shared<IndexBTree>(pg_, root_page_id, sizeof(int) + 1 + size_, 
+ IndexManager::IndexManager(int size, std::shared_ptr<Pager> pg, int root_page_id, comparer compare)
+    : buf_(new char[sizeof(int) + 1 + size]), size_(size), pg_(pg)
+    , btr_(std::make_shared<IndexBTree>(pg_, root_page_id, sizeof(int) + 1 + size, 
         [compare](const char *a, const char *b) -> int {
             // One of a and b is null
             if (a[4] != b[4])
@@ -54,29 +54,7 @@ IndexManager::IndexManager(std::shared_ptr<Pager> pg, int root_page_id, int size
             }
             // if data equal or both are null, compare row id
             return integer_comparer(*reinterpret_cast<const int *>(a), *reinterpret_cast<const int *>(b));
-        }))
-{
-    // pg_ = pg;
-    // size_ = size;
-    // // rowid, nullmark, data
-    // buf_ = new char[sizeof(int) + 1 + size_];
-    // btr_ = std::make_shared<IndexBTree>(pg_, root_page_id, sizeof(int) + 1 + size_, 
-    //     [compare](const char *a, const char *b) -> int {
-    //         // One of a and b is null
-    //         if (a[4] != b[4])
-    //         {
-    //             return a[4] ? -1 : 1;
-    //         }
-    //         // A and B are not null, compare data
-    //         else if (!a[4])
-    //         {
-    //             int res = compare(a + sizeof(int) + 1, b + sizeof(int) + 1);
-    //             if (res != 0) { return res; }
-    //         }
-    //         // if data equal or both are null, compare row id
-    //         return integer_comparer(*reinterpret_cast<const int *>(a), *reinterpret_cast<const int *>(b));
-    //     });
-}
+        })) {}
 
 IndexManager::~IndexManager()
 {

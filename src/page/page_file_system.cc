@@ -62,6 +62,7 @@ int PageFileSystem::Open(const std::string &name)
     std::ifstream ifs(name);
     bool file_exist = ifs.is_open();
     if (file_exist) { ifs.close(); }
+    else { std::ofstream(name, std::ios::out); }  // if file not exist, create it
     std::fstream fd(name, std::ios::in | std::ios::out | std::ios::binary);
     PageFileHeader header;
     if (!file_exist)
