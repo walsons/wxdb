@@ -26,6 +26,7 @@ public:
     ColVal(const bool &bval);
     ColVal(const Date &tval);
     // default is varchar
+    ColVal(const char *sval);
     ColVal(const std::string &sval);
     ColVal(const ColVal &col_val);
 
@@ -35,6 +36,7 @@ public:
     ColVal &operator=(const bool &bval);
     ColVal &operator=(const Date &tval);
     // default is varchar
+    ColVal &operator=(const char *sval);
     ColVal &operator=(const std::string &sval);
     ColVal &operator=(const ColVal &col_val);
 

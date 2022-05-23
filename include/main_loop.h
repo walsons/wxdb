@@ -47,6 +47,10 @@ void main_loop(bool &exit)
             DBMS::GetInstance().CreateTable(table_header);
         }
     }
+    else if (tolower(tmp) == "insert")
+    {
+
+    }
 }
 
 #endif

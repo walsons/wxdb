@@ -322,80 +322,49 @@ TEST_CASE("TC-PARSER", "[parser test]")
     }
 
 
-    // SECTION("insert parser")
-    // {
-    //     std::string statement = "insert into customers \
-    //                              values \
-    //                              ( 1, \
-    //                                'Jack', \
-    //                                'Shanghai' \
-    //                              );";
-    //     auto tokenizer = std::make_shared<Tokenizer>(statement);
-    //     InsertParser insert_parser(tokenizer);
-    //     auto sql_stmt_insert = insert_parser.ParseSQLStmtInsert();
-    //     REQUIRE(sql_stmt_insert != nullptr);
+    SECTION("insert parser")
+    {
+        std::string statement = "INSERT INTO users (id, name, email, age, height, country, sign_up) \
+                                 VALUES (1, \"Walson\", \"walsons@163.com\", 18, 180, \"China\", 20200103);";
+        auto tokenizer = std::make_shared<Tokenizer>(statement);
+        TableParser table_parser(tokenizer);
+        auto insert_info = table_parser.InsertTable();
+        REQUIRE(insert_info != nullptr);
 
-    //     // # SQL_Stmt_Type
-    //     CHECK(sql_stmt_insert->type_ == SQL_Stmt_Type::SQL_INSERT);
-    //     // # Table name
-    //     CHECK(sql_stmt_insert->table_name_ == "customers");
-    //     // # field name
-    //     CHECK(sql_stmt_insert->fields_name_.empty());
-    //     // # values
-    //     DataValue value(Data_Type::DATA_TYPE_INT);
-    //     value.SetIntValue(1);
-    //     CHECK(sql_stmt_insert->values_[0].GetDataType() == value.GetDataType());
-    //     CHECK(sql_stmt_insert->values_[0].int_value() == value.int_value());
-    //     value.SetCharValue("Jack");
-    //     CHECK(sql_stmt_insert->values_[1].GetDataType() == value.GetDataType());
-    //     CHECK(sql_stmt_insert->values_[1].char_value() == value.char_value());
-    //     value.SetCharValue("Shanghai");
-    //     CHECK(sql_stmt_insert->values_[2].GetDataType() == value.GetDataType());
-    //     CHECK(sql_stmt_insert->values_[2].char_value() == value.char_value());
-
-    //     statement = "insert into customers \
-    //                  ( cust_id, \
-    //                    cust_name, \
-    //                    cust_address \
-    //                  ) \
-    //                  values \
-    //                  ( 1, \
-    //                    \"Jack\", \
-    //                    \"Shanghai\" \
-    //                  );";
-    //     tokenizer = std::make_shared<Tokenizer>(statement);
-    //     insert_parser = InsertParser(tokenizer);
-    //     sql_stmt_insert = insert_parser.ParseSQLStmtInsert();
-    //     REQUIRE(sql_stmt_insert != nullptr);
-
-    //     // # SQL_Stmt_Type
-    //     CHECK(sql_stmt_insert->type_ == SQL_Stmt_Type::SQL_INSERT);
-    //     // # Table name
-    //     CHECK(sql_stmt_insert->table_name_ == "customers");
-    //     // # field name
-    //     CHECK(sql_stmt_insert->fields_name_[0] == "cust_id");
-    //     CHECK(sql_stmt_insert->fields_name_[1] == "cust_name");
-    //     CHECK(sql_stmt_insert->fields_name_[2] == "cust_address");
-    //     // # values
-    //     value.SetIntValue(1);
-    //     CHECK(sql_stmt_insert->values_[0].GetDataType() == value.GetDataType());
-    //     CHECK(sql_stmt_insert->values_[0].int_value() == value.int_value());
-    //     value.SetCharValue("Jack");
-    //     CHECK(sql_stmt_insert->values_[1].GetDataType() == value.GetDataType());
-    //     CHECK(sql_stmt_insert->values_[1].char_value() == value.char_value());
-    //     value.SetCharValue("Shanghai");
-    //     CHECK(sql_stmt_insert->values_[2].GetDataType() == value.GetDataType());
-    //     CHECK(sql_stmt_insert->values_[2].char_value() == value.char_value());
-    // }
-
-    // SECTION("select parser")
-    // {
-    //     std::string statement = "select cust_id, cust_address \
-    //                              from customers;";
-    //     auto tokenizer = std::make_shared<Tokenizer>(statement);
-    //     SelectParser select_parser(tokenizer);
-    //     auto sra = select_parser.ParseSQLStmtSelect();
-    //     REQUIRE(sra != nullptr);
-    //     REQUIRE(sra->type_ == SRA_Type::SRA_PROJECT);
-    // }
+        // table name
+        CHECK(insert_info->table_name == "users");
+        // field name map
+        auto &m = insert_info->field_name;
+        CHECK(m.find("id") != m.end());
+        CHECK(m.find("name") != m.end());
+        CHECK(m.find("email") != m.end());
+        CHECK(m.find("age") != m.end());
+        CHECK(m.find("height") != m.end());
+        CHECK(m.find("country") != m.end());
+        CHECK(m.find("sign_up") != m.end());
+        CHECK(m["id"] == 0);
+        CHECK(m["name"] == 1);
+        CHECK(m["email"] == 2);
+        CHECK(m["age"] == 3);
+        CHECK(m["height"] == 4);
+        CHECK(m["country"] == 5);
+        CHECK(m["sign_up"] == 6);
+        // Column value
+        auto &vals = insert_info->col_val;
+        CHECK(vals[0].type_ == Col_Type::COL_TYPE_INT);
+        CHECK(vals[0].ival_ == ColVal(1).ival_);
+        // Parser can't distinguish char and varchar only via literal, default is varchar
+        CHECK(vals[1].type_ == Col_Type::COL_TYPE_VARCHAR);  
+        CHECK(vals[1].sval_ == ColVal("Walson").sval_);
+        CHECK(vals[2].type_ == Col_Type::COL_TYPE_VARCHAR);
+        CHECK(vals[2].sval_ == ColVal("walsons@163.com").sval_);
+        CHECK(vals[3].type_ == Col_Type::COL_TYPE_INT);
+        CHECK(vals[3].ival_ == ColVal(18).ival_);
+        CHECK(vals[4].type_ == Col_Type::COL_TYPE_INT);
+        CHECK(vals[4].ival_ == ColVal(180).ival_);
+        CHECK(vals[5].type_ == Col_Type::COL_TYPE_VARCHAR);
+        CHECK(vals[5].sval_ == ColVal("China").sval_);
+        CHECK(vals[6].type_ == Col_Type::COL_TYPE_DATE);
+        CHECK(vals[6].tval_.timestamp == ColVal(20200103).tval_.timestamp);
+    }
 }
