@@ -325,7 +325,7 @@ TEST_CASE("TC-PARSER", "[parser test]")
     SECTION("insert parser")
     {
         std::string statement = "INSERT INTO users (id, name, email, age, height, country, sign_up) \
-                                 VALUES (1, \"Walson\", \"walsons@163.com\", 18, 180, \"China\", 20200103);";
+                                 VALUES (1, \"Walson\", \"walsons@163.com\", 18, 180, \"China\", \"2020-01-03\");";
         auto tokenizer = std::make_shared<Tokenizer>(statement);
         TableParser table_parser(tokenizer);
         auto insert_info = table_parser.InsertTable();
@@ -364,7 +364,8 @@ TEST_CASE("TC-PARSER", "[parser test]")
         CHECK(vals[4].ival_ == ColVal(180).ival_);
         CHECK(vals[5].type_ == Col_Type::COL_TYPE_VARCHAR);
         CHECK(vals[5].sval_ == ColVal("China").sval_);
-        CHECK(vals[6].type_ == Col_Type::COL_TYPE_DATE);
-        CHECK(vals[6].tval_.timestamp == ColVal(20200103).tval_.timestamp);
+        // Parser also can't distinguish date and char and varchar, it will decide in the next steps.
+        CHECK(vals[6].type_ == Col_Type::COL_TYPE_VARCHAR);
+        CHECK(vals[6].sval_ == ColVal("2020-01-03").sval_);
     }
 }

@@ -11,7 +11,7 @@ class TableManager
 {
     TableHeader table_header_;
     std::string table_name_;
-    bool is_open_, is_mirror_;
+    bool is_open_ = false, is_mirror_ = false;
     std::shared_ptr<IntBTree> btr_;
     std::shared_ptr<Pager> pg_;
     int tmp_record_size_;
@@ -22,6 +22,7 @@ class TableManager
 
 public:
     TableManager() = default;
+    TableManager(const std::string &table_name) : table_name_(table_name) {}
     ~TableManager() = default;
     bool CreateTable(const std::shared_ptr<TableHeader> table_header);
     bool OpenTable(const std::string &table_name);

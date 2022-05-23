@@ -30,6 +30,10 @@ void DatabaseManager::Open(const std::string &db_name)
     {
         ifs.read(reinterpret_cast<char *>(&info_), sizeof(info_));
         is_open_ = true;
+        for (size_t i = 0; i < info_.num_table; ++i)
+        {
+            table_manager_.push_back(std::make_shared<TableManager>(info_.table_name[i]));
+        }
     }
 }
 
@@ -71,11 +75,12 @@ void DatabaseManager::CreateTable(const std::shared_ptr<TableHeader> table_heade
 void DatabaseManager::InsertRow(const std::shared_ptr<InsertInfo> insert_info)
 {
     std::shared_ptr<TableManager> table;
-    for (auto & t : table_manager_)
+    for (auto &t : table_manager_)
     {
         if (t->table_name() == insert_info->table_name)
         {
             table = t;
+            break;
         }
     }
     if (table == nullptr) 
@@ -83,6 +88,7 @@ void DatabaseManager::InsertRow(const std::shared_ptr<InsertInfo> insert_info)
         std::cerr << "table " << insert_info->table_name << " not found!" << std::endl;
         return;
     }
+    table->OpenTable(table->table_name());
     if (insert_info->field_name.empty())
     {
         if (insert_info->col_val.size() != table->number_of_column())

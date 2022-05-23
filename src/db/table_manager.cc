@@ -1,4 +1,5 @@
 #include "../../include/db/table_manager.h"
+#include <cassert>
 
 bool TableManager::CreateTable(const std::shared_ptr<TableHeader> table_header)
 {
@@ -146,13 +147,26 @@ bool TableManager::SetTempRecord(int column_number, ColVal value)
     case Col_Type::COL_TYPE_DOUBLE:
         *reinterpret_cast<double *>(tmp_record_ + table_header_.column_offset[column_number]) = value.dval_;
         break;
-    case Col_Type::COL_TYPE_VARCHAR:
-        std::strncpy(tmp_record_ + table_header_.column_offset[column_number], 
-                     value.sval_.c_str(), 
-                     table_header_.column_length[column_number]);
+    case Col_Type::COL_TYPE_BOOL:
+        *reinterpret_cast<bool *>(tmp_record_ + table_header_.column_offset[column_number]) = value.bval_;
         break;
-    // TODO: add other type
+    case Col_Type::COL_TYPE_VARCHAR:
+        // need to decide is varchar, char or date
+        if (table_header_.column_type[column_number] == Col_Type::COL_TYPE_VARCHAR ||
+            table_header_.column_type[column_number] == Col_Type::COL_TYPE_CHAR)
+        {
+            std::strncpy(tmp_record_ + table_header_.column_offset[column_number], 
+                         value.sval_.c_str(), 
+                         table_header_.column_length[column_number]);
+        }
+        else if (table_header_.column_type[column_number] == Col_Type::COL_TYPE_DATE)
+        {
+            Date date(value.sval_);
+            std::memcpy(tmp_record_ + table_header_.column_offset[column_number], &date ,sizeof(date));
+        }
+        break;
     default:
+        assert(false);
         break;
     }
     return true;

@@ -66,13 +66,13 @@ VALUES (value1, value2, value3, ...);
 
 #example
 INSERT INTO users (id, name, email, age, height, country, sign_up)
-VALUES (1, "Walson", "walsons@163.com", 18, 180, "China", 20200103);
+VALUES (1, "Walson", "walsons@163.com", 18, 180, "China", "2020-01-03");
 
 INSERT INTO table_name
 VALUES (value1, value2, value3, ...);
 
 #example
 INSERT INTO users
-VALUES (1, "Walson", "walsons@163.com", "18", "180", "China", "20200103");
+VALUES (1, "Walson", "walsons@163.com", "18", "180", "China", "2020-01-03");
 ```
 

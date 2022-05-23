@@ -113,4 +113,16 @@ TEST_CASE( "TC-DATABASE", "[database test]" )
             CHECK(expression.term_.bval_ == false);
         }
     }
+
+    SECTION("insert into")
+    {
+        std::string statement = "INSERT INTO users (id, name, email, age, height, country, sign_up) \
+                                 VALUES (1, \"Walson\", \"walsons@163.com\", 18, 180, \"China\", \"2020-01-03\");";
+        auto tokenizer = std::make_shared<Tokenizer>(statement);
+        TableParser table_parser(tokenizer);
+        auto insert_info = table_parser.InsertTable();
+        REQUIRE(insert_info != nullptr);
+        DBMS::GetInstance().UseDatabase("mydb");
+        DBMS::GetInstance().InsertRow(insert_info);
+    }
 }
