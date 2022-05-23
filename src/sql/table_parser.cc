@@ -400,7 +400,7 @@ std::shared_ptr<InsertInfo> TableParser::InsertTable()
 
 std::shared_ptr<std::vector<ColVal>> TableParser::parse_value_expr()
 {
-    auto value = std::shared_ptr<std::vector<ColVal>>();
+    auto value = std::make_shared<std::vector<ColVal>>();
     if (!MatchToken(Token_Type::TOKEN_OPEN_PARENTHESIS, "("))   
     {
         ParseError("invalid SQL: missing \"(\"!");
@@ -422,7 +422,7 @@ std::shared_ptr<std::vector<ColVal>> TableParser::parse_value_expr()
             if (token->type_ == Token_Type::TOKEN_STRING)
             {
                 ColVal data_value(token->text_);
-                data_value.type_ = Col_Type::COL_TYPE_CHAR;
+                data_value.type_ = Col_Type::COL_TYPE_VARCHAR;
                 value->push_back(data_value);
             }
             else if (token->type_ == Token_Type::TOKEN_DECIMAL ||

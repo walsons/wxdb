@@ -87,7 +87,7 @@ std::shared_ptr<TableManager> TableManager::Mirror(const std::string &alias)
     table->pg_ = pg_;
     table->allocate_temp_record();
     // Share indices_, check_constraint_, 
-    for (int i = 0; i < MAX_NUM_COLUMN; ++i)
+    for (size_t i = 0; i < MAX_NUM_COLUMN; ++i)
     {
         table->indices_[i] = indices_[i];
     }
@@ -201,7 +201,7 @@ void TableManager::free_indices()
 void TableManager::load_check_constraints()
 {
     std::memset(check_constraint_, 0, sizeof(check_constraint_));
-    for (int i = 0; i != table_header_.num_check_constraint; ++i)
+    for (size_t i = 0; i != table_header_.num_check_constraint; ++i)
     {
         std::istringstream in(table_header_.check_constraint[i]);
         check_constraint_[i] = Expression::LoadExprNode(in);
@@ -210,7 +210,7 @@ void TableManager::load_check_constraints()
 
 void TableManager::free_check_constraints()
 {
-    for (int i = 0; i != table_header_.num_check_constraint; ++i)
+    for (size_t i = 0; i != table_header_.num_check_constraint; ++i)
     {
         Expression::FreeExprNode(check_constraint_[i]);
         check_constraint_[i] = nullptr;

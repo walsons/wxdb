@@ -17,6 +17,12 @@ TermExpr::TermExpr(const bool &bval)
 TermExpr::TermExpr(const Date &tval)
     : term_type_(Term_Type::TERM_DATE), tval_(tval) {}
 
+TermExpr::TermExpr(const char *sval)
+    : term_type_(Term_Type::TERM_STRING)
+{
+    new (&sval_) std::string(sval);
+}
+
 TermExpr::TermExpr(const std::string &sval)
     : term_type_(Term_Type::TERM_STRING)
 {
@@ -96,6 +102,14 @@ TermExpr &TermExpr::operator=(const Date &tval)
     destory_class_member();
     term_type_ = Term_Type::TERM_DATE;
     tval_ = tval;
+    return *this;
+}
+
+TermExpr &TermExpr::operator=(const char *sval)
+{
+    destory_class_member();
+    term_type_ = Term_Type::TERM_STRING;
+    new (&sval_) std::string(sval);
     return *this;
 }
 

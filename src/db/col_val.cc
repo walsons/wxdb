@@ -14,6 +14,12 @@ ColVal::ColVal(const bool &bval)
 ColVal::ColVal(const Date &tval) 
     : type_(Col_Type::COL_TYPE_DATE), tval_(tval) {}
 
+ColVal::ColVal(const char *sval)
+    : type_(Col_Type::COL_TYPE_VARCHAR)
+{
+    new (&sval_) std::string(sval);
+}
+
 ColVal::ColVal(const std::string &sval) 
     : type_(Col_Type::COL_TYPE_VARCHAR)
 {
@@ -84,6 +90,14 @@ ColVal &ColVal::operator=(const Date &tval)
     destory_class_member();
     type_ = Col_Type::COL_TYPE_DATE;
     tval_ = tval;
+    return *this;
+}
+
+ColVal &ColVal::operator=(const char *sval)
+{
+    destory_class_member();
+    type_ = Col_Type::COL_TYPE_VARCHAR;
+    new (&sval_) std::string(sval);
     return *this;
 }
 

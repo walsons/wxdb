@@ -55,6 +55,7 @@ public:
     TermExpr(const double &dval);
     TermExpr(const bool &bval);
     TermExpr(const Date &tval);
+    TermExpr(const char *sval);
     TermExpr(const std::string &sval);
     TermExpr(const ColumnRef &ref);
     TermExpr(const TermExpr &term);
@@ -64,6 +65,7 @@ public:
     TermExpr &operator=(const double &dval);
     TermExpr &operator=(const bool &bval);
     TermExpr &operator=(const Date &tval);
+    TermExpr &operator=(const char *sval);
     TermExpr &operator=(const std::string &sval);
     TermExpr &operator=(const ColumnRef &ref);
     TermExpr &operator=(const TermExpr &term);
