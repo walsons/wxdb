@@ -49,7 +49,13 @@ void main_loop(bool &exit)
     }
     else if (tolower(tmp) == "insert")
     {
-
+        in >> tmp;
+        if (tolower(tmp) == "into")
+        {
+            auto parser = std::make_shared<TableParser>(t);
+            auto info = parser->InsertTable();
+            DBMS::GetInstance().InsertRow(info);
+        }
     }
 }
 
