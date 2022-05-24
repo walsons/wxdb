@@ -2,7 +2,13 @@
 #ifndef DBMS_H_
 #define DBMS_H_
 
+#ifdef _WIN32
 #include <direct.h>
+#elif __linux__
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+#endif
 #include <string>
 #include <memory>
 #include <cassert>
@@ -29,12 +35,21 @@ private:
 
 inline DBMS::DBMS() : db_manager_(std::make_shared<DatabaseManager>())
 {
+#ifdef _WIN32
     int exists = access(DB_DIR.c_str(), F_OK);
     if (exists != 0)
     {
         int res = mkdir(DB_DIR.c_str());
         assert(res == 0);
     }
+#elif __linux__
+    int exists = access(DB_DIR.c_str(), F_OK);
+    if (exists != 0)
+    {
+        int res = mkdir(DB_DIR.c_str(), 0775);
+        assert(res == 0);
+    }
+#endif
 }
 
 inline DBMS &DBMS::GetInstance()
