@@ -1,6 +1,12 @@
 #include "catch.hpp"
 
-#include "direct.h"
+#ifdef _WIN32
+#include <direct.h>
+#elif __linux__
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+#endif
 
 #include "../include/sql/database_parser.h"
 #include "../include/db/dbms.h"

@@ -66,10 +66,10 @@ BTree<KeyType, Comparer, Copier>::BTree(std::shared_ptr<Pager> pg,
     : pg_(pg), root_page_id_(root_page_id), field_size_(field_size)
     , comparer_(comparer), copier_(copier)
 {
-    if (root_page_id == 0)
+    if (root_page_id_ == 0)
     {
-        root_page_id = pg_->NewPage();
-        leaf_page{pg_->ReadForWrite(root_page_id), pg_}.Init(field_size_);
+        root_page_id_ = pg_->NewPage();
+        leaf_page{pg_->ReadForWrite(root_page_id_), pg_}.Init(field_size_);
     }
 }
 

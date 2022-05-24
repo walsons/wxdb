@@ -7,7 +7,7 @@ bool TableManager::CreateTable(const std::shared_ptr<TableHeader> table_header)
     table_name_ = table_header->table_name;
     std::string data_path = DB_DIR + table_name_ + ".tdata";
     pg_ = std::make_shared<Pager>(data_path);
-    btr_ = std::make_shared<IntBTree>(pg_);
+    btr_ = std::make_shared<IntBTree>(pg_, table_header->index_root_page[table_header_.main_index]);
 
     table_header_ = *table_header;
     table_header_.index_root_page[table_header_.main_index] = btr_->root_page_id();
