@@ -90,7 +90,7 @@ void PageFileSystem::Close(int file_id)
 
 void PageFileSystem::WriteBack(int file_id)
 {
-    for (int i = 0; i < CACHE_CAPACITY; ++i)
+    for (size_t i = 0; i < CACHE_CAPACITY; ++i)
     {
         file_page_t page = index2page_[i];
         if (page.first == file_id && dirty_[i])

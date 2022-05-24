@@ -4,7 +4,8 @@ CacheManager::CacheManager()
 {
     head = 0;
     nodes = new node[CACHE_CAPACITY];
-    for (int i = 0; i < CACHE_CAPACITY - 1; ++i)
+    int stop = CACHE_CAPACITY - 1;
+    for (int i = 0; i < stop; ++i)
     {
         nodes[i].next = i + 1;
         nodes[i + 1].prev = i;

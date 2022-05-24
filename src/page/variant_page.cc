@@ -49,7 +49,7 @@ char *VariantPage::allocate(int sz)
         bool has_proper_free_block = true;
         while (header->size < sz)
         {
-            if (header->next = 0) 
+            if (header->next == 0) 
             { 
                 has_proper_free_block = false;
                 break; 
@@ -94,7 +94,7 @@ void VariantPage::defragment()
 {
     int sz = size();
     char *ptr = buf_ + PAGE_SIZE;
-    for (int i = size() - 1; i >= 0; ++i)
+    for (int i = sz - 1; i >= 0; ++i)
     {
         int offset = slots(i);
         auto header = block_header(offset);
@@ -210,7 +210,7 @@ void VariantPage::MoveFrom(VariantPage src_page, int src_pos, int dest_pos)
 {
     auto src_block = src_page.GetBlock(src_pos);
     // Only need to move data in block(no need for overflow page data)
-    bool res = Insert(dest_pos, src_block.second, src_block.first.size - sizeof(BlockHeader));
+    Insert(dest_pos, src_block.second, src_block.first.size - sizeof(BlockHeader));
     src_page.Erase(src_pos, false);
 }
 

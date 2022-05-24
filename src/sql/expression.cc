@@ -457,6 +457,12 @@ std::shared_ptr<TermExpr> Expression::EvalOperator(ExprNode *op, std::shared_ptr
             res = std::make_shared<TermExpr>(term1->dval_ / term2->dval_);
         }
         break;
+    case Operator_Type::MOD:
+        if (term1->term_type_ == Term_Type::TERM_INT || term2->term_type_ == Term_Type::TERM_INT)
+        {
+            res = std::make_shared<TermExpr>(term1->ival_ % term2->ival_);
+        }
+        break;
     case Operator_Type::POWER:
         if (term1->term_type_ == Term_Type::TERM_INT || term2->term_type_ == Term_Type::TERM_INT)
         {

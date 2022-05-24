@@ -10,7 +10,7 @@ bool TableManager::CreateTable(const std::shared_ptr<TableHeader> table_header)
     btr_ = std::make_shared<IntBTree>(pg_);
 
     table_header_ = *table_header;
-    table_header_.index_root_page[table_header->main_index] = btr_->root_page_id();
+    table_header_.index_root_page[table_header_.main_index] = btr_->root_page_id();
 
     allocate_temp_record();
     load_indices();
