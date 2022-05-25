@@ -1,4 +1,5 @@
 #include "../../include/page/page_file_system.h"
+#include <cassert>
 
 char *PageFileSystem::read(int file_id, int page_id, int &index)
 {
@@ -19,7 +20,9 @@ char *PageFileSystem::read(int file_id, int page_id, int &index)
         index2page_[index] = key;
         page2index_[key] = index;
         files_[file_id].seekg(page_id * PAGE_SIZE, std::ios::beg);
+        assert(files_[file_id].good());
         files_[file_id].read(buffer_ + index * PAGE_SIZE, PAGE_SIZE);
+        if (files_[file_id].eof()) { files_[file_id].clear(); }
     }
     else
     {
@@ -51,6 +54,7 @@ void PageFileSystem::free_last_cache()
 void PageFileSystem::write_page_to_file(int file_id, int page_id, const char *data)
 {
     files_[file_id].seekp(page_id * PAGE_SIZE, std::ios::beg);
+    assert(files_[file_id].good());
     files_[file_id].write(data, PAGE_SIZE);
 }
 
@@ -63,21 +67,25 @@ int PageFileSystem::Open(const std::string &name)
     bool file_exist = ifs.is_open();
     if (file_exist) { ifs.close(); }
     else { std::ofstream(name, std::ios::out); }  // if file not exist, create it
-    std::fstream fd(name, std::ios::in | std::ios::out | std::ios::binary);
+    // std::fstream fd(name, std::ios::in | std::ios::out | std::ios::binary);
+    files_[file_id].open(name, std::ios::in | std::ios::out | std::ios::binary);
     PageFileHeader header;
     if (!file_exist)
     {
         header.page_num = 0;
-        fd.seekp(0, std::ios::beg);
-        fd.write(reinterpret_cast<const char *>(&header), sizeof(header));
+        files_[file_id].seekp(0, std::ios::beg);
+        assert(files_[file_id].good());
+        files_[file_id].write(reinterpret_cast<const char *>(&header), sizeof(header));
     }
     else 
     {
-        fd.seekg(0, std::ios::beg);
-        fd.read(reinterpret_cast<char *>(&header), sizeof(header));
+        files_[file_id].seekg(0, std::ios::beg);
+        assert(files_[file_id].good());
+        files_[file_id].read(reinterpret_cast<char *>(&header), sizeof(header));
+        if (files_[file_id].eof()) { files_[file_id].clear(); }
     }
     file_info_[file_id] = header;
-    files_[file_id] = std::move(fd);
+    // files_[file_id] = std::move(fd);
     return file_id;
 }
 
@@ -96,6 +104,7 @@ void PageFileSystem::WriteBack(int file_id)
         if (page.first == file_id && dirty_[i])
         {
             files_[page.first].seekp(page.second * PAGE_SIZE, std::ios::beg);
+            assert(files_[file_id].good());
             files_[page.first].write(buffer_ + i * PAGE_SIZE, PAGE_SIZE);
             page2index_.erase(page);
             index2page_[i] = {0, 0};
@@ -103,6 +112,7 @@ void PageFileSystem::WriteBack(int file_id)
     }
     // write PageFileHeader
     files_[file_id].seekp(0, std::ios::beg);
+    assert(files_[file_id].good());
     files_[file_id].write(reinterpret_cast<const char *>(&file_info_[file_id]), sizeof(PageFileHeader));
 }
 

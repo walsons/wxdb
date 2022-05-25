@@ -27,6 +27,7 @@ bool TableManager::OpenTable(const std::string &table_name)
     std::string header_path = DB_DIR + table_name_ + ".thead";
     std::string data_path = DB_DIR + table_name_ + ".tdata";
     std::ifstream ifs(header_path, std::ios::binary);
+    assert(ifs.good());
     ifs.read(reinterpret_cast<char *>(&table_header_), sizeof(table_header_));
     pg_ = std::make_shared<Pager>(data_path);
     btr_ = std::make_shared<IntBTree>(pg_, table_header_.index_root_page[table_header_.main_index]);
@@ -63,7 +64,6 @@ void TableManager::CloseTable()
     }
     btr_ = nullptr;
 
-    
     // Write contents in cache back to .tdata file(will call pg_->Close() in destructor)
     pg_ = nullptr;
     delete[] tmp_record_;

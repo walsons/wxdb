@@ -146,6 +146,7 @@ public:
             if (pages_[i] != nullptr)
             {
                 fd_.seekp(i * PAGE_SIZE, std::ios::beg);
+                assert(fd_.good());
                 fd_.write(pages_[i], PAGE_SIZE);
             }
         }
@@ -174,7 +175,9 @@ private:
         {
             fd_.seekg(page_num * PAGE_SIZE, std::ios::beg);
             pages_[page_num] = new char[PAGE_SIZE];
+            assert(fd_.good());
             fd_.read(pages_[page_num], PAGE_SIZE);
+            if (fd_.eof()) { fd_.clear(); }
         }
         return pages_[page_num];
     }
