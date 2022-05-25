@@ -18,8 +18,8 @@ char *PageFileSystem::read(int file_id, int page_id, int &index)
         dirty_[index] = false;
         index2page_[index] = key;
         page2index_[key] = index;
-        files_[file_id].seekp(page_id * PAGE_SIZE, std::ios::beg);
-        files_[file_id].write(reinterpret_cast<const char *>(buffer_ + index * PAGE_SIZE), PAGE_SIZE);
+        files_[file_id].seekg(page_id * PAGE_SIZE, std::ios::beg);
+        files_[file_id].read(buffer_ + index * PAGE_SIZE, PAGE_SIZE);
     }
     else
     {
@@ -96,7 +96,7 @@ void PageFileSystem::WriteBack(int file_id)
         if (page.first == file_id && dirty_[i])
         {
             files_[page.first].seekp(page.second * PAGE_SIZE, std::ios::beg);
-            files_[page.first].write(buffer_ + i * PAGE_SIZE, PAGE_SIZE);
+            files_[page.first].write(reinterpret_cast<char *>(buffer_) + i * PAGE_SIZE, PAGE_SIZE);
             page2index_.erase(page);
             index2page_[i] = {0, 0};
         }
@@ -129,7 +129,7 @@ char *PageFileSystem::Read(int file_id, int page_id)
 
 char *PageFileSystem::ReadForWrite(int file_id, int page_id)
 {
-    int index;
+    int index = 0;
     char *buf = read(file_id, page_id, index);
     dirty_[index] = true;
     return buf;

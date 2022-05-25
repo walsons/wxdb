@@ -55,16 +55,21 @@ void TableManager::CloseTable()
     if (!is_mirror_)
     {
         std::string header_path = DB_DIR + table_name_ + ".thead";
-        // std::string data_path = DB_DIR + table_name_ + ".tdata";
         table_header_.index_root_page[table_header_.main_index] = btr_->root_page_id();
         free_indices();
         free_check_constraints();
         std::ofstream ofs(header_path, std::ios::binary);
         ofs.write(reinterpret_cast<const char *>(&table_header_), sizeof(table_header_));
-        pg_->Close();
     }
     btr_ = nullptr;
+
+    
+    // Write contents in cache back to .tdata file(will call pg_->Close() in destructor)
     pg_ = nullptr;
+    std::ifstream ifs(DB_DIR + "user.tdata");
+    ifs.seekg(1 * PAGE_SIZE, std::ios::beg);
+    Page_Type page_type;
+    ifs.read(reinterpret_cast<char*>(&page_type), sizeof(Page_Type));
     delete[] tmp_record_;
     delete[] tmp_cache_;
     delete[] tmp_index_;
