@@ -144,7 +144,7 @@ BTree<KeyType, Comparer, Copier>::insert_interior(int now_page_id,
     int child_pos = Search::upper_bound(0, page.size(), [&](int id) {
         return comparer_(page.keys(id), key) >= 0;
     });
-    child_pos = std::min(page.size() - 1, child_pos);
+    child_pos = std::min(page.Capacity() - 1, child_pos);
     int child_page_id = page.children(child_pos);
     char *child_addr = pg_->ReadForWrite(child_page_id);
     Page_Type child_page_type = GeneralPage::GetPageType(child_addr);

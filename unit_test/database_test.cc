@@ -12,6 +12,7 @@
 #include "../include/db/dbms.h"
 #include "../include/db/database_manager.h"
 #include "../include/sql/table_parser.h"
+#include "../include/page/general_page.h"
 #include <fstream>
 #include <memory>
 
@@ -118,6 +119,12 @@ TEST_CASE( "TC-DATABASE", "[database test]" )
             expression.Eval(expr_node, test_term3);
             CHECK(expression.term_.bval_ == false);
         }
+
+        std::ifstream ifs(DB_DIR + "user.tdata");
+        ifs.seekg(1 * PAGE_SIZE, std::ios::beg);
+        Page_Type page_type;
+        ifs.read(reinterpret_cast<char*>(&page_type), sizeof(Page_Type));
+        CHECK(page_type == Page_Type::VARIANT_PAGE);
     }
 
     SECTION("insert into")

@@ -62,7 +62,7 @@ template <typename T> inline
 constexpr int FixedPage<T>::header_size() { return 16; }
 
 template <typename T> inline
-int &FixedPage<T>::children(int index) { return *reinterpret_cast<int *>(buf_ + 16 + index * sizeof(int)); }
+int &FixedPage<T>::children(int index) { return *reinterpret_cast<int *>(buf_ + header_size() + index * sizeof(int)); }
 
 template <typename T> inline
 T &FixedPage<T>::keys(int index) { return *reinterpret_cast<T *>(begin() + index * field_size()); }

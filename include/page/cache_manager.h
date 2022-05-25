@@ -1,7 +1,7 @@
 #ifndef CACHE_MANAGER_H_
 #define CACHE_MANAGER_H_
 
-constexpr unsigned CACHE_CAPACITY = 8192;
+constexpr unsigned CACHE_CAPACITY = 100;
 
 class CacheManager
 {
