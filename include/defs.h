@@ -16,6 +16,7 @@ constexpr unsigned MAX_LENGTH_DEFAULT_VALUE = 256;
 const char *const DATE_TEMPLATE = "%Y-%m-%d";
 struct Date
 {
+    Date(const time_t &t = -1) : timestamp(t) {}
     Date(const std::string &str)
     {
         timestamp = str2timestamp(str);

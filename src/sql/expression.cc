@@ -306,21 +306,37 @@ ExprNode *Expression::LoadExprNode(std::istringstream &is)
             expr = expr->next_expr_;
             int term_type = 0;
             is >> term_type;
-            expr->term_->term_type_ = static_cast<Term_Type>(term_type);
-            switch (expr->term_->term_type_)
+            // expr->term_->term_type_ = static_cast<Term_Type>(term_type);
+            switch (static_cast<Term_Type>(term_type))
             {
             case Term_Type::TERM_INT:
-                is >> expr->term_->ival_;
+            {
+                int tmp;
+                is >> tmp;
+                *expr->term_ = tmp;
                 break;
+            }
             case Term_Type::TERM_DOUBLE:
-                is >> expr->term_->ival_;
+            {
+                double tmp;
+                is >> tmp;
+                *expr->term_ = tmp;
                 break;
+            }
             case Term_Type::TERM_BOOL:
-                is >> expr->term_->ival_;
+            {
+                bool tmp;
+                is >> tmp;
+                *expr->term_ = tmp;
                 break;
+            }
             case Term_Type::TERM_DATE:
-                is >> expr->term_->tval_.timestamp;
+            {
+                Date tmp;
+                is >> tmp.timestamp;
+                *expr->term_ = tmp;
                 break;
+            }
             case Term_Type::TERM_COL_REF:
             {
                 ColumnRef ref;
