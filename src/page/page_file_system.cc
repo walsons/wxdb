@@ -96,7 +96,7 @@ void PageFileSystem::WriteBack(int file_id)
         if (page.first == file_id && dirty_[i])
         {
             files_[page.first].seekp(page.second * PAGE_SIZE, std::ios::beg);
-            files_[page.first].write(reinterpret_cast<char *>(buffer_) + i * PAGE_SIZE, PAGE_SIZE);
+            files_[page.first].write(buffer_ + i * PAGE_SIZE, PAGE_SIZE);
             page2index_.erase(page);
             index2page_[i] = {0, 0};
         }
