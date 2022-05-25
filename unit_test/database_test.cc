@@ -120,11 +120,24 @@ TEST_CASE( "TC-DATABASE", "[database test]" )
             CHECK(expression.term_.bval_ == false);
         }
 
-        std::ifstream ifs(DB_DIR + "user.tdata");
-        ifs.seekg(1 * PAGE_SIZE, std::ios::beg);
+        std::ifstream ifs(DB_DIR + "users.tdata");
         Page_Type page_type;
+        REQUIRE(ifs.is_open());
+        
+        ifs.seekg(1 * PAGE_SIZE, std::ios::beg);
         ifs.read(reinterpret_cast<char*>(&page_type), sizeof(Page_Type));
+        if (ifs.eof()) { ifs.clear(); }
         CHECK(page_type == Page_Type::VARIANT_PAGE);
+
+        ifs.seekg(2 * PAGE_SIZE, std::ios::beg);
+        ifs.read(reinterpret_cast<char*>(&page_type), sizeof(Page_Type));
+        if (ifs.eof()) { ifs.clear(); }
+        CHECK(page_type == Page_Type::INDEX_LEAF_PAGE);
+
+        ifs.seekg(3 * PAGE_SIZE, std::ios::beg);
+        ifs.read(reinterpret_cast<char*>(&page_type), sizeof(Page_Type));
+        if (ifs.eof()) { ifs.clear(); }
+        CHECK(page_type == Page_Type::INDEX_LEAF_PAGE);
     }
 
     SECTION("insert into")
