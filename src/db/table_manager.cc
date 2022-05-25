@@ -66,10 +66,6 @@ void TableManager::CloseTable()
     
     // Write contents in cache back to .tdata file(will call pg_->Close() in destructor)
     pg_ = nullptr;
-    std::ifstream ifs(DB_DIR + "user.tdata");
-    ifs.seekg(1 * PAGE_SIZE, std::ios::beg);
-    Page_Type page_type;
-    ifs.read(reinterpret_cast<char*>(&page_type), sizeof(Page_Type));
     delete[] tmp_record_;
     delete[] tmp_cache_;
     delete[] tmp_index_;
