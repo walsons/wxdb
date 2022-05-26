@@ -8,15 +8,16 @@ class DataPage : public VariantPage
 {
 public:
     using VariantPage::VariantPage;
-    Key &keys(int id);
+    Key get_key(int index);
+    void set_key(int index, const Key &data);
     std::pair<int, DataPage> Split(int currend_id);
 };
 
-template <typename Key> inline    
-Key &DataPage<Key>::keys(int id)
-{
-    return *reinterpret_cast<Key *>(GetBlock(id).second);
-}
+template <typename Key> inline
+Key DataPage<Key>::get_key(int index) { return *reinterpret_cast<Key *>(GetBlock(index).second); }
+
+template <typename Key> inline
+void DataPage<Key>::set_key(int index, const Key &data) { *reinterpret_cast<Key *>(GetBlock(index).second) = data; }
 
 template <typename Key> inline    
 std::pair<int, DataPage<Key>> DataPage<Key>::Split(int currend_id)

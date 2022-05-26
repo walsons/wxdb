@@ -73,6 +73,12 @@ BTree<KeyType, Comparer, Copier>::BTree(std::shared_ptr<Pager> pg,
     }
 }
 
+// For IntBTree data_page, key is row_id(int), data is a row, data_size is row data size.
+// For IndexBTree index_leaf_page, key is buf(row_id, is_null, index), data is buf too, data_size is delegate row_id.
+// For both interior_page, child delegate page id.
+// 
+// Even though buf have row_id info in first 4 bytes, we can store row_id in child so that no need to rewrite 
+// insert function(which means interior_page and index_leaf_page share the same insert function)
 template <typename KeyType, typename Comparer, typename Copier>
 void BTree<KeyType, Comparer, Copier>::Insert(KeyType key, const char *data, int data_size)
 {
@@ -107,7 +113,7 @@ BTree<KeyType, Comparer, Copier>::insert_leaf(int now_page_id,
     leaf_page page{now_addr, pg_};
     // Find the first pos of key int page greater or equal to key
     int child_pos = Search::upper_bound(0, page.size(), [&](int id) {
-        return comparer_(page.keys(id), key) >= 0;
+        return comparer_(page.get_key(id), key) >= 0;
     });
     insert_ret ret;
     ret.split = false;
@@ -142,7 +148,7 @@ BTree<KeyType, Comparer, Copier>::insert_interior(int now_page_id,
 {
     interior_page page{now_addr, pg_};
     int child_pos = Search::upper_bound(0, page.size(), [&](int id) {
-        return comparer_(page.keys(id), key) >= 0;
+        return comparer_(page.get_key(id), key) >= 0;
     });
     child_pos = std::min(page.Capacity() - 1, child_pos);
     int child_page_id = page.children(child_pos);
@@ -171,8 +177,8 @@ void BTree<KeyType, Comparer, Copier>::insert_split_root(insert_ret ret)
         page.Init(field_size_);
         Page lower{ret.lower_half, pg_};
         Page upper{ret.upper_half, pg_};
-        page.Insert(0, lower.keys(lower.size() - 1), root_page_id_);
-        page.Insert(1, upper.keys(upper.size() - 1), ret.upper_page_id);
+        page.Insert(0, lower.get_key(lower.size() - 1), root_page_id_);
+        page.Insert(1, upper.get_key(upper.size() - 1), ret.upper_page_id);
         root_page_id_ = new_page_id;
     }
 }
@@ -191,9 +197,9 @@ BTree<KeyType, Comparer, Copier>::insert_post_process(int page_id,
         ChildPage lower_child{child_ret.lower_half, pg_};
         ChildPage upper_child{child_ret.upper_half, pg_};
         // Update the key of page
-        page.keys(child_pos) = lower_child.keys(lower_child.size() - 1);
+        page.set_key(child_pos, lower_child.get_key(lower_child.size() - 1));
         // Insert the new page to page
-        KeyType child_largest = copier_(upper_child.keys(upper_child.size() - 1));
+        KeyType child_largest = copier_(upper_child.get_key(upper_child.size() - 1));
         bool succ = page.Insert(child_pos + 1, child_largest, child_ret.upper_page_id);
         if (!succ)
         {
@@ -220,7 +226,7 @@ BTree<KeyType, Comparer, Copier>::insert_post_process(int page_id,
     {
         ChildPage child_page{pg_->ReadForWrite(child_page_id), pg_};
         // Update the key of page
-        page.keys(child_pos) = child_page.keys(child_page.size() - 1);
+        page.set_key(child_pos, child_page.get_key(child_page.size() - 1));
     }
     return ret;
 }
@@ -235,7 +241,7 @@ BTree<KeyType, Comparer, Copier>::upper_bound(int now_page_id, KeyType key)
     {
         interior_page page{now_addr, pg_};
         int child_pos = Search::upper_bound(0, page.size(), [&](int id) {
-            return comparer_(page.keys(id), key) >= 0;
+            return comparer_(page.get_key(id), key) >= 0;
         });
         child_pos = std::min(page.size() - 1, child_pos);
         return upper_bound(page.children(child_pos), key);
@@ -243,7 +249,7 @@ BTree<KeyType, Comparer, Copier>::upper_bound(int now_page_id, KeyType key)
     // else: INDEX_LEAF_PAGE, VARIANT_PAGE,
     leaf_page page{now_addr, pg_};
     int pos = Search::upper_bound(0, page.size(), [&](int id) {
-        return comparer_(page.keys(id), key) >= 0;
+        return comparer_(page.get_key(id), key) >= 0;
     });
     if (pos == page.size()) { return {0, 0}; }
     return {now_page_id, pos};
@@ -297,7 +303,7 @@ public:
     ~IndexBTree() = default;
     void Insert(const char *key, int row_id)
     {
-        BTree::Insert(key, reinterpret_cast<const char *>(&row_id), sizeof(row_id));
+        BTree::Insert(key, key, row_id);
     }
     bool Erase(const char *key)
     {

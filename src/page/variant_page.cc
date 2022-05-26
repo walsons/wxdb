@@ -85,9 +85,8 @@ char *VariantPage::allocate(int sz)
     if (unallocated_space > 2 + sz)
     {
         char *offset = buf_ + PAGE_SIZE - bottom_used() - sz;
-        free_size() -= (2 + sz);
+        free_size() -= sz;
         bottom_used() += sz;
-        // size() will increase after insert
         return offset;
     }  // unallocated space is not enough
 
