@@ -27,7 +27,8 @@ public:
     int &prev_page();
     static constexpr int header_size();
     int &children(int index);
-    T &keys(int index);
+    T get_key(int index);
+    void set_key(int index, const T &data);
 
     char *begin();
     char *end();
@@ -65,7 +66,20 @@ template <typename T> inline
 int &FixedPage<T>::children(int index) { return *reinterpret_cast<int *>(buf_ + header_size() + index * sizeof(int)); }
 
 template <typename T> inline
-T &FixedPage<T>::keys(int index) { return *reinterpret_cast<T *>(begin() + index * field_size()); }
+T FixedPage<T>::get_key(int index) { return *reinterpret_cast<T *>(begin() + index * field_size()); }
+
+template <typename T> inline
+void FixedPage<T>::set_key(int index, const T &data) { *reinterpret_cast<T *>(begin() + index * field_size()) = data; }
+
+// Specialized for const char *
+template <> inline
+const char *FixedPage<const char *>::get_key(int index) { return begin() + index * field_size(); }
+
+template <> inline
+void FixedPage<const char *>::set_key(int index, const char * const &data) 
+{
+    std::memcpy(begin() + index * field_size(), data, field_size());
+}
 
 template <typename T> inline
 char *FixedPage<T>::begin() { return end() - size() * field_size(); }
@@ -114,7 +128,7 @@ bool FixedPage<T>::Insert(int pos, const T &key, int child)
         pos * field_size()
     );
     ++size();
-    keys(pos) = key;
+    set_key(pos, key);
     return true;
 }
 
@@ -201,7 +215,7 @@ bool FixedPage<T>::Merge(FixedPage page, int current_id)
 template <typename T> inline
 void FixedPage<T>::MoveFrom(FixedPage src_page, int src_pos, int des_pos)
 {
-    Insert(des_pos, keys(src_pos), children(src_pos));
+    Insert(des_pos, get_key(src_pos), children(src_pos));
     Erase(src_pos);
 }
 
