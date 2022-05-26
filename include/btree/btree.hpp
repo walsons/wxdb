@@ -256,7 +256,7 @@ class IntBTree : public BTree<int, int(*)(const int &, const int &), int(*)(int)
     static int copy_int(int x) { return x; }
 public:
     IntBTree(std::shared_ptr<Pager> pg, int root_page_id = 0)
-        : BTree(pg, root_page_id, sizeof(int), integer_comparer, copy_int)
+        : BTree(pg, root_page_id, sizeof(int), integer_comparer, copy_int)  
     {
     }
     ~IntBTree() = default;
