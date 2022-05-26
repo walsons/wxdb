@@ -63,7 +63,6 @@ void TableManager::CloseTable()
         ofs.write(reinterpret_cast<const char *>(&table_header_), sizeof(table_header_));
     }
     btr_ = nullptr;
-
     // Write contents in cache back to .tdata file(will call pg_->Close() in destructor)
     pg_ = nullptr;
     delete[] tmp_record_;

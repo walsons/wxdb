@@ -34,13 +34,7 @@ constexpr int FREE_SIZE_IN_UNDERFLOW = PAGE_SIZE - VariantPage::header_size() - 
 char *VariantPage::allocate(int sz)
 {
     if (free_size() < sz + 2) { return nullptr; } 
-    int unallocated_space = PAGE_SIZE - (header_size() + size() * 2 + bottom_used());
-    // Can't allocate space to slot
-    if (unallocated_space < 2)
-    {
-        defragment();
-        return allocate(sz);
-    }
+
     if (free_block())
     {
         auto *header = &free_block_header(free_block());
@@ -85,7 +79,18 @@ char *VariantPage::allocate(int sz)
             free_size() -= sz;
             return reinterpret_cast<char *>(header);
         }
-    }
+    }  // No free blocks or no free blocks with proper size
+
+    int unallocated_space = PAGE_SIZE - (header_size() + size() * 2 + bottom_used());
+    if (unallocated_space > 2 + sz)
+    {
+        char *offset = buf_ + PAGE_SIZE - bottom_used() - sz;
+        free_size() -= (2 + sz);
+        bottom_used() += sz;
+        // size() will increase after insert
+        return offset;
+    }  // unallocated space is not enough
+
     defragment();
     return allocate(sz);
 }
