@@ -98,7 +98,7 @@ void DatabaseManager::InsertRow(const std::shared_ptr<InsertInfo> insert_info)
         }
         for (size_t i = 0; i < table->number_of_column(); ++i)
         {
-            if (!TypeCast::check_type_compatible(insert_info->col_val[i].type_, table->column_type(i)))
+            if (!TypeCast::make_type_compatible(insert_info->col_val[i], table->column_type(i)))
             {
                 std::cerr << "incompatible type!" << std::endl;
                 return;
@@ -110,8 +110,14 @@ void DatabaseManager::InsertRow(const std::shared_ptr<InsertInfo> insert_info)
     {
         auto &field_map = insert_info->field_name;
         ColVal null_value;
-        for (size_t i = 0; i < table->number_of_column(); ++i)
+        for (int i = 0; i < static_cast<int>(table->number_of_column()) - 1; ++i)
         {
+            // insert_info don't have __rowid__, and we will set __rowid__ in InsertRecord()
+            if (!TypeCast::make_type_compatible(insert_info->col_val[i], table->column_type(i)))
+            {
+                std::cerr << "incompatible type!" << std::endl;
+                return;
+            }
             if (field_map.find(table->column_name(i)) != field_map.end())   
             {
                 table->SetTempRecord(i, insert_info->col_val[field_map[table->column_name(i)]]);

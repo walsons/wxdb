@@ -13,6 +13,7 @@
 #include "../include/db/database_manager.h"
 #include "../include/sql/table_parser.h"
 #include "../include/page/general_page.h"
+#include "../include/page/data_page.hpp"
 #include <fstream>
 #include <memory>
 
@@ -150,5 +151,49 @@ TEST_CASE( "TC-DATABASE", "[database test]" )
         REQUIRE(insert_info != nullptr);
         DBMS::GetInstance().UseDatabase("mydb");
         DBMS::GetInstance().InsertRow(insert_info);
+        DBMS::GetInstance().CloseDatabase();
+
+        std::ifstream ifs(DB_DIR + "users.tdata");
+        REQUIRE(ifs.is_open());
+        
+        ifs.seekg(1 * PAGE_SIZE, std::ios::beg);
+        char page[PAGE_SIZE];              
+        ifs.read(page, PAGE_SIZE);
+        if (ifs.eof()) { ifs.clear(); }
+
+        DataPage<int> data_page{page, nullptr};
+
+        CHECK(data_page.size() == 1);
+        auto header_and_buf = data_page.GetBlock(0);
+        int record_length = sizeof(VariantPage::BlockHeader) + 8 + sizeof(int) + 32 + 255 + sizeof(int) + sizeof(double) + 32 + sizeof(Date);
+        CHECK(header_and_buf.first.size == record_length);
+        CHECK(header_and_buf.first.overflow_page == 0);
+        REQUIRE(data_page.slots(0) == PAGE_SIZE - record_length);
+
+        CHECK(*reinterpret_cast<int *>(page + data_page.slots(0) + 8) == 1);  // __rowid__
+
+        char *buf = header_and_buf.second;
+        int pos = 0;
+        auto vaildate_each_col = [&]() {
+            CHECK(*reinterpret_cast<int *>(buf + pos) == 1);  // __rowid__
+            pos += sizeof(int);
+            CHECK(*reinterpret_cast<int *>(buf + pos) == 0);  // null_mark
+            pos += sizeof(int);
+            CHECK(*reinterpret_cast<int *>(buf + pos) == 1);  // id
+            pos += sizeof(int);
+            CHECK(std::string(buf + pos) == "Walson");  // name
+            pos += 32;
+            CHECK(std::string(buf + pos) == "walsons@163.com");  // email
+            pos += 255;
+            CHECK(*reinterpret_cast<int *>(buf + pos) == 18);  // age
+            pos += sizeof(int);
+            CHECK(*reinterpret_cast<double *>(buf + pos) == 180);  // height
+            pos += sizeof(double);
+            CHECK(std::string(buf + pos) == "China");  // country
+            pos += 32;
+            Date date{*reinterpret_cast<time_t *>(buf + pos)};
+            CHECK(date.timestamp2str() == "2020-01-03");  // sign_up
+        };
+        vaildate_each_col();
     }
 }
