@@ -258,13 +258,53 @@ TEST_CASE( "TC-DATABASE", "[database test]" )
             DBMS::GetInstance().CloseDatabase();
         }
 
-        std::vector<int> ids{3,8,4,1,11,17,6,21};
+        DBMS::GetInstance().UseDatabase("mydb");
+        std::vector<int> ids{3,6,7,13,1,4,21,11,5,89,33,2};
         for (auto i : ids)
         {
             std::string statement = "INSERT INTO users (id, name, email, age, height, country, sign_up) \
                                      VALUES (" + std::to_string(i) + ", \"Walson\", \"walsons@163.com\", 18, 180, \"China\", \"2020-01-03\");";
+            auto tokenizer = std::make_shared<Tokenizer>(statement);
+            TableParser table_parser(tokenizer);
+            auto insert_info = table_parser.InsertTable();
+            REQUIRE(insert_info != nullptr);
+            DBMS::GetInstance().InsertRow(insert_info);
         }
-        // TODO
+        DBMS::GetInstance().CloseDatabase();
+        
+        std::string header_path = DB_DIR + "users.thead";
+        std::string data_path = DB_DIR + "users.tdata";
+        std::ifstream ifs(header_path, std::ios::binary);
+        assert(ifs.good());
+        TableHeader header;
+        ifs.read(reinterpret_cast<char *>(&header), sizeof(header));
+        auto pg = std::make_shared<Pager>(data_path);
+        auto btr = std::make_shared<IntBTree>(pg, header.index_root_page[header.main_index]);
+        int root_page_id = btr->root_page_id();
+        char *buf = pg->Read(root_page_id);
+        Page_Type page_type = *reinterpret_cast<Page_Type *>(buf);
 
+
+        while (page_type == Page_Type::FIXED_PAGE)
+        {
+            IntBTree::interior_page page{buf, pg};
+            int first_child_id =  page.children(0);
+            buf = pg->Read(first_child_id);
+            page_type = *reinterpret_cast<Page_Type *>(buf);
+        }
+        IntBTree::leaf_page data_page{buf, pg};
+        int cnt = 0;
+        char *pos = nullptr;
+        for (int i = 0; i < ids.size(); ++i)
+        {
+            if (cnt == data_page.size())
+            {
+                data_page = IntBTree::leaf_page{pg->Read(data_page.next_page()), pg};
+                cnt = 0;
+            }
+            pos = data_page.GetBlock(cnt++).second;
+            // char *pos = buf + data_page.slots(cnt++);
+            CHECK(*reinterpret_cast<int *>(pos + 8) == ids[i]);
+        }
     }
 }

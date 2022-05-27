@@ -218,34 +218,36 @@ void VariantPage::MoveFrom(VariantPage src_page, int src_pos, int dest_pos)
     src_page.Erase(src_pos, false);
 }
 
-// Split to a new page as upper page, this can make lower page no need to move data
+// Split to a new page as upper page(the page store previous data) 
 std::pair<int, VariantPage> VariantPage::Split(int current_id)
 {
     int page_id = pg_->NewPage();
     if (page_id == 0) { return { 0, VariantPage{nullptr, nullptr} }; }
     VariantPage upper_page{pg_->ReadForWrite(page_id), pg_};
     upper_page.Init();
-    if (next_page())
+    if (prev_page())
     {
-        VariantPage page{pg_->ReadForWrite(next_page()), pg_};
-        page.prev_page() = page_id;
+        VariantPage page{pg_->ReadForWrite(prev_page()), pg_};
+        page.next_page() = page_id;
     }
-    upper_page.next_page() = next_page();
-    upper_page.prev_page() = current_id;
-    next_page() = page_id;
+    upper_page.prev_page() = prev_page();
+    upper_page.next_page() = current_id;
+    prev_page() = page_id;
 
     // Copy half data or remain 2 items then stop,
     // We should ensure items >= 4 and no free blocks when split
     char *dest_addr = upper_page.buf_ + PAGE_SIZE;
-    for (int i = size() - 1; i >= 2; --i)  
+    int i = 0;
+    int lower_page_size = size();
+    for (; i < lower_page_size - 2; ++i)
     {
         if (UnderflowIfRemove(i)) { break; }
         char *src_addr = buf_ + slots(i);
-        BlockHeader *src_header = &block_header(i);
+        BlockHeader *src_header = reinterpret_cast<BlockHeader *>(src_addr);
         dest_addr -= src_header->size;
         std::memcpy(dest_addr, src_addr, src_header->size);
-        // Reverse after collect all slots
-        upper_page.slots(size() - 1 - i) = slots(i);
+
+        upper_page.slots(i) = slots(i);
         --size();
         ++upper_page.size();
         int required_size = src_header->size + 2;
@@ -253,8 +255,12 @@ std::pair<int, VariantPage> VariantPage::Split(int current_id)
         upper_page.free_size() -= required_size;
         set_free_block(slots(i));
     }
-    std::reverse(&upper_page.slots(0), &upper_page.slots(0) + size());
-    upper_page.bottom_used() = buf_ + PAGE_SIZE - dest_addr;
+    // Move lower page slots
+    for (int j = 0; j < i; ++j)
+    {
+        slots(j) = slots(i + j);
+    }
+    upper_page.bottom_used() = upper_page.buf_ + PAGE_SIZE - dest_addr;
     return {page_id, upper_page };
 }
 
