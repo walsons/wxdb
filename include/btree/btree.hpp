@@ -125,13 +125,13 @@ BTree<KeyType, Comparer, Copier>::insert_leaf(int now_page_id,
         leaf_page upper_page = upper.second;
         leaf_page lower_page = page;
         // TODO: check underflow
-        if (child_pos < lower_page.size())
+        if (child_pos < upper_page.size())
         {
-            lower_page.Insert(child_pos, data, data_size);
+            upper_page.Insert(child_pos, data, data_size);
         }
         else
         {
-            upper_page.Insert(child_pos - lower_page.size(), data, data_size);
+            lower_page.Insert(child_pos - upper_page.size(), data, data_size);
         }
         ret.split = true;
         ret.lower_half = lower_page.buf_;
@@ -177,8 +177,8 @@ void BTree<KeyType, Comparer, Copier>::insert_split_root(insert_ret ret)
         page.Init(field_size_);
         Page lower{ret.lower_half, pg_};
         Page upper{ret.upper_half, pg_};
-        page.Insert(0, lower.get_key(lower.size() - 1), root_page_id_);
-        page.Insert(1, upper.get_key(upper.size() - 1), ret.upper_page_id);
+        page.Insert(0, upper.get_key(upper.size() - 1), ret.upper_page_id);
+        page.Insert(1, lower.get_key(lower.size() - 1), root_page_id_);
         root_page_id_ = new_page_id;
     }
 }

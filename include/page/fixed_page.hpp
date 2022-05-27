@@ -117,7 +117,7 @@ template <typename T> inline
 bool FixedPage<T>::Insert(int pos, const T &key, int child)
 {
     if (Full()) { return false; }
-    for (int i = size() - 1; i >= pos; ++i)
+    for (int i = size() - 1; i >= pos; --i)
     {
         children(i + 1) = children(i);
     }
