@@ -14,11 +14,13 @@
 #include "../include/sql/table_parser.h"
 #include "../include/page/general_page.h"
 #include "../include/page/data_page.hpp"
+#include "../include/page/index_leaf_page.hpp"
 #include <fstream>
 #include <memory>
 
 TEST_CASE( "TC-DATABASE", "[database test]" ) 
 {
+    // below 3 section need to run respectively
     SECTION("create database")
     {
         std::string statement = "create database mydb";
@@ -160,9 +162,7 @@ TEST_CASE( "TC-DATABASE", "[database test]" )
         char page[PAGE_SIZE];              
         ifs.read(page, PAGE_SIZE);
         if (ifs.eof()) { ifs.clear(); }
-
         DataPage<int> data_page{page, nullptr};
-
         CHECK(data_page.size() == 1);
         auto header_and_buf = data_page.GetBlock(0);
         int record_length = sizeof(VariantPage::BlockHeader) + 8 + sizeof(int) + 32 + 255 + sizeof(int) + sizeof(double) + 32 + sizeof(Date);
@@ -170,30 +170,101 @@ TEST_CASE( "TC-DATABASE", "[database test]" )
         CHECK(header_and_buf.first.overflow_page == 0);
         REQUIRE(data_page.slots(0) == PAGE_SIZE - record_length);
 
-        CHECK(*reinterpret_cast<int *>(page + data_page.slots(0) + 8) == 1);  // __rowid__
-
         char *buf = header_and_buf.second;
         int pos = 0;
-        auto vaildate_each_col = [&]() {
-            CHECK(*reinterpret_cast<int *>(buf + pos) == 1);  // __rowid__
-            pos += sizeof(int);
-            CHECK(*reinterpret_cast<int *>(buf + pos) == 0);  // null_mark
-            pos += sizeof(int);
-            CHECK(*reinterpret_cast<int *>(buf + pos) == 1);  // id
-            pos += sizeof(int);
-            CHECK(std::string(buf + pos) == "Walson");  // name
-            pos += 32;
-            CHECK(std::string(buf + pos) == "walsons@163.com");  // email
-            pos += 255;
-            CHECK(*reinterpret_cast<int *>(buf + pos) == 18);  // age
-            pos += sizeof(int);
-            CHECK(*reinterpret_cast<double *>(buf + pos) == 180);  // height
-            pos += sizeof(double);
-            CHECK(std::string(buf + pos) == "China");  // country
-            pos += 32;
-            Date date{*reinterpret_cast<time_t *>(buf + pos)};
-            CHECK(date.timestamp2str() == "2020-01-03");  // sign_up
-        };
-        vaildate_each_col();
+        // vaildate each column
+        CHECK(*reinterpret_cast<int *>(buf + pos) == 1);  // __rowid__
+        pos += sizeof(int);
+        CHECK(*reinterpret_cast<int *>(buf + pos) == 0);  // null_mark
+        pos += sizeof(int);
+        CHECK(*reinterpret_cast<int *>(buf + pos) == 1);  // id
+        pos += sizeof(int);
+        CHECK(std::string(buf + pos) == "Walson");  // name
+        pos += 32;
+        CHECK(std::string(buf + pos) == "walsons@163.com");  // email
+        pos += 255;
+        CHECK(*reinterpret_cast<int *>(buf + pos) == 18);  // age
+        pos += sizeof(int);
+        CHECK(*reinterpret_cast<double *>(buf + pos) == 180);  // height
+        pos += sizeof(double);
+        CHECK(std::string(buf + pos) == "China");  // country
+        pos += 32;
+        Date date{*reinterpret_cast<time_t *>(buf + pos)};
+        CHECK(date.timestamp2str() == "2020-01-03");  // sign_up
+
+        // index id
+        {
+            ifs.seekg(2 * PAGE_SIZE, std::ios::beg);
+            ifs.read(page, PAGE_SIZE);
+            if (ifs.eof()) { ifs.clear(); }
+            IndexLeafPage<const char*> index_leaf_page{page, nullptr};
+            CHECK(index_leaf_page.size() == 1);
+            const char *index_buf = index_leaf_page.get_key(0);
+            int record_length = index_leaf_page.field_size();
+            CHECK(record_length == sizeof(int) + 1 + sizeof(int));
+            CHECK(*reinterpret_cast<const int *>(index_buf + 0) == 1);
+            CHECK(*(index_buf + 4) == 0);
+            CHECK(*reinterpret_cast<const int *>(index_buf + 5) == 1);
+        }
+        // index email
+        {
+            ifs.seekg(3 * PAGE_SIZE, std::ios::beg);
+            ifs.read(page, PAGE_SIZE);
+            if (ifs.eof()) { ifs.clear(); }
+            IndexLeafPage<const char*> index_leaf_page{page, nullptr};
+            CHECK(index_leaf_page.size() == 1);
+            const char *index_buf = index_leaf_page.get_key(0);
+            int record_length = index_leaf_page.field_size();
+            CHECK(record_length == sizeof(int) + 1 + 255);
+            CHECK(*reinterpret_cast<const int *>(index_buf + 0) == 1);
+            CHECK(*(index_buf + 4) == 0);
+            CHECK(std::string(index_buf + 5) == "walsons@163.com");
+        }
+    }
+
+    // Delete the .db directory before run this section
+    SECTION("insert into multiple row")
+    {
+        // create database
+        {
+            std::string statement = "create database mydb";
+            auto t = std::make_shared<Tokenizer>(statement);
+            auto parser = std::make_shared<DatabaseParser>(t);
+            auto database_info = parser->CreateDatabase();
+            DBMS::GetInstance().CreateDatabase(database_info->database_name);
+        }
+
+        // create table
+        {
+            DBMS::GetInstance().UseDatabase("mydb");
+            std::string statement = "CREATE TABLE users (                              \
+                                         id          INT,                              \ 
+                                         name        CHAR(32)       NOT NULL,          \
+                                         email       VARCHAR(255),                     \
+                                         age         INT,                              \
+                                         height      DOUBLE,                           \
+                                         country     CHAR(32)       DEFAULT \"China\", \
+                                         sign_up     DATE,                             \
+                                         UNIQUE (email),                               \
+                                         PRIMARY KEY (id),                             \
+                                         CHECK(age>=18 AND age<= 60)                   \
+                                    );";
+            auto t = std::make_shared<Tokenizer>(statement);
+            auto parser = std::make_shared<TableParser>(t);
+            auto info = parser->CreateTable();
+            auto table_header = std::make_shared<TableHeader>();
+            fill_table_header(table_header, *info);               
+            DBMS::GetInstance().CreateTable(table_header);
+            DBMS::GetInstance().CloseDatabase();
+        }
+
+        std::vector<int> ids{3,8,4,1,11,17,6,21};
+        for (auto i : ids)
+        {
+            std::string statement = "INSERT INTO users (id, name, email, age, height, country, sign_up) \
+                                     VALUES (" + std::to_string(i) + ", \"Walson\", \"walsons@163.com\", 18, 180, \"China\", \"2020-01-03\");";
+        }
+        // TODO
+
     }
 }
