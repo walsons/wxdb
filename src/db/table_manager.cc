@@ -151,19 +151,13 @@ bool TableManager::SetTempRecord(int column_number, ColVal value)
         *reinterpret_cast<bool *>(tmp_record_ + table_header_.column_offset[column_number]) = value.bval_;
         break;
     case Col_Type::COL_TYPE_VARCHAR:
-        // need to decide is varchar, char or date
-        if (table_header_.column_type[column_number] == Col_Type::COL_TYPE_VARCHAR ||
-            table_header_.column_type[column_number] == Col_Type::COL_TYPE_CHAR)
-        {
-            std::strncpy(tmp_record_ + table_header_.column_offset[column_number], 
-                         value.sval_.c_str(), 
-                         table_header_.column_length[column_number]);
-        }
-        else if (table_header_.column_type[column_number] == Col_Type::COL_TYPE_DATE)
-        {
-            Date date(value.sval_);
-            std::memcpy(tmp_record_ + table_header_.column_offset[column_number], &date ,sizeof(date));
-        }
+    case Col_Type::COL_TYPE_CHAR:
+        std::strncpy(tmp_record_ + table_header_.column_offset[column_number], 
+                     value.sval_.c_str(), 
+                     table_header_.column_length[column_number]);
+        break;
+    case Col_Type::COL_TYPE_DATE:
+        std::memcpy(tmp_record_ + table_header_.column_offset[column_number], &value.tval_,sizeof(Date));
         break;
     default:
         assert(false);
@@ -185,6 +179,7 @@ void TableManager::allocate_temp_record()
     tmp_cache_ = new char[tmp_record_size_];
     tmp_index_ = new char[tmp_record_size_];
     tmp_null_mark_ = reinterpret_cast<int *>(tmp_record_ + 4);
+    *tmp_null_mark_ = 0;
 }
 
 void TableManager::load_indices()
