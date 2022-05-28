@@ -259,7 +259,8 @@ TEST_CASE( "TC-DATABASE", "[database test]" )
         }
 
         DBMS::GetInstance().UseDatabase("mydb");
-        std::vector<int> ids{3,6,7,13,1,4,21,11,5,89,33,2};
+        std::vector<int> ids{3,6,7,13,1,4,21,11,5,89,33,2};  // 12 numbers
+        for (int i = 100; i < 150; ++i) { ids.push_back(i); }
         for (auto i : ids)
         {
             std::string statement = "INSERT INTO users (id, name, email, age, height, country, sign_up) \
