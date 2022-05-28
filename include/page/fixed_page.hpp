@@ -155,19 +155,23 @@ std::pair<int, FixedPage<T>> FixedPage<T>::Split(int current_id)
     if (page_id == 0) { return {0, FixedPage<T>{nullptr, nullptr}}; }
     FixedPage upper_page{pg_->ReadForWrite(page_id), pg_};
     upper_page.Init(field_size());
-    if (next_page())
+    if (prev_page())
     {
-        FixedPage page{pg_->ReadForWrite(next_page()), pg_};
-        page.prev_page() = page_id;
+        FixedPage page{pg_->ReadForWrite(prev_page()), pg_};
+        page.next_page() = page_id;
     }
-    upper_page.next_page() = next_page();
-    upper_page.prev_page() = current_id;
-    next_page() = page_id;
+    upper_page.prev_page() = prev_page();
+    upper_page.next_page() = current_id;
+    prev_page() = page_id;
     int lower_size = size() >> 1;
     int upper_size = size() - lower_size;
-    for (int i = lower_size; i < size(); ++i)
+    for (int i = 0; i < upper_size; ++i)
     {
-        upper_page.children(i - lower_size) = children(i);
+        upper_page.children(i) = children(i);
+    }
+    for (int i = 0; i < lower_size; ++i)
+    {
+        children(i) = children(i + upper_size);
     }
     std::memcpy(
         upper_page.end() - upper_size * field_size(),
