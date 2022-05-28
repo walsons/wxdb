@@ -150,7 +150,7 @@ BTree<KeyType, Comparer, Copier>::insert_interior(int now_page_id,
     int child_pos = Search::upper_bound(0, page.size(), [&](int id) {
         return comparer_(page.get_key(id), key) >= 0;
     });
-    child_pos = std::min(page.Capacity() - 1, child_pos);
+    child_pos = std::min(page.size() - 1, child_pos);
     int child_page_id = page.children(child_pos);
     char *child_addr = pg_->ReadForWrite(child_page_id);
     Page_Type child_page_type = GeneralPage::GetPageType(child_addr);
@@ -200,7 +200,7 @@ BTree<KeyType, Comparer, Copier>::insert_post_process(int page_id,
         page.set_key(child_pos, lower_child.get_key(lower_child.size() - 1));
         // Insert the new page to page
         KeyType child_largest = copier_(upper_child.get_key(upper_child.size() - 1));
-        bool succ = page.Insert(child_pos + 1, child_largest, child_ret.upper_page_id);
+        bool succ = page.Insert(child_pos, child_largest, child_ret.upper_page_id);
         if (!succ)
         {
             auto upper = page.Split(page_id);

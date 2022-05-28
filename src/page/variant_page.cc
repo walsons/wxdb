@@ -247,7 +247,7 @@ std::pair<int, VariantPage> VariantPage::Split(int current_id)
         dest_addr -= src_header->size;
         std::memcpy(dest_addr, src_addr, src_header->size);
 
-        upper_page.slots(i) = slots(i);
+        upper_page.slots(i) = dest_addr - upper_page.buf_;
         --size();
         ++upper_page.size();
         int required_size = src_header->size + 2;
