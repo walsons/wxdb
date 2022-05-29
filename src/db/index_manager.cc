@@ -27,6 +27,7 @@ IndexManager::comparer IndexManager::GetIndexComparer(Col_Type type)
     case Col_Type::COL_TYPE_DOUBLE:
         return double_cast_comparer;
         break;
+    case Col_Type::COL_TYPE_CHAR:
     case Col_Type::COL_TYPE_VARCHAR:
         return string_comparer;
         break;

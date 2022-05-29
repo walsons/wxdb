@@ -259,8 +259,10 @@ TEST_CASE( "TC-DATABASE", "[database test]" )
         }
 
         DBMS::GetInstance().UseDatabase("mydb");
-        std::vector<int> ids{3,6,7,13,1,4,21,11,5,89,33,2};  // 12 numbers
-        for (int i = 100; i < 10000; ++i) { ids.push_back(i); }
+        std::vector<int> ids{3,6,7,13,1,4,21,11,5,89,33,2,20,30,66,34,14,58,61,46};  // 20 numbers
+        // In this case, 4 layers btree need 7126 numbers, 5 layers need 3121206 numbers,
+        // test case is insert 100000 rows, which take up disk about 128MB
+        for (int i = 100; i < 100000; ++i) { ids.push_back(i); }  
         for (auto i : ids)
         {
             std::string statement = "INSERT INTO users (id, name, email, age, height, country, sign_up) \
@@ -280,12 +282,12 @@ TEST_CASE( "TC-DATABASE", "[database test]" )
         TableHeader header;
         ifs.read(reinterpret_cast<char *>(&header), sizeof(header));
         auto pg = std::make_shared<Pager>(data_path);
+
+        // Validate main data
         auto btr = std::make_shared<IntBTree>(pg, header.index_root_page[header.main_index]);
         int root_page_id = btr->root_page_id();
         char *buf = pg->Read(root_page_id);
         Page_Type page_type = *reinterpret_cast<Page_Type *>(buf);
-
-
         while (page_type == Page_Type::FIXED_PAGE)
         {
             IntBTree::interior_page page{buf, pg};
@@ -304,8 +306,67 @@ TEST_CASE( "TC-DATABASE", "[database test]" )
                 cnt = 0;
             }
             pos = data_page.GetBlock(cnt++).second;
-            // char *pos = buf + data_page.slots(cnt++);
             CHECK(*reinterpret_cast<int *>(pos + 8) == ids[i]);
+        }
+        
+        // Validate index id
+        {
+            auto btr = std::make_shared<IndexBTree>(pg, header.index_root_page[0], sizeof(int) + 5, 
+                                                    IndexManager::GetIndexComparer(Col_Type::COL_TYPE_INT));
+            int root_page_id = btr->root_page_id();
+            char *buf = pg->Read(root_page_id);
+            Page_Type page_type = *reinterpret_cast<Page_Type *>(buf);
+            while (page_type == Page_Type::FIXED_PAGE)
+            {
+                IndexBTree::interior_page page{buf, pg};
+                int first_child_id =  page.children(0);
+                buf = pg->Read(first_child_id);
+                page_type = *reinterpret_cast<Page_Type *>(buf);
+            }
+            IndexLeafPage<const char*> index_page{buf, pg};
+            int cnt = 0;
+            char *pos = nullptr;
+            std::sort(ids.begin(), ids.end());
+            for (int i = 0; i < ids.size(); ++i)
+            {
+                if (cnt == index_page.size())
+                {
+                    index_page = IndexLeafPage<const char*>{pg->Read(index_page.next_page()), pg};
+                    cnt = 0;
+                }
+                pos = index_page.begin() + index_page.field_size() * (cnt++);
+                CHECK(*reinterpret_cast<int *>(pos + 5) == ids[i]);
+            }
+        }
+
+        // Validate index email
+        {
+            auto btr = std::make_shared<IndexBTree>(pg, header.index_root_page[2], 255 + 5,
+                                                    IndexManager::GetIndexComparer(Col_Type::COL_TYPE_VARCHAR));
+            int root_page_id = btr->root_page_id();
+            char *buf = pg->Read(root_page_id);
+            Page_Type page_type = *reinterpret_cast<Page_Type *>(buf);
+            while (page_type == Page_Type::FIXED_PAGE)
+            {
+                IndexBTree::interior_page page{buf, pg};
+                int first_child_id =  page.children(0);
+                buf = pg->Read(first_child_id);
+                page_type = *reinterpret_cast<Page_Type *>(buf);
+            }
+            IndexLeafPage<const char*> index_page{buf, pg};
+            int cnt = 0;
+            char *pos = nullptr;
+            // std::sort(ids.begin(), ids.end());
+            for (int i = 0; i < ids.size(); ++i)
+            {
+                if (cnt == index_page.size())
+                {
+                    index_page = IndexLeafPage<const char*>{pg->Read(index_page.next_page()), pg};
+                    cnt = 0;
+                }
+                pos = index_page.begin() + index_page.field_size() * (cnt++);
+                CHECK(std::string(pos + 5) == "walsons@163.com");
+            }
         }
     }
 }
