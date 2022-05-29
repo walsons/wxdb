@@ -34,7 +34,7 @@ public:
     char *end();
 
     void Init(int field_size);
-    int Capacity() const;
+    int Capacity();
     bool Full();
     bool Empty() const;
     bool Underflow() const;
@@ -97,7 +97,7 @@ void FixedPage<T>::Init(int fsize)
 }
 
 template <typename T> inline
-int FixedPage<T>::Capacity() const { return (PAGE_SIZE - header_size()) / (sizeof(T) + 4); }
+int FixedPage<T>::Capacity() { return (PAGE_SIZE - header_size()) / (field_size() + 4); }
 
 template <typename T> inline
 bool FixedPage<T>::Full() { return size() == Capacity(); }
@@ -175,15 +175,10 @@ std::pair<int, FixedPage<T>> FixedPage<T>::Split(int current_id)
     }
     std::memcpy(
         upper_page.end() - upper_size * field_size(),
-        end() - upper_size * field_size(),
+        begin(),
         upper_size * field_size()
     );
     upper_page.size() = upper_size;
-    std::memmove(
-        end() - lower_size * field_size(),
-        end() - size() * field_size(),
-        lower_size
-    );
     size() = lower_size;
     return {page_id, upper_page};
 }
