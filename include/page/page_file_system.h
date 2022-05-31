@@ -58,6 +58,7 @@ private:
 public:
     static PageFileSystem &GetInstance();
     ~PageFileSystem();
+    void MarkDirty(int file_id, int page_id);
     int Open(const std::string &name);
     void Close(int file_id);
     void WriteBack(int file_id);
@@ -70,8 +71,7 @@ public:
     char *ReadForWrite(int file_id, int page_id);
 };
 
-inline
-PageFileSystem::PageFileSystem()
+inline PageFileSystem::PageFileSystem()
 {
     // file id and page id both start from 1, if they are 0, 
     // which means this page of cache is not used
@@ -81,20 +81,23 @@ PageFileSystem::PageFileSystem()
     }
 }
 
-inline 
-PageFileSystem &PageFileSystem::GetInstance()
+inline PageFileSystem &PageFileSystem::GetInstance()
 {
     static PageFileSystem page_file_system;
     return page_file_system;
 }
 
-inline
-PageFileSystem::~PageFileSystem()
+inline PageFileSystem::~PageFileSystem()
 {
     for (size_t i = 1; i <= MAX_NUM_FILE_ID; ++i)
     {
         if (fid_manager_.IsUsed(i)) { Close(i); }
     }
+}
+
+inline void PageFileSystem::MarkDirty(int file_id, int page_id) 
+{ 
+    dirty_[page2index_[file_page_t{file_id, page_id}]] = true; 
 }
 
 #endif
