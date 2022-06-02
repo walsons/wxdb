@@ -130,3 +130,54 @@ void DatabaseManager::InsertRow(const std::shared_ptr<InsertInfo> insert_info)
     }
     table->InsertRecord();
 }
+
+void DatabaseManager::SelectTable(const std::shared_ptr<SelectInfo> select_info)
+{
+    // Get table map
+    std::vector<std::shared_ptr<TableManager>> tms;
+    tms.reserve(select_info->tables.size());
+    std::unordered_map<std::string, std::shared_ptr<TableManager>> table_map;
+    for (const auto &item : select_info->tables)
+    {
+        table_map[item] = nullptr;
+    }
+    for (size_t i = 0; i < table_manager_.size(); ++i)
+    {
+        if (table_map.find(table_manager_[i]->table_name()) != table_map.end())
+        {
+            table_map[table_manager_[i]->table_name()] = table_manager_[i];
+        }
+    }
+    for (const auto &item : table_map)
+    {
+        if (item.second == nullptr)
+        {
+            std::cout << "Error: no table named \"" << item.first << "\"!" << std::endl;
+            return;
+        }
+    }
+    // Get Columns
+    auto columns = select_info->columns;
+    // Get where expression
+    auto condition = select_info->where;
+
+    // Iterator records
+    if (table_map.size() == 1)
+    {
+        iterate_one_table();
+    }
+    else
+    {
+        iterate_many_table();
+    }
+}
+
+void DatabaseManager::iterate_one_table()
+{
+    // TODO
+}
+
+void DatabaseManager::iterate_many_table()
+{
+    // TODO
+}

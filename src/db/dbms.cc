@@ -20,6 +20,11 @@ void DBMS::InsertRow(const std::shared_ptr<InsertInfo> insert_info)
     db_manager_->InsertRow(insert_info);
 }
 
+void DBMS::SelectTable(const std::shared_ptr<SelectInfo> select_info)
+{
+    db_manager_->SelectTable(select_info);
+}
+
 void DBMS::CloseDatabase()
 {
     db_manager_->Close();

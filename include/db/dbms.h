@@ -26,6 +26,7 @@ public:
     void UseDatabase(const std::string &db_name);
     void CreateTable(const std::shared_ptr<TableHeader> table_header);
     void InsertRow(const std::shared_ptr<InsertInfo> insert_info);
+    void SelectTable(const std::shared_ptr<SelectInfo> select_info);
     // call when exit
     void CloseDatabase();
 
