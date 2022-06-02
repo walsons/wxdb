@@ -19,6 +19,11 @@ public:
     void Close();
     void CreateTable(const std::shared_ptr<TableHeader> table_header);
     void InsertRow(const std::shared_ptr<InsertInfo> insert_info);
+    void SelectTable(const std::shared_ptr<SelectInfo> select_info);
+
+private:
+    void iterate_one_table();
+    void iterate_many_table();
 
 private:
     // These infomation about database need to be stored in "database_name.db" file:

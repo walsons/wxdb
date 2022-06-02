@@ -58,4 +58,11 @@ struct InsertInfo
     std::vector<ColVal> col_val;
 };
 
+struct SelectInfo
+{
+    std::vector<ColumnRef> columns;
+    std::vector<std::string> tables;
+    ExprNode *where;
+};
+
 #endif
