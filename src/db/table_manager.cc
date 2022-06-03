@@ -166,6 +166,12 @@ bool TableManager::SetTempRecord(int column_number, ColVal value)
     return true;
 }
 
+std::pair<int, int> TableManager::GetRowPosition(int row_id)
+{
+    auto pos = btr_->upper_bound(btr_->root_page_id(), row_id);
+    return pos;
+}
+
 void TableManager::allocate_temp_record()
 {
     if (tmp_record_) delete[] tmp_record_;
