@@ -32,6 +32,7 @@ public:
     void Insert(KeyType key, const char *data, int data_size);
     bool Erase(KeyType key);
     int root_page_id() { return root_page_id_; }
+    search_result upper_bound(int now_page_id, KeyType key);
 
 private:
     struct insert_ret
@@ -57,7 +58,6 @@ private:
     void insert_split_root(insert_ret ret);
     template <typename Page, typename ChildPage>
     insert_ret insert_post_process(int page_id, int child_page_id, int child_pos, insert_ret child_ret);
-    search_result upper_bound(int now_page_id, KeyType key);
 };
 
 template <typename KeyType, typename Comparer, typename Copier>

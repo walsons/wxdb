@@ -4,6 +4,8 @@
 #include <iostream>
 #include "../../include/db/type_cast.h"
 #include "../../include/db/col_val.h"
+#include "../../include/btree/btree_iterator.hpp"
+#include "../../include/db/record_manager.h"
 
 void DatabaseManager::CreateDatabase(const std::string &db_name)
 {
@@ -164,7 +166,7 @@ void DatabaseManager::SelectTable(const std::shared_ptr<SelectInfo> select_info)
     // Iterator records
     if (table_map.size() == 1)
     {
-        iterate_one_table();
+        iterate_one_table(table_map, columns, condition);
     }
     else
     {
@@ -172,9 +174,100 @@ void DatabaseManager::SelectTable(const std::shared_ptr<SelectInfo> select_info)
     }
 }
 
-void DatabaseManager::iterate_one_table()
+void DatabaseManager::iterate_one_table(const std::unordered_map<std::string, std::shared_ptr<TableManager>> &table_map,
+                                        const std::vector<ColumnRef> &columns, ExprNode *condition)
 {
-    // TODO
+    auto tm = (*table_map.begin()).second;
+    // Find the first record
+    int row_id = 1;
+    auto file_page = tm->GetRowPosition(row_id);
+    BTreeIterator<VariantPage> btit{tm->pg(), file_page};   
+    RecordManager record_manager{tm->pg()};
+    std::vector<int> col_index;
+    for (const auto &col : columns)
+    {
+        bool exist_flag = false;
+        for (int i = 0; i < tm->table_header().num_column; ++i)
+        {
+            if (tm->column_name(i) == col.column_name)
+            {
+                col_index.push_back(i);
+                exist_flag = true;
+                break;
+            }
+        }
+        if (!exist_flag)
+        {
+            std::cout << "Error: no column named \"" << col.column_name << "\"!" << std::endl;
+            return;
+        }
+    }
+    // TODO: process * case
+    // Print header
+    for (auto it = columns.begin(); it != columns.end(); ++it)
+    {
+        if (it != columns.begin()) { std::cout << "\t"; }
+        std::cout << it->column_name;
+    }
+    std::cout << std::endl;
+    // Print rows
+    for (; btit.IsEnd(); btit.next())
+    {
+        record_manager.Open(*btit, false);
+        for (auto it = col_index.begin(); it != col_index.end(); ++it)
+        {
+            if (it != col_index.begin()) { std::cout << "\t"; }
+            record_manager.Seek(tm->table_header().column_offset[*it]);
+            int col_length = tm->table_header().column_length[*it];
+            switch (tm->table_header().column_type[*it])
+            {
+            case Col_Type::COL_TYPE_INT:
+            {
+                int val;
+                record_manager.Read(&val, col_length);
+                std::cout << val;
+                break;
+            }
+            case Col_Type::COL_TYPE_DOUBLE:
+            {
+                double val;
+                record_manager.Read(&val, col_length);
+                std::cout << val;
+                break;
+            }
+            case Col_Type::COL_TYPE_BOOL:
+            {
+                bool val;
+                record_manager.Read(&val, col_length);
+                std::cout << (val ? "true" : "false");
+                break;
+            }
+            case Col_Type::COL_TYPE_DATE:
+            {
+                Date val;
+                record_manager.Read(&val, col_length);
+                std::cout << (val.timestamp2str());
+                break;
+            }
+            case Col_Type::COL_TYPE_CHAR:
+            case Col_Type::COL_TYPE_VARCHAR:
+            {
+                char *val = new char[col_length + 1];
+                record_manager.Read(&val, col_length);
+                std::cout << val;
+                delete[] val;
+                break;
+            }
+            case Col_Type::COL_TYPE_NULL:
+            {
+                std::cout << "NULL";
+            }
+            default:
+                break;
+            }
+        }
+        std::cout << std::endl;
+    }
 }
 
 void DatabaseManager::iterate_many_table()

@@ -18,9 +18,9 @@ class BTreeIterator
         if (page_id_)
         {
             PageType page{pg_->Read(page_id_), pg_};
-            assert(pgae.page_type() == Page_Type::VARIANT_PAGE ||
+            assert(page.page_type() == Page_Type::VARIANT_PAGE ||
                    page.page_type() == Page_Type::INDEX_LEAF_PAGE);
-            cur_size_ = paeg.size();
+            cur_size_ = page.size();
             next_page_id_ = page.next_page();
             prev_page_id_ = page.prev_page();
         }
@@ -37,10 +37,10 @@ public:
     value_t next()
     {
         assert(page_id_);
-        if (++pos == cur_size_)
+        if (++pos_ == cur_size_)
         {
             load_info(next_page_id_);
-            pos = 0;
+            pos_ = 0;
         }
         return Get();
     }
@@ -50,7 +50,7 @@ public:
         if (pos_-- == 0)
         {
             load_info(prev_page_id_);
-            pos = cur_size_ - 1;
+            pos_ = cur_size_ - 1;
         }
         return Get();
     }

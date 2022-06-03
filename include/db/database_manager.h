@@ -22,7 +22,8 @@ public:
     void SelectTable(const std::shared_ptr<SelectInfo> select_info);
 
 private:
-    void iterate_one_table();
+    void iterate_one_table(const std::unordered_map<std::string, std::shared_ptr<TableManager>> &table_map,
+                           const std::vector<ColumnRef> &columns, ExprNode *condition);
     void iterate_many_table();
 
 private:

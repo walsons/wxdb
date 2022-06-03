@@ -33,6 +33,8 @@ public:
     int InsertRecord();
     bool SetTempRecord(int column_number, ColVal value);
 
+    std::pair<int, int> GetRowPosition(int row_id);
+
 private:
     void allocate_temp_record();
     void load_indices();
@@ -42,12 +44,14 @@ private:
     bool validate_constraints();
 
 public:
-    TableHeader table_header() const { return table_header_; }
+    const TableHeader &table_header() const { return table_header_; }
     std::string table_name() const { return table_name_; }
     bool is_open() const { return is_open_; }
     unsigned number_of_column() const { return table_header_.num_column; }
     Col_Type column_type(int index) const { return table_header_.column_type[index]; }
     std::string column_name(int index) const { return table_header_.column_name[index]; }
+    std::shared_ptr<Pager> pg() { return pg_; }
+    std::shared_ptr<IntBTree> btr() { return btr_; }
 };
 
 #endif
