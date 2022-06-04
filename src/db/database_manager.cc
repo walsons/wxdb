@@ -211,7 +211,7 @@ void DatabaseManager::iterate_one_table(const std::unordered_map<std::string, st
     }
     std::cout << std::endl;
     // Print rows
-    for (; btit.IsEnd(); btit.next())
+    for (; !btit.IsEnd(); btit.next())
     {
         record_manager.Open(*btit, false);
         for (auto it = col_index.begin(); it != col_index.end(); ++it)
@@ -253,7 +253,8 @@ void DatabaseManager::iterate_one_table(const std::unordered_map<std::string, st
             case Col_Type::COL_TYPE_VARCHAR:
             {
                 char *val = new char[col_length + 1];
-                record_manager.Read(&val, col_length);
+                val[col_length] = '\0';
+                record_manager.Read(val, col_length);
                 std::cout << val;
                 delete[] val;
                 break;

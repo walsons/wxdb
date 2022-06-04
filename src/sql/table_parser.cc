@@ -463,3 +463,92 @@ std::shared_ptr<std::vector<ColVal>> TableParser::parse_value_expr()
     }
     return value;
 }
+
+std::shared_ptr<SelectInfo> TableParser::SelectTable()
+{
+    auto select_info = std::make_shared<SelectInfo>();
+    select_info->where = nullptr;
+    // select
+    if (!MatchToken(Token_Type::TOKEN_RESERVED_WORD, "select")) { return nullptr; }
+    // column name
+    auto token = ParseNextToken();
+    if (MatchToken(Token_Type::TOKEN_MULTIPLY, "*"))
+    {
+        //  Nothing need to do, remain columns to empty
+    }
+    else if (token->type_ == Token_Type::TOKEN_WORD)
+    {
+        while (token->type_ == Token_Type::TOKEN_WORD)
+        {
+            std::string col_name = token->text_;
+            size_t pos = 0;
+            ColumnRef ref;
+            if ((pos = col_name.find(".")) != std::string::npos)
+            {
+                ref.table_name = col_name.substr(0, pos);
+                ref.column_name = col_name.substr(pos + 1);
+            }
+            else
+            {
+                ref.column_name = col_name;
+            }
+            ParseEatToken();
+            select_info->columns.push_back(ref);
+            if (!MatchToken(Token_Type::TOKEN_COMMA, ","))
+            {
+                break;
+            }
+            token = ParseNextToken();
+        }
+    }
+    else 
+    {
+        ParseError("Invalid SQL: should be column name!");
+        return nullptr;
+    }
+    // from
+    if (!MatchToken(Token_Type::TOKEN_RESERVED_WORD, "from")) 
+    {
+        ParseError("Invalid SQL: should be \"from\"!");
+        return nullptr;
+    }
+    // table name
+    token = ParseNextToken();
+    if (token->type_ == Token_Type::TOKEN_WORD)
+    {
+        while (token->type_ == Token_Type::TOKEN_WORD)
+        {
+            select_info->tables.push_back(token->text_);
+            if (!MatchToken(Token_Type::TOKEN_COMMA, ","))
+            {
+                break;
+            }
+        }
+    }
+    else 
+    {
+        ParseError("Invalid SQL: should be table name!");
+        return nullptr;
+    }
+    if (!MatchToken(Token_Type::TOKEN_SEMICOLON, ";")) 
+    {
+        return select_info;
+    }
+    // where if has
+    if (!MatchToken(Token_Type::TOKEN_RESERVED_WORD, "where")) 
+    {
+        ExprNode *node = ParseExpressionRD();      
+        select_info->where = node;
+    }
+    else
+    {
+        ParseError("Invalid SQL: wrong statement!");
+        return nullptr;
+    }
+    if (!MatchToken(Token_Type::TOKEN_SEMICOLON, ";")) 
+    {
+        ParseError("Invalid SQL: should \";\"!");
+        return nullptr;
+    }
+    return select_info;
+}

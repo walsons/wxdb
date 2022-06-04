@@ -12,6 +12,7 @@ public:
     ~TableParser() = default;
     std::shared_ptr<TableInfo> CreateTable();
     std::shared_ptr<InsertInfo> InsertTable();
+    std::shared_ptr<SelectInfo> SelectTable();
 private:
     std::shared_ptr<FieldInfo> parse_field_expr();
     std::shared_ptr<ConstraintInfo> parse_constraint_expr();
