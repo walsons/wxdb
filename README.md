@@ -76,3 +76,29 @@ INSERT INTO users
 VALUES (1, "Walson", "walsons@163.com", "18", "180", "China", "2020-01-03");
 ```
 
+```sql
+SELECT *
+FROM table_name;
+
+#example
+SELECT *
+FROM users;
+
+SELECT column1, column2, ...
+FROM table_name;
+
+#example
+SELECT id, name, sign_up
+FROM users;
+
+# Select from multiple tables need to add table name before column name
+SELECT table_name.column1, table_name.column2, ...
+FROM table_name, ...
+WHERE expression;
+
+#example
+SELECT users.name, users.contents
+FROM users, comments
+WHERE users.id = comments.user_id;
+
+```
