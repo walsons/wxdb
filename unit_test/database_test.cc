@@ -112,9 +112,9 @@ TEST_CASE( "TC-DATABASE", "[database test]" )
             ExprNode *expr_node = Expression::LoadExprNode(is);
             // TODO: validate expr node
             CHECK(expr_node != nullptr);
-            auto test_term1 = std::make_shared<TermExpr>(18);
-            auto test_term2 = std::make_shared<TermExpr>(60);
-            auto test_term3 = std::make_shared<TermExpr>(12);
+            auto test_term1 = std::unordered_map<std::string, std::shared_ptr<TermExpr>>{{"age", std::make_shared<TermExpr>(18)}};
+            auto test_term2 = std::unordered_map<std::string, std::shared_ptr<TermExpr>>{{"age", std::make_shared<TermExpr>(60)}};
+            auto test_term3 = std::unordered_map<std::string, std::shared_ptr<TermExpr>>{{"age", std::make_shared<TermExpr>(12)}};
             Expression expression(expr_node, test_term1);
             CHECK(expression.term_.bval_ == true);
             expression.Eval(expr_node, test_term2);
@@ -406,11 +406,19 @@ TEST_CASE( "TC-DATABASE", "[database test]" )
         // insert table
         {
             DBMS::GetInstance().UseDatabase("mydb");
-            std::vector<int> ids{3,6,7,13,1,4,21,11,5,89,33,2,20,30,66,34,14,58,61,46};  // 20 numbers
+            std::vector<std::string> statements;
+            statements.emplace_back("INSERT INTO users (id, name, email, age, height, country, sign_up) \
+                                     VALUES (1, \"Walson\", \"walsons@163.com\", 18, 180, \"China\", \"2020-01-03\");");
+            statements.emplace_back("INSERT INTO users (id, name, email, age, height, country, sign_up) \
+                                     VALUES (2, \"John\", \"John123@163.com\", 20, 175, \"China\", \"2020-03-12\");");
+            std::vector<int> ids{3,6,7,13,4,21,11,5,89,33,20,30,66,34,14,58,61,46};  // 20 numbers
             for (auto i : ids)
             {
-                std::string statement = "INSERT INTO users (id, name, email, age, height, country, sign_up) \
-                                        VALUES (" + std::to_string(i) + ", \"Walson\", \"walsons@163.com\", 18, 180, \"China\", \"2020-01-03\");";
+                statements.emplace_back("INSERT INTO users (id, name, email, age, height, country, sign_up) \
+                                        VALUES (" + std::to_string(i) + ", \"Walson\", \"walsons@163.com\", 18, 180, \"China\", \"2020-01-03\");");
+            }
+            for (auto statement : statements)
+            {
                 auto tokenizer = std::make_shared<Tokenizer>(statement);
                 TableParser table_parser(tokenizer);
                 auto insert_info = table_parser.InsertTable();
@@ -420,7 +428,7 @@ TEST_CASE( "TC-DATABASE", "[database test]" )
         }
         // select
         {
-            std::string statement = "SELECT id, name, sign_up FROM users;";
+            std::string statement = "SELECT id, name, sign_up FROM users WHERE id < 10;";
             auto tokenizer = std::make_shared<Tokenizer>(statement);
             TableParser table_parser(tokenizer);
             auto select_info = table_parser.SelectTable();
@@ -433,7 +441,7 @@ TEST_CASE( "TC-DATABASE", "[database test]" )
             // tables
             CHECK(select_info->tables[0] == "users");
             // where
-            CHECK(select_info->where == nullptr);
+            CHECK(select_info->where != nullptr);
 
             DBMS::GetInstance().SelectTable(select_info);
         }

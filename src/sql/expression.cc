@@ -2,6 +2,7 @@
 #include <cmath>
 #include <cassert>
 #include <stack>
+#include <unordered_map>
 
 TermExpr::TermExpr() : term_type_(Term_Type::TERM_NULL) {}
 
@@ -181,12 +182,12 @@ void TermExpr::destory_class_member()
     }
 }
 
-Expression::Expression(ExprNode *expr, std::shared_ptr<TermExpr> col_real_term)
+Expression::Expression(ExprNode *expr, std::unordered_map<std::string, std::shared_ptr<TermExpr>> col_real_term)
 {
     Eval(expr, col_real_term);
 }
 
-void Expression::Eval(ExprNode *expr, std::shared_ptr<TermExpr> col_real_term)
+void Expression::Eval(ExprNode *expr, std::unordered_map<std::string, std::shared_ptr<TermExpr>> col_real_term)
 {
     // TODO: add type check
     assert(expr != nullptr);
@@ -197,7 +198,7 @@ void Expression::Eval(ExprNode *expr, std::shared_ptr<TermExpr> col_real_term)
         if (expr->term_->term_type_ == Term_Type::TERM_COL_REF)
         {
             tmp_store = expr->term_;
-            expr->term_ = col_real_term;
+            expr->term_ = col_real_term[expr->term_->ref_.all_name()];
             is_col_ref = true;
         }
     };

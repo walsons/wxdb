@@ -133,9 +133,9 @@ TEST_CASE("TC-PARSER", "[parser test]")
         CHECK(cons.type == Constraint_Type::CONS_CHECK);
         // TODO: validate expr node
         CHECK(cons.expr != nullptr);
-        auto test_term1 = std::make_shared<TermExpr>(18);
-        auto test_term2 = std::make_shared<TermExpr>(60);
-        auto test_term3 = std::make_shared<TermExpr>(12);
+        auto test_term1 = std::unordered_map<std::string, std::shared_ptr<TermExpr>>{{"age", std::make_shared<TermExpr>(18)}};
+        auto test_term2 = std::unordered_map<std::string, std::shared_ptr<TermExpr>>{{"age", std::make_shared<TermExpr>(60)}};
+        auto test_term3 = std::unordered_map<std::string, std::shared_ptr<TermExpr>>{{"age", std::make_shared<TermExpr>(12)}};
         expression.Eval(cons.expr, test_term1);
         CHECK(expression.term_.bval_ == true);
         expression.Eval(cons.expr, test_term2);
@@ -265,9 +265,9 @@ TEST_CASE("TC-PARSER", "[parser test]")
             ExprNode *expr_node = Expression::LoadExprNode(is);
             // TODO: validate expr node
             CHECK(expr_node != nullptr);
-            auto test_term1 = std::make_shared<TermExpr>(18);
-            auto test_term2 = std::make_shared<TermExpr>(60);
-            auto test_term3 = std::make_shared<TermExpr>(12);
+            auto test_term1 = std::unordered_map<std::string, std::shared_ptr<TermExpr>>{{"age", std::make_shared<TermExpr>(18)}};
+            auto test_term2 = std::unordered_map<std::string, std::shared_ptr<TermExpr>>{{"age", std::make_shared<TermExpr>(60)}};
+            auto test_term3 = std::unordered_map<std::string, std::shared_ptr<TermExpr>>{{"age", std::make_shared<TermExpr>(12)}};
             Expression expression(expr_node, test_term1);
             CHECK(expression.term_.bval_ == true);
             expression.Eval(expr_node, test_term2);
