@@ -177,32 +177,39 @@ void DatabaseManager::SelectTable(const std::shared_ptr<SelectInfo> select_info)
 void DatabaseManager::iterate_one_table(const std::unordered_map<std::string, std::shared_ptr<TableManager>> &table_map,
                                         const std::vector<ColumnRef> &columns, ExprNode *condition)
 {
+    // Construct column map (map{column_name, {table_name, column_index}})
+    std::unordered_map<std::string, std::pair<std::string, size_t>> column_map;
     auto tm = (*table_map.begin()).second;
+    for (size_t i = 0; i < tm->table_header().num_column; ++i)
+    {
+        column_map[tm->column_name(i)] = {tm->table_name(), i};
+    }
+
     // Find the first record
     int row_id = 1;
     auto file_page = tm->GetRowPosition(row_id);
     BTreeIterator<VariantPage> btit{tm->pg(), file_page};   
     RecordManager record_manager{tm->pg()};
-    std::vector<int> col_index;
-    for (const auto &col : columns)
+    std::vector<size_t> column_index;
+    if (columns.empty())
     {
-        bool exist_flag = false;
-        for (int i = 0; i < tm->table_header().num_column; ++i)
+        for (size_t i = 0; i < tm->number_of_column() - 1; ++i)  // no need to print __rowid__
         {
-            if (tm->column_name(i) == col.column_name)
-            {
-                col_index.push_back(i);
-                exist_flag = true;
-                break;
-            }
-        }
-        if (!exist_flag)
-        {
-            std::cout << "Error: no column named \"" << col.column_name << "\"!" << std::endl;
-            return;
+            column_index.push_back(i);
         }
     }
-    // TODO: process * case
+    else
+    {
+        for (const auto &col : columns)
+        {
+            if (column_map.find(col.column_name) == column_map.end())
+            {
+                std::cout << "Error: no column named \"" << col.column_name << "\"!" << std::endl;
+                return;
+            }
+            column_index.push_back(column_map[col.column_name].second);
+        }
+    }
     // Print header
     for (auto it = columns.begin(); it != columns.end(); ++it)
     {
@@ -214,9 +221,76 @@ void DatabaseManager::iterate_one_table(const std::unordered_map<std::string, st
     for (; !btit.IsEnd(); btit.next())
     {
         record_manager.Open(*btit, false);
-        for (auto it = col_index.begin(); it != col_index.end(); ++it)
+        // Check condition
+        if (condition != nullptr)
         {
-            if (it != col_index.begin()) { std::cout << "\t"; }
+            std::unordered_map<std::string, std::shared_ptr<TermExpr>> term_map;
+            for (size_t i = 0; i < tm->number_of_column(); ++i)
+            {
+                record_manager.Seek(tm->table_header().column_offset[i]);
+                int col_length = tm->table_header().column_length[i];
+                switch (tm->table_header().column_type[i])
+                {
+                case Col_Type::COL_TYPE_INT:
+                {
+                    int val;
+                    record_manager.Read(&val, col_length);
+                    auto term = std::make_shared<TermExpr>(val);
+                    term_map.insert({tm->column_name(i), term});
+                    break;
+                }
+                case Col_Type::COL_TYPE_DOUBLE:
+                {
+                    double val;
+                    record_manager.Read(&val, col_length);
+                    auto term = std::make_shared<TermExpr>(val);
+                    term_map.insert({tm->column_name(i), term});
+                    break;
+                }
+                case Col_Type::COL_TYPE_BOOL:
+                {
+                    bool val;
+                    record_manager.Read(&val, col_length);
+                    auto term = std::make_shared<TermExpr>(val);
+                    term_map.insert({tm->column_name(i), term});
+                    break;
+                }
+                case Col_Type::COL_TYPE_DATE:
+                {
+                    Date val;
+                    record_manager.Read(&val, col_length);
+                    auto term = std::make_shared<TermExpr>(val);
+                    term_map.insert({tm->column_name(i), term});
+                    break;
+                }
+                case Col_Type::COL_TYPE_CHAR:
+                case Col_Type::COL_TYPE_VARCHAR:
+                {
+                    char *val = new char[col_length + 1];
+                    val[col_length] = '\0';
+                    record_manager.Read(val, col_length);
+                    auto term = std::make_shared<TermExpr>(val);
+                    term_map.insert({tm->column_name(i), term});
+                    delete[] val;
+                    break;
+                }
+                case Col_Type::COL_TYPE_NULL:
+                {
+                    auto term = std::make_shared<TermExpr>();
+                    term_map.insert({tm->column_name(i), term});
+                }
+                default:
+                    break;
+                }
+            }
+            Expression expression{condition, term_map};
+            if (!expression.term_.bval_) { continue; }
+        }
+
+        // Print
+        for (auto it = column_index.begin(); it != column_index.end(); ++it)
+        {
+            if (it != column_index.begin()) { std::cout << "\t"; }
             record_manager.Seek(tm->table_header().column_offset[*it]);
             int col_length = tm->table_header().column_length[*it];
             switch (tm->table_header().column_type[*it])

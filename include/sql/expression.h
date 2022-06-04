@@ -5,6 +5,7 @@
 #include "token.h"
 #include <memory>
 #include <sstream>
+#include <unordered_map>
 
 // enum class Func_Type
 // {
@@ -21,6 +22,7 @@ struct ColumnRef
     ColumnRef(const std::string &col_name, const std::string &tname = "")
         : table_name(tname), column_name(col_name) {}
     ~ColumnRef() = default;
+    std::string all_name() const { return table_name.empty() ? column_name : (table_name + "." + column_name); }
     std::string table_name;
     std::string column_name;
 };
@@ -105,9 +107,9 @@ public:
 class Expression
 {
 public:
-    Expression(ExprNode *expr, std::shared_ptr<TermExpr> col_real_term = nullptr);
+    Expression(ExprNode *expr, std::unordered_map<std::string, std::shared_ptr<TermExpr>> col_real_term = std::unordered_map<std::string, std::shared_ptr<TermExpr>>{});
     //Evaluate Reverse Polish Notation 
-    void Eval(ExprNode *expr, std::shared_ptr<TermExpr> col_real_term = nullptr);
+    void Eval(ExprNode *expr, std::unordered_map<std::string, std::shared_ptr<TermExpr>> col_real_term = std::unordered_map<std::string, std::shared_ptr<TermExpr>>{});
     // Store expr_node linklist in ostringstream
     static void DumpExprNode(std::ostringstream &os, ExprNode *expr);
     // Load expr_node linklist

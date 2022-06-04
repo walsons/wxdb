@@ -521,6 +521,7 @@ std::shared_ptr<SelectInfo> TableParser::SelectTable()
             select_info->tables.push_back(token->text_);
             if (!MatchToken(Token_Type::TOKEN_COMMA, ","))
             {
+                token = ParseEatAndNextToken();
                 break;
             }
         }
@@ -530,12 +531,12 @@ std::shared_ptr<SelectInfo> TableParser::SelectTable()
         ParseError("Invalid SQL: should be table name!");
         return nullptr;
     }
-    if (!MatchToken(Token_Type::TOKEN_SEMICOLON, ";")) 
+    if (MatchToken(Token_Type::TOKEN_SEMICOLON, ";")) 
     {
         return select_info;
     }
     // where if has
-    if (!MatchToken(Token_Type::TOKEN_RESERVED_WORD, "where")) 
+    if (MatchToken(Token_Type::TOKEN_RESERVED_WORD, "where")) 
     {
         ExprNode *node = ParseExpressionRD();      
         select_info->where = node;
