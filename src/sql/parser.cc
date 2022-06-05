@@ -335,7 +335,16 @@ ExprNode *Parser::ParseReadBuiltin()
         {
             // Identifier: there are three forms of column_ref:
             // student.*, student.sno, sno
-            auto column_ref = new ColumnRef(text);
+            std::shared_ptr<ColumnRef> column_ref = nullptr;
+            auto pos = text.find(".");
+            if (pos != std::string::npos)
+            {
+                column_ref = std::make_shared<ColumnRef>(text.substr(pos + 1), text.substr(0, pos));
+            }
+            else
+            {
+                column_ref = std::make_shared<ColumnRef>(text);
+            }
             auto term = std::make_shared<TermExpr>(*column_ref);
             expr = new ExprNode(Operator_Type::NONE, term);
         }
