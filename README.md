@@ -102,3 +102,6 @@ FROM users, comments
 WHERE users.id = comments.user_id;
 
 ```
+
+## Unit Test
+Because of the static local object, the unit test should run individually, otherwise will crash.

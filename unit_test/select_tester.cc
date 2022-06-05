@@ -6,7 +6,6 @@ TEST_CASE( "TC-Select", "[insert row test]" )
     // Create database
     {
         fs::remove_all(DB_DIR.c_str());
-        fs::create_directory(DB_DIR.c_str());
         std::string statement = "create database mydb";
         auto t = std::make_shared<Tokenizer>(statement);
         auto database_parser = std::make_shared<DatabaseParser>(t);
