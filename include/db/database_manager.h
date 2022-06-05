@@ -8,6 +8,9 @@
 
 #include "../../include/defs.h"
 #include "../../include/db/table_manager.h"
+#include "../../include/db/col_val.h"
+#include "../../include/btree/btree_iterator.hpp"
+#include "../../include/db/record_manager.h"
 
 class DatabaseManager
 {
@@ -24,7 +27,14 @@ public:
 private:
     void iterate_one_table(const std::unordered_map<std::string, std::shared_ptr<TableManager>> &table_map,
                            const std::vector<ColumnRef> &columns, ExprNode *condition);
-    void iterate_many_table();
+    // void iterate_many_table(const std::unordered_map<std::string, std::shared_ptr<TableManager>> &table_map,
+    //                         const std::vector<ColumnRef> &columns, ExprNode *condition);
+    void update_column2term(const std::vector<std::shared_ptr<TableManager>> &tms,
+                            std::vector<BTreeIterator<VariantPage>> &btits, 
+                            std::vector<RecordManager> &rms,
+                            std::unordered_map<std::string, std::shared_ptr<TermExpr>> &column2term);
+    void iterate_many_table(const std::vector<std::shared_ptr<TableManager>> &table_map,
+                            const std::vector<ColumnRef> &columns, ExprNode *condition);
 
 private:
     // These infomation about database need to be stored in "database_name.db" file:

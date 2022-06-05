@@ -89,6 +89,9 @@ private:
     void destory_class_member();
 };
 
+std::ostream &operator<<(std::ostream &os, const TermExpr &term);
+
+
 class ExprNode
 {
 public:

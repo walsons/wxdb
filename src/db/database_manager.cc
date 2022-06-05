@@ -135,9 +135,10 @@ void DatabaseManager::InsertRow(const std::shared_ptr<InsertInfo> insert_info)
 
 void DatabaseManager::SelectTable(const std::shared_ptr<SelectInfo> select_info)
 {
-    // Get table map
-    std::vector<std::shared_ptr<TableManager>> tms;
-    tms.reserve(select_info->tables.size());
+    // Check all column are exist, check table is empty
+    // TODO
+
+    // Construct a table map for founding table that does not exist quickly
     std::unordered_map<std::string, std::shared_ptr<TableManager>> table_map;
     for (const auto &item : select_info->tables)
     {
@@ -150,6 +151,10 @@ void DatabaseManager::SelectTable(const std::shared_ptr<SelectInfo> select_info)
             table_map[table_manager_[i]->table_name()] = table_manager_[i];
         }
     }
+
+    // Get table manager vector
+    std::vector<std::shared_ptr<TableManager>> tms;
+    tms.reserve(select_info->tables.size());
     for (const auto &item : table_map)
     {
         if (item.second == nullptr)
@@ -157,8 +162,12 @@ void DatabaseManager::SelectTable(const std::shared_ptr<SelectInfo> select_info)
             std::cout << "Error: no table named \"" << item.first << "\"!" << std::endl;
             return;
         }
+        else
+        {
+            tms.push_back(item.second);
+        }
     }
-    // Get Columns
+    // Get columns
     auto columns = select_info->columns;
     // Get where expression
     auto condition = select_info->where;
@@ -170,7 +179,7 @@ void DatabaseManager::SelectTable(const std::shared_ptr<SelectInfo> select_info)
     }
     else
     {
-        iterate_many_table();
+        iterate_many_table(tms, columns, condition);
     }
 }
 
@@ -345,7 +354,138 @@ void DatabaseManager::iterate_one_table(const std::unordered_map<std::string, st
     }
 }
 
-void DatabaseManager::iterate_many_table()
+void DatabaseManager::update_column2term(const std::vector<std::shared_ptr<TableManager>> &tms,
+                                         std::vector<BTreeIterator<VariantPage>> &btits, 
+                                         std::vector<RecordManager> &rms,
+                                         std::unordered_map<std::string, std::shared_ptr<TermExpr>> &column2term)
 {
-    // TODO
+    column2term.clear();
+    for (size_t counter = 0; counter < tms.size(); ++counter)
+    {
+        auto tm = tms[counter];
+        auto rm = rms[counter];
+        auto btit = btits[counter];
+        // Initialize each record manager
+        rm.Open(*btit, false);
+        for (size_t i = 0; i < tm->number_of_column(); ++i)
+        {
+            rm.Seek(tm->column_offset(i));
+            size_t col_length = tm->column_length(i);
+            switch (tm->column_type(i))
+            {
+            case Col_Type::COL_TYPE_INT:
+            {
+                int val;
+                rm.Read(&val, col_length);
+                auto term = std::make_shared<TermExpr>(val);
+                column2term.insert({tm->table_name() + "." + tm->column_name(i), term});
+                break;
+            }
+            case Col_Type::COL_TYPE_DOUBLE:
+            {
+                double val;
+                rm.Read(&val, col_length);
+                auto term = std::make_shared<TermExpr>(val);
+                column2term.insert({tm->table_name() + "." + tm->column_name(i), term});
+                break;
+            }
+            case Col_Type::COL_TYPE_BOOL:
+            {
+                bool val;
+                rm.Read(&val, col_length);
+                auto term = std::make_shared<TermExpr>(val);
+                column2term.insert({tm->table_name() + "." + tm->column_name(i), term});
+                break;
+            }
+            case Col_Type::COL_TYPE_DATE:
+            {
+                Date val;
+                rm.Read(&val, col_length);
+                auto term = std::make_shared<TermExpr>(val);
+                column2term.insert({tm->table_name() + "." + tm->column_name(i), term});
+                break;
+            }
+            case Col_Type::COL_TYPE_CHAR:
+            case Col_Type::COL_TYPE_VARCHAR:
+            {
+                char *val = new char[col_length + 1];
+                val[col_length] = '\0';
+                rm.Read(val, col_length);
+                auto term = std::make_shared<TermExpr>(val);
+                column2term.insert({tm->table_name() + "." + tm->column_name(i), term});
+                delete[] val;
+                break;
+            }
+            case Col_Type::COL_TYPE_NULL:
+            {
+                auto term = std::make_shared<TermExpr>();
+                column2term.insert({tm->table_name() + "." + tm->column_name(i), term});
+            }
+            default:
+                break;
+            }
+        }
+    }
+}
+
+void DatabaseManager::iterate_many_table(const std::vector<std::shared_ptr<TableManager>> &tms,
+                                         const std::vector<ColumnRef> &columns, ExprNode *condition)
+{
+    // Construct btree iterator vector and record manager vector
+    std::vector<BTreeIterator<VariantPage>> btits;
+    std::vector<RecordManager> rms;
+    int row_id = 1;
+    for (auto it = tms.begin(); it != tms.end(); ++it)
+    {
+        auto tm = *it;
+        auto pos = tm->GetRowPosition(row_id);
+        btits.emplace_back(tm->pg(), pos);
+        rms.emplace_back(tm->pg());
+    }
+            
+    // Print header
+    for (auto it = columns.begin(); it != columns.end(); ++it)
+    {
+        if (it != columns.begin()) { std::cout << "\t"; }
+        std::cout << it->all_name();
+    }
+    std::cout << std::endl;
+
+    // Print rows
+    // The cartesian product
+    std::unordered_map<std::string, std::shared_ptr<TermExpr>> column2term;
+    while (true)
+    {
+        // Update column2term;
+        update_column2term(tms, btits, rms, column2term);
+        // Check condition
+        if (condition != nullptr)
+        {
+            Expression expression{condition, column2term};
+            if (!expression.term_.bval_) { continue; }
+        }
+        // Print
+        for (size_t i = 0; i < columns.size(); ++i)
+        {
+            if (i != 0) { std::cout << "\t"; }
+            std::cout << *column2term[columns[i].all_name()];
+        }
+        std::cout << std::endl;
+        // Iterate btree iterator
+        auto it = btits.rbegin();
+        for (; it != btits.rend(); ++it)
+        {
+            it->next();
+            if (it->IsEnd())
+            {
+                it->Reset();
+            }
+            else
+            {
+                break;
+            }
+        }
+        // loop over
+        if (it == btits.rend()) { break; }
+    }
 }

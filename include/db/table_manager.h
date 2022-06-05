@@ -50,6 +50,8 @@ public:
     unsigned number_of_column() const { return table_header_.num_column; }
     Col_Type column_type(int index) const { return table_header_.column_type[index]; }
     std::string column_name(int index) const { return table_header_.column_name[index]; }
+    unsigned column_length(int index) const { return table_header_.column_length[index]; }
+    unsigned column_offset(int index) const { return table_header_.column_offset[index]; }
     std::shared_ptr<Pager> pg() { return pg_; }
     std::shared_ptr<IntBTree> btr() { return btr_; }
 };

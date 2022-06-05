@@ -22,7 +22,7 @@ struct Date
         timestamp = str2timestamp(str);
     }
     ~Date() = default;
-    time_t str2timestamp(const std::string &str)
+    time_t str2timestamp(const std::string &str) const
     {
         std::tm t{};
         std::string tmp{str};
@@ -31,7 +31,7 @@ struct Date
         if (ss.fail()) { return -1; }
         else { return std::mktime(&t); }
     }
-    std::string timestamp2str()
+    std::string timestamp2str() const
     {
         tm *t = localtime(&timestamp);
         char buf[32];

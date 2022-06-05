@@ -370,7 +370,7 @@ TEST_CASE( "TC-DATABASE", "[database test]" )
         }
     }
 
-    SECTION("select")
+    SECTION("select one table")
     {
         // create database
         {
@@ -442,6 +442,112 @@ TEST_CASE( "TC-DATABASE", "[database test]" )
             CHECK(select_info->tables[0] == "users");
             // where
             CHECK(select_info->where != nullptr);
+
+            DBMS::GetInstance().SelectTable(select_info);
+        }
+
+        DBMS::GetInstance().CloseDatabase();
+    }
+
+    SECTION("select many tables")
+    {
+        // create database
+        {
+            std::string statement = "create database mydb";
+            auto t = std::make_shared<Tokenizer>(statement);
+            auto parser = std::make_shared<DatabaseParser>(t);
+            auto database_info = parser->CreateDatabase();
+            DBMS::GetInstance().CreateDatabase(database_info->database_name);
+        }
+        // create table
+        {
+            DBMS::GetInstance().UseDatabase("mydb");
+            {
+                std::string statement = "CREATE TABLE users (                              \
+                                             id          INT,                              \ 
+                                             name        CHAR(32)       NOT NULL,          \
+                                             email       VARCHAR(255),                     \
+                                             age         INT,                              \
+                                             height      DOUBLE,                           \
+                                             country     CHAR(32)       DEFAULT \"China\", \
+                                             sign_up     DATE,                             \
+                                             UNIQUE (email),                               \
+                                             PRIMARY KEY (id),                             \
+                                             CHECK(age>=18 AND age<= 60)                   \
+                                        );";
+                auto t = std::make_shared<Tokenizer>(statement);
+                auto parser = std::make_shared<TableParser>(t);
+                auto info = parser->CreateTable();
+                REQUIRE(info != nullptr);
+                auto table_header = std::make_shared<TableHeader>();
+                fill_table_header(table_header, *info);               
+                DBMS::GetInstance().CreateTable(table_header);
+            }
+            {
+                std::string statement = "CREATE TABLE comments (                           \
+                                            id          INT,                              \
+                                            user_id     INT        NOT NULL,              \
+                                            time        DATE       NOT NULL,              \
+                                            contents    VARCHAR(255),                     \
+                                            PRIMARY KEY (id),                             \
+                                            FOREIGN KEY (user_id) REFERENCES users (id)   \
+                                        );";
+                auto t = std::make_shared<Tokenizer>(statement);
+                auto parser = std::make_shared<TableParser>(t);
+                auto info = parser->CreateTable();
+                REQUIRE(info != nullptr);
+                auto table_header = std::make_shared<TableHeader>();
+                fill_table_header(table_header, *info);               
+                DBMS::GetInstance().CreateTable(table_header);
+            }
+            DBMS::GetInstance().CloseDatabase();
+        }
+        // insert table
+        {
+            DBMS::GetInstance().UseDatabase("mydb");
+            std::vector<std::string> statements;
+            statements.emplace_back("INSERT INTO users (id, name, email, age, height, country, sign_up) \
+                                     VALUES (1, \"Walson\", \"walsons@163.com\", 18, 180, \"China\", \"2020-01-03\");");
+            statements.emplace_back("INSERT INTO users (id, name, email, age, height, country, sign_up) \
+                                     VALUES (2, \"John\", \"John123@163.com\", 20, 175, \"China\", \"2020-03-12\");");
+            // std::vector<int> ids{3,6,7,13,4,21,11,5,89,33,20,30,66,34,14,58,61,46};
+            // for (auto i : ids)
+            // {
+            //     statements.emplace_back("INSERT INTO users (id, name, email, age, height, country, sign_up) \
+            //                             VALUES (" + std::to_string(i) + ", \"Walson\", \"walsons@163.com\", 18, 180, \"China\", \"2020-01-03\");");
+            // }
+            statements.emplace_back("INSERT INTO comments (id, user_id, time, contents) \
+                                     VALUES (1, 1, \"2021-06-03\", \"Yes!\");");
+            statements.emplace_back("INSERT INTO comments (id, user_id, time, contents) \
+                                     VALUES (2, 1, \"2021-06-03\", \"Cool!\");");
+            for (auto statement : statements)
+            {
+                auto tokenizer = std::make_shared<Tokenizer>(statement);
+                TableParser table_parser(tokenizer);
+                auto insert_info = table_parser.InsertTable();
+                REQUIRE(insert_info != nullptr);
+                DBMS::GetInstance().InsertRow(insert_info);
+            }
+        }
+        // select
+        {
+            std::string statement = "SELECT users.id, users.name, users.sign_up, comments.contents FROM users, comments;";
+            auto tokenizer = std::make_shared<Tokenizer>(statement);
+            TableParser table_parser(tokenizer);
+            auto select_info = table_parser.SelectTable();
+            REQUIRE(select_info != nullptr);
+            // columns
+            CHECK(select_info->columns[0].table_name == "users");
+            CHECK(select_info->columns[0].column_name == "id");
+            CHECK(select_info->columns[1].column_name == "name");
+            CHECK(select_info->columns[2].column_name == "sign_up");
+            CHECK(select_info->columns[3].table_name == "comments");
+            CHECK(select_info->columns[3].column_name == "contents");
+            // tables
+            CHECK(select_info->tables[0] == "users");
+            CHECK(select_info->tables[1] == "comments");
+            // where
+            CHECK(select_info->where == nullptr);
 
             DBMS::GetInstance().SelectTable(select_info);
         }

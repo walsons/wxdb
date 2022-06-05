@@ -3,6 +3,7 @@
 #include <cassert>
 #include <stack>
 #include <unordered_map>
+#include <iostream>
 
 TermExpr::TermExpr() : term_type_(Term_Type::TERM_NULL) {}
 
@@ -180,6 +181,35 @@ void TermExpr::destory_class_member()
     default:
         break;
     }
+}
+
+std::ostream &operator<<(std::ostream &os, const TermExpr &term)
+{
+    switch (term.term_type_)
+    {
+    case Term_Type::TERM_NULL:
+        os << "NULL";
+        break;
+    case Term_Type::TERM_INT:
+        os << term.ival_;
+        break;
+    case Term_Type::TERM_DOUBLE:
+        os << term.dval_;
+        break;
+    case Term_Type::TERM_BOOL:
+        os << (term.bval_ ? "true" : "false");
+        break;
+    case Term_Type::TERM_DATE:
+        os << term.tval_.timestamp2str();
+        break;
+    case Term_Type::TERM_STRING:
+        os << term.sval_;
+        break;
+    case Term_Type::TERM_COL_REF:
+        os << term.ref_.all_name();
+        break;
+    }
+    return os;
 }
 
 Expression::Expression(ExprNode *expr, std::unordered_map<std::string, std::shared_ptr<TermExpr>> col_real_term)
