@@ -519,11 +519,12 @@ std::shared_ptr<SelectInfo> TableParser::SelectTable()
         while (token->type_ == Token_Type::TOKEN_WORD)
         {
             select_info->tables.push_back(token->text_);
+            token = ParseEatAndNextToken();
             if (!MatchToken(Token_Type::TOKEN_COMMA, ","))
             {
-                token = ParseEatAndNextToken();
                 break;
             }
+            token = ParseNextToken();
         }
     }
     else 

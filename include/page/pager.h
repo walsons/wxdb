@@ -29,7 +29,7 @@ inline Pager::Pager() : file_id_(0)
 
 inline Pager::Pager(const std::string &file_name) : file_id_(0)
 {
-    file_id_ = Open(file_name);
+    Open(file_name);
 }
 
 inline Pager::~Pager()

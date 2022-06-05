@@ -9,6 +9,7 @@
 template <typename PageType>
 class BTreeIterator
 {
+    int original_page_id_, original_pos_;
     std::shared_ptr<Pager> pg_;
     int page_id_, pos_;
     int cur_size_, prev_page_id_, next_page_id_;
@@ -27,8 +28,10 @@ class BTreeIterator
     }
 public:
     using value_t = std::pair<int, int>;
+    BTreeIterator() = default;
     BTreeIterator(std::shared_ptr<Pager> pg, int page_id, int pos)
-        : pg_(pg), page_id_(page_id), pos_(pos) { load_info(page_id_); }
+        : original_page_id_(page_id), original_pos_(pos) 
+        , pg_(pg), page_id_(page_id), pos_(pos) { load_info(page_id_); }
     BTreeIterator(std::shared_ptr<Pager> pg, value_t value)
         : BTreeIterator(pg, value.first, value.second) {}
     std::shared_ptr<Pager> GetPager() { return pg_; }
@@ -55,6 +58,11 @@ public:
         return Get();
     }
     bool IsEnd() { return page_id_ == 0; }
+    void Reset() 
+    { 
+        load_info(original_page_id_);
+        pos_ = original_pos_;
+    }
 };
 
 #endif
