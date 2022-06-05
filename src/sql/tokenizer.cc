@@ -359,6 +359,7 @@ std::shared_ptr<Token> Tokenizer::lt()
 
 std::shared_ptr<Token> Tokenizer::equal()
 {
+    NextChar();
     return MakeToken(Token_Type::TOKEN_EQ);
 }
 

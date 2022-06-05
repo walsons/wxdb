@@ -97,7 +97,9 @@ TEST_CASE( "TC-Select", "[insert row test]" )
 
     SECTION("select many tables")
     {
-        std::string statement = "SELECT users.id, users.name, users.sign_up, comments.contents FROM users, comments;";
+        std::string statement = "SELECT users.id, users.name, users.sign_up, comments.contents \
+                                 FROM users, comments \
+                                 WHERE users.id = comments.user_id;";
         auto tokenizer = std::make_shared<Tokenizer>(statement);
         TableParser table_parser(tokenizer);
         auto select_info = table_parser.SelectTable();
@@ -113,7 +115,7 @@ TEST_CASE( "TC-Select", "[insert row test]" )
         CHECK(select_info->tables[0] == "users");
         CHECK(select_info->tables[1] == "comments");
         // where
-        CHECK(select_info->where == nullptr);
+        CHECK(select_info->where != nullptr);
 
         DBMS::GetInstance().SelectTable(select_info);
         DBMS::GetInstance().CloseDatabase();

@@ -25,15 +25,17 @@ public:
     void SelectTable(const std::shared_ptr<SelectInfo> select_info);
 
 private:
-    void iterate_one_table(const std::unordered_map<std::string, std::shared_ptr<TableManager>> &table_map,
-                           const std::vector<ColumnRef> &columns, ExprNode *condition);
-    // void iterate_many_table(const std::unordered_map<std::string, std::shared_ptr<TableManager>> &table_map,
-    //                         const std::vector<ColumnRef> &columns, ExprNode *condition);
+    void update_column2term(const std::shared_ptr<TableManager> &tm,
+                            BTreeIterator<VariantPage> &btit, 
+                            RecordManager &rm,
+                            std::unordered_map<std::string, std::shared_ptr<TermExpr>> &column2term);
     void update_column2term(const std::vector<std::shared_ptr<TableManager>> &tms,
                             std::vector<BTreeIterator<VariantPage>> &btits, 
                             std::vector<RecordManager> &rms,
                             std::unordered_map<std::string, std::shared_ptr<TermExpr>> &column2term);
-    void iterate_many_table(const std::vector<std::shared_ptr<TableManager>> &table_map,
+    void iterate_one_table(const std::shared_ptr<TableManager> &tm,
+                           const std::vector<ColumnRef> &columns, ExprNode *condition);
+    void iterate_many_table(const std::vector<std::shared_ptr<TableManager>> &tms,
                             const std::vector<ColumnRef> &columns, ExprNode *condition);
 
 private:
