@@ -15,8 +15,8 @@ class TableManager
     std::shared_ptr<IntBTree> btr_;
     std::shared_ptr<Pager> pg_;
     int tmp_record_size_;
-    char *tmp_record_, *tmp_cache_, *tmp_index_; 
-    int *tmp_null_mark_;
+    char *tmp_record_ = nullptr, *tmp_cache_ = nullptr, *tmp_index_ = nullptr; 
+    int *tmp_null_mark_ = nullptr;
     std::shared_ptr<IndexManager> indices_[MAX_NUM_COLUMN];
     ExprNode *check_constraint_[MAX_NUM_CHECK_CONSTRAINT];
 

@@ -174,7 +174,7 @@ std::pair<int, int> TableManager::GetRowPosition(int row_id)
 
 void TableManager::allocate_temp_record()
 {
-    if (tmp_record_) delete[] tmp_record_;
+    if (tmp_record_) { delete[] tmp_record_; }
     int total_length = 4;  // 4 bytes for not null
     for (int i = 0; i < table_header_.num_column; ++i)
     {

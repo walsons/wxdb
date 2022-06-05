@@ -1,7 +1,7 @@
 #ifndef FID_MANAGER_H_
 #define FID_MANAGER_H_
 
-constexpr unsigned MAX_NUM_FILE_ID = 1024;
+constexpr unsigned MAX_NUM_FILE_ID = 100;
 
 // file id manager
 class FidManager
