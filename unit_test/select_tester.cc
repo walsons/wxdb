@@ -56,10 +56,12 @@ TEST_CASE( "TC-Select", "[insert row test]" )
     // Insert row
     {
         std::vector<std::string> statements;
+        // users
         statements.emplace_back("INSERT INTO users (id, name, email, age, height, country, sign_up) \
                                     VALUES (1, \"Walson\", \"walsons@163.com\", 18, 180, \"China\", \"2020-01-03\");");
         statements.emplace_back("INSERT INTO users (id, name, email, age, height, country, sign_up) \
                                     VALUES (2, \"John\", \"John123@163.com\", 20, 175, \"China\", \"2020-03-12\");");
+        // comments
         statements.emplace_back("INSERT INTO comments (id, user_id, time, contents) \
                                     VALUES (1, 1, \"2021-06-03\", \"Yes!\");");
         statements.emplace_back("INSERT INTO comments (id, user_id, time, contents) \
@@ -95,9 +97,27 @@ TEST_CASE( "TC-Select", "[insert row test]" )
         DBMS::GetInstance().CloseDatabase();
     }
 
+    SECTION("select one table using asterisk")
+    {
+        std::string statement = "SELECT * FROM users WHERE id < 10;";
+        auto tokenizer = std::make_shared<Tokenizer>(statement);
+        TableParser table_parser(tokenizer);
+        auto select_info = table_parser.SelectTable();
+        REQUIRE(select_info != nullptr);
+        // columns
+        CHECK(select_info->columns.empty());
+        // tables
+        CHECK(select_info->tables[0] == "users");
+        // where
+        CHECK(select_info->where != nullptr);
+
+        DBMS::GetInstance().SelectTable(select_info);
+        DBMS::GetInstance().CloseDatabase();
+    }
+
     SECTION("select many tables")
     {
-        std::string statement = "SELECT users.id, users.name, users.sign_up, comments.contents \
+        std::string statement = "SELECT comments.id, users.name, comments.time, comments.contents \
                                  FROM users, comments \
                                  WHERE users.id = comments.user_id;";
         auto tokenizer = std::make_shared<Tokenizer>(statement);
@@ -105,12 +125,33 @@ TEST_CASE( "TC-Select", "[insert row test]" )
         auto select_info = table_parser.SelectTable();
         REQUIRE(select_info != nullptr);
         // columns
-        CHECK(select_info->columns[0].table_name == "users");
+        CHECK(select_info->columns[0].table_name == "comments");
         CHECK(select_info->columns[0].column_name == "id");
+        CHECK(select_info->columns[1].table_name == "users");
         CHECK(select_info->columns[1].column_name == "name");
-        CHECK(select_info->columns[2].column_name == "sign_up");
-        CHECK(select_info->columns[3].table_name == "comments");
+        CHECK(select_info->columns[2].column_name == "time");
         CHECK(select_info->columns[3].column_name == "contents");
+        // tables
+        CHECK(select_info->tables[0] == "users");
+        CHECK(select_info->tables[1] == "comments");
+        // where
+        CHECK(select_info->where != nullptr);
+
+        DBMS::GetInstance().SelectTable(select_info);
+        DBMS::GetInstance().CloseDatabase();
+    }
+
+    SECTION("select many tables using asterisk")
+    {
+        std::string statement = "SELECT * \
+                                 FROM users, comments \
+                                 WHERE users.id = comments.user_id;";
+        auto tokenizer = std::make_shared<Tokenizer>(statement);
+        TableParser table_parser(tokenizer);
+        auto select_info = table_parser.SelectTable();
+        REQUIRE(select_info != nullptr);
+        // columns
+        CHECK(select_info->columns.empty());
         // tables
         CHECK(select_info->tables[0] == "users");
         CHECK(select_info->tables[1] == "comments");
