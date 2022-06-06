@@ -78,30 +78,36 @@ VALUES (1, "Walson", "walsons@163.com", "18", "180", "China", "2020-01-03");
 
 ```sql
 SELECT *
-FROM table_name;
+FROM table_name
+WHERE expression;
 
 #example
-SELECT *
-FROM users;
+SELECT * FROM users WHERE id < 10;
 
 SELECT column1, column2, ...
-FROM table_name;
+FROM table_name
+WHERE expression;
 
 #example
-SELECT id, name, sign_up
-FROM users;
+SELECT id, name, sign_up FROM users WHERE id < 10;
 
 # Select from multiple tables need to add table name before column name
+SELECT *
+FROM table_name, ...
+WHERE expression;
+
+#example
+SELECT * FROM users, comments WHERE users.id = comments.user_id;
+
 SELECT table_name.column1, table_name.column2, ...
 FROM table_name, ...
 WHERE expression;
 
 #example
-SELECT users.name, users.contents
+SELECT comments.id, users.name, comments.time, comments.contents
 FROM users, comments
 WHERE users.id = comments.user_id;
-
 ```
 
 ## Unit Test
-Because of the static local object, the unit test should run individually, otherwise will crash.
+Because of the static local object, the unit test should be run individually by SECTION.

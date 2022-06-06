@@ -2,6 +2,7 @@
 #include <cstring>
 #include <fstream>
 #include <iostream>
+#include <unordered_set>
 #include "../../include/db/type_cast.h"
 #include "../../include/db/col_val.h"
 #include "../../include/btree/btree_iterator.hpp"
@@ -135,9 +136,6 @@ void DatabaseManager::InsertRow(const std::shared_ptr<InsertInfo> insert_info)
 
 void DatabaseManager::SelectTable(const std::shared_ptr<SelectInfo> select_info)
 {
-    // Check all column are exist, check table is empty
-    // TODO
-
     // Construct a table map for founding table that does not exist quickly
     std::unordered_map<std::string, std::shared_ptr<TableManager>> table_map;
     for (const auto &item : select_info->tables)
@@ -151,10 +149,6 @@ void DatabaseManager::SelectTable(const std::shared_ptr<SelectInfo> select_info)
             table_map[table_manager_[i]->table_name()] = table_manager_[i];
         }
     }
-
-    // Get table manager vector
-    std::vector<std::shared_ptr<TableManager>> tms;
-    tms.reserve(select_info->tables.size());
     for (const auto &item : table_map)
     {
         if (item.second == nullptr)
@@ -162,10 +156,14 @@ void DatabaseManager::SelectTable(const std::shared_ptr<SelectInfo> select_info)
             std::cout << "Error: no table named \"" << item.first << "\"!" << std::endl;
             return;
         }
-        else
-        {
-            tms.push_back(item.second);
-        }
+    }
+
+    // Get table manager vector
+    std::vector<std::shared_ptr<TableManager>> tms;
+    tms.reserve(select_info->tables.size());
+    for (const auto &item : select_info->tables)
+    {
+        tms.push_back(table_map[item]);
     }
     // Get columns
     auto columns = select_info->columns;
@@ -327,7 +325,7 @@ void DatabaseManager::update_column2term(const std::vector<std::shared_ptr<Table
 }
 
 void DatabaseManager::iterate_one_table(const std::shared_ptr<TableManager> &tm,
-                                        const std::vector<ColumnRef> &columns, ExprNode *condition)
+                                        std::vector<ColumnRef> &columns, ExprNode *condition)
 {
     // Construct btree iterator and record manager
     int row_id = 1;
@@ -335,6 +333,32 @@ void DatabaseManager::iterate_one_table(const std::shared_ptr<TableManager> &tm,
     BTreeIterator<VariantPage> btit{tm->pg(), pos};
     RecordManager rm{tm->pg()};
             
+    // Check whether the columns is empty or have column doesn't exist
+    if (columns.empty())
+    {
+        columns.reserve(tm->number_of_column() - 1);
+        for (size_t i = 0; i < tm->number_of_column() - 1; ++i)  // No need to add __rowid__
+        {
+            columns.emplace_back(tm->column_name(i));
+        }
+    }
+    else
+    {
+        std::unordered_set<std::string> col_s;
+        for (size_t i = 0; i < tm->number_of_column() - 1; ++i)  // No need to validate __rowid__ exists
+        {
+            col_s.insert(tm->column_name(i));
+        }
+        for (auto it = columns.begin(); it != columns.end(); ++it)
+        {
+            if (col_s.find(it->all_name()) == col_s.end()) 
+            { 
+                std::cout << "Error: no column named \"" << *it << "\"!" << std::endl;
+                return;
+            }
+        }
+    }
+
     // Print header
     for (auto it = columns.begin(); it != columns.end(); ++it)
     {
@@ -377,7 +401,7 @@ void DatabaseManager::iterate_one_table(const std::shared_ptr<TableManager> &tm,
 }
 
 void DatabaseManager::iterate_many_table(const std::vector<std::shared_ptr<TableManager>> &tms,
-                                         const std::vector<ColumnRef> &columns, ExprNode *condition)
+                                         std::vector<ColumnRef> &columns, ExprNode *condition)
 {
     // Construct btree iterator vector and record manager vector
     std::vector<BTreeIterator<VariantPage>> btits;
@@ -390,7 +414,38 @@ void DatabaseManager::iterate_many_table(const std::vector<std::shared_ptr<Table
         btits.emplace_back(tm->pg(), pos);
         rms.emplace_back(tm->pg());
     }
-            
+
+    // Check whether the columns is empty or have column doesn't exist
+    if (columns.empty())
+    {
+        for (auto &tm : tms)
+        {
+            for (size_t i = 0; i < tm->number_of_column() - 1; ++i)  // No need to add __rowid__
+            {
+                columns.emplace_back(tm->table_name() + "." + tm->column_name(i));
+            }
+        }
+    }
+    else
+    {
+        std::unordered_set<std::string> col_s;
+        for (auto &tm : tms)
+        {
+            for (size_t i = 0; i < tm->number_of_column() - 1; ++i)  // No need to validate __rowid__ exists
+            {
+                col_s.insert(tm->table_name() + "." + tm->column_name(i));
+            }
+        }
+        for (auto it = columns.begin(); it != columns.end(); ++it)
+        {
+            if (col_s.find(it->all_name()) == col_s.end()) 
+            { 
+                std::cout << "Error: no column named \"" << *it << "\"!" << std::endl;
+                return;
+            }
+        }
+    }
+
     // Print header
     for (auto it = columns.begin(); it != columns.end(); ++it)
     {

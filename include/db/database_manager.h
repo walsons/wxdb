@@ -34,9 +34,9 @@ private:
                             std::vector<RecordManager> &rms,
                             std::unordered_map<std::string, std::shared_ptr<TermExpr>> &column2term);
     void iterate_one_table(const std::shared_ptr<TableManager> &tm,
-                           const std::vector<ColumnRef> &columns, ExprNode *condition);
+                           std::vector<ColumnRef> &columns, ExprNode *condition);
     void iterate_many_table(const std::vector<std::shared_ptr<TableManager>> &tms,
-                            const std::vector<ColumnRef> &columns, ExprNode *condition);
+                            std::vector<ColumnRef> &columns, ExprNode *condition);
 
 private:
     // These infomation about database need to be stored in "database_name.db" file:
