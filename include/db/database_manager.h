@@ -33,10 +33,12 @@ private:
                             std::vector<BTreeIterator<VariantPage>> &btits, 
                             std::vector<RecordManager> &rms,
                             std::unordered_map<std::string, std::shared_ptr<TermExpr>> &column2term);
-    void iterate_one_table(const std::shared_ptr<TableManager> &tm,
-                           std::vector<ColumnRef> &columns, ExprNode *condition);
-    void iterate_many_table(const std::vector<std::shared_ptr<TableManager>> &tms,
-                            std::vector<ColumnRef> &columns, ExprNode *condition);
+    void iterate_one_table(const std::shared_ptr<TableManager> &tm, std::vector<ColumnRef> &columns, ExprNode *condition);
+    void iterate_many_table(const std::vector<std::shared_ptr<TableManager>> &tms, std::vector<ColumnRef> &columns, ExprNode *condition);
+    void iterate_one_table(const std::shared_ptr<TableManager> &tm, std::vector<ColumnRef> &columns, ExprNode *condition,
+                           std::vector<std::shared_ptr<TermExpr>> cols, std::vector<std::shared_ptr<TermExpr>> vals);
+    void iterate_many_table(const std::vector<std::shared_ptr<TableManager>> &tms, std::vector<ColumnRef> &columns, ExprNode *condition,
+                            std::vector<std::shared_ptr<TermExpr>> cols, std::vector<std::shared_ptr<TermExpr>> vals);
 
 private:
     // These infomation about database need to be stored in "database_name.db" file:

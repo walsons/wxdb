@@ -3,10 +3,13 @@
 #include <fstream>
 #include <iostream>
 #include <unordered_set>
+#include <stack>
+#include <list>
 #include "../../include/db/type_cast.h"
 #include "../../include/db/col_val.h"
 #include "../../include/btree/btree_iterator.hpp"
 #include "../../include/db/record_manager.h"
+#include "../../include/page/index_leaf_page.hpp"
 
 void DatabaseManager::CreateDatabase(const std::string &db_name)
 {
@@ -170,15 +173,261 @@ void DatabaseManager::SelectTable(const std::shared_ptr<SelectInfo> select_info)
     // Get where expression
     auto condition = select_info->where;
 
-    // Iterator records
-    if (table_map.size() == 1)
+    // If condition is nullptr or has "or", cartisian product directly
+    bool cartisian_product_directly = false;
+    if (condition == nullptr)
     {
-        // iterate_one_table(table_map, columns, condition);
+        cartisian_product_directly = true;
+    }
+    else
+    {
+        auto expr = condition;
+        while (expr != nullptr)
+        {
+            if (expr->operator_type_ == Operator_Type::OR)
+            {
+                cartisian_product_directly = true;
+            }
+            expr = expr->next_expr_;
+        }
+    }
+    if (cartisian_product_directly)
+    {
+        // Iterator records
+        if (tms.size() == 1)
+        {
+            iterate_one_table(tms[0], columns, condition);
+        }
+        else
+        {
+            iterate_many_table(tms, columns, condition);
+        }
+        return;
+    }
+    // Else, use index to accelerate finding if it could
+    // 1. converse reserve polish notation to normal then store in a list
+    auto p = condition, q = p->next_expr_;
+    std::stack<ExprNode *> expr_stack;
+    while (p != nullptr)
+    {
+        q = p->next_expr_;
+        auto node = new ExprNode(p->operator_type_, p->term_, nullptr);
+        if (node->operator_type_ == Operator_Type::NONE)
+        {
+            expr_stack.push(node);
+        }
+        else
+        {
+            // unary
+            if (node->operator_type_ > Operator_Type::UNARY_DELIMETER)
+            {
+                auto expr = expr_stack.top();
+                expr_stack.pop();
+                node->next_expr_ = expr;
+                expr_stack.push(node);
+            }
+            // binary
+            else
+            {
+                auto expr2 = expr_stack.top();
+                expr_stack.pop();
+                auto expr1 = expr_stack.top();
+                expr_stack.pop();
+                auto p = expr1;
+                while (p->next_expr_ != nullptr) { p = p->next_expr_; }
+                p->next_expr_ = node;
+                node->next_expr_ = expr2;
+                expr_stack.push(expr1);
+            }
+        }
+        p = q;
+    }
+    auto header = expr_stack.top();
+    expr_stack.pop();
+    std::list<ExprNode *> ls;
+    auto expr = header;
+    while (expr != nullptr)
+    {
+        ls.push_back(expr);
+        expr = expr->next_expr_;
+    }
+    // 2. find expression start(or and) -> Col -> = -> (+-) -> value -> end( or and) 
+    std::vector<std::shared_ptr<TermExpr>> cols;
+    std::vector<std::shared_ptr<TermExpr>> vals;
+    auto it = ls.begin();
+    while (it != ls.end())
+    {
+        if ((*it)->operator_type_ == Operator_Type::EQ)
+        {
+            // TODO: check condtion such as col = -3
+            auto prev = --it;
+            auto pprev = --prev;
+            auto next = ++it;
+            auto nnext = ++next;
+            if (
+                ((*prev)->operator_type_ == Operator_Type::NONE && (*prev)->term_->term_type_  == Term_Type::TERM_COL_REF) &&
+                (pprev == ls.end() || (*pprev)->operator_type_ == Operator_Type::AND) &&
+                ((*next)->operator_type_ == Operator_Type::NONE && (*next)->term_->term_type_ != Term_Type::TERM_COL_REF && (*next)->term_->term_type_ != Term_Type::TERM_NULL) &&
+                (nnext == ls.end() || (*nnext)->operator_type_ == Operator_Type::AND)
+                )
+            {
+                cols.emplace_back(std::make_shared<TermExpr>(*prev));
+                vals.emplace_back(std::make_shared<TermExpr>(*next));
+                break;
+            }
+        }
+        else
+        {
+            ++it;
+        }
+    }
+    // free
+    expr = header;
+    while (expr != nullptr)
+    {
+        auto tmp = expr;
+        expr = expr->next_expr_;
+        delete tmp;
+    }
+    // Iterator records
+    if (tms.size() == 1)
+    {
         iterate_one_table(tms[0], columns, condition);
     }
     else
     {
         iterate_many_table(tms, columns, condition);
+    }
+
+
+
+
+
+
+
+    // Parse condition whether use index: if expression only use "and"(not "or") to connect and has "Col = value"
+    std::shared_ptr<TermExpr> term1;  // for column
+    std::shared_ptr<TermExpr> term2;  // for value
+    // Converse reserve polish notation to normal then store in a list
+    if (condition != nullptr)
+    {
+        auto p = condition, q = p->next_expr_;
+        std::stack<ExprNode *> expr_stack;
+        while (p != nullptr)
+        {
+            q = p->next_expr_;
+            auto node = new ExprNode(p->operator_type_, p->term_, nullptr);
+            if (node->operator_type_ == Operator_Type::NONE)
+            {
+                expr_stack.push(node);
+            }
+            else
+            {
+                // unary
+                if (node->operator_type_ > Operator_Type::UNARY_DELIMETER)
+                {
+                    auto expr = expr_stack.top();
+                    expr_stack.pop();
+                    node->next_expr_ = expr;
+                    expr_stack.push(node);
+                }
+                // binary
+                else
+                {
+                    auto expr1 = expr_stack.top();
+                    expr_stack.pop();
+                    auto expr2 = expr_stack.top();
+                    expr_stack.pop();
+                    expr1->next_expr_ = node;
+                    node->next_expr_ = expr2;
+                    expr_stack.push(expr1);
+                }
+            }
+            p = q;
+        }
+        auto header = expr_stack.top();
+        expr_stack.pop();
+        std::list<ExprNode *> ls;
+        auto expr = header;
+        while (expr != nullptr)
+        {
+            ls.push_back(expr);
+            expr = expr->next_expr_;
+        }
+        bool use_index = true;
+        // 1. check "or" doesn't exist
+        for (auto it = ls.begin(); it != ls.end(); ++it)
+        {
+            if ((*it)->operator_type_ == Operator_Type::OR)
+            {
+                use_index = false;
+                break;
+            }
+        }
+        // 2. find expression start(or and) -> Col -> = -> (+-) -> value -> end( or and) 
+        if (use_index)
+        {
+            auto it = ls.begin();
+            while (it != ls.end())
+            {
+                if ((*it)->operator_type_ == Operator_Type::EQ)
+                {
+                    // TODO: check condtion such as col = -3
+                    auto prev = --it;
+                    auto pprev = --prev;
+                    auto next = ++it;
+                    auto nnext = ++next;
+                    if (
+                        ((*prev)->operator_type_ == Operator_Type::NONE && (*prev)->term_->term_type_  == Term_Type::TERM_COL_REF) &&
+                        (pprev == ls.end() || (*pprev)->operator_type_ == Operator_Type::AND) &&
+                        ((*next)->operator_type_ == Operator_Type::NONE && (*next)->term_->term_type_ != Term_Type::TERM_COL_REF && (*next)->term_->term_type_ != Term_Type::TERM_NULL) &&
+                        (nnext == ls.end() || (*nnext)->operator_type_ == Operator_Type::AND)
+                       )
+                    {
+                        term1 = std::make_shared<TermExpr>(*prev);
+                        term2 = std::make_shared<TermExpr>(*next);
+                        break;
+                    }
+                }
+                else
+                {
+                    ++it;
+                }
+            }
+        }
+
+        // free
+        expr = header;
+        while (expr != nullptr)
+        {
+            auto tmp = expr;
+            expr = expr->next_expr_;
+            delete tmp;
+        }
+    }
+    // Don't use index
+    if (term1 == nullptr && term2 == nullptr)
+    {
+        // Iterator records
+        if (tms.size() == 1)
+        {
+            // iterate_one_table(table_map, columns, condition);
+            iterate_one_table(tms[0], columns, condition);
+        }
+        else
+        {
+            iterate_many_table(tms, columns, condition);
+        }
+    }
+    // Use index
+    else
+    {
+        if (table_map.size() == 1)
+        {
+        }
+        else
+        {
+        }
     }
 }
 
@@ -502,4 +751,159 @@ void DatabaseManager::iterate_many_table(const std::vector<std::shared_ptr<Table
         // Loop over
         if (it == btits.rend()) { break; }
     }
+}
+
+void DatabaseManager::iterate_one_table(const std::shared_ptr<TableManager> &tm, std::vector<ColumnRef> &columns, ExprNode *condition,
+                                        std::vector<std::shared_ptr<TermExpr>> cols, std::vector<std::shared_ptr<TermExpr>> vals)
+{
+    // Check whether the columns is empty or have column doesn't exist
+    if (columns.empty())
+    {
+        columns.reserve(tm->number_of_column() - 1);
+        for (size_t i = 0; i < tm->number_of_column() - 1; ++i)  // No need to add __rowid__
+        {
+            columns.emplace_back(tm->column_name(i));
+        }
+    }
+    else
+    {
+        std::unordered_set<std::string> col_s;
+        for (size_t i = 0; i < tm->number_of_column() - 1; ++i)  // No need to validate __rowid__ exists
+        {
+            col_s.insert(tm->column_name(i));
+        }
+        for (auto it = columns.begin(); it != columns.end(); ++it)
+        {
+            if (col_s.find(it->all_name()) == col_s.end()) 
+            { 
+                std::cout << "Error: no column named \"" << *it << "\"!" << std::endl;
+                return;
+            }
+        }
+    }
+
+    // Print header
+    for (auto it = columns.begin(); it != columns.end(); ++it)
+    {
+        if (it != columns.begin()) { std::cout << "\t"; }
+        std::cout << it->all_name();
+    }
+    std::cout << std::endl;
+
+    // find row_id if where statement can use index
+    auto get_index = [&](const std::string &name) -> size_t {
+        for (size_t i = 0; i < tm->number_of_column(); ++i)
+        {
+            if (name == tm->column_name(i))
+            {
+                return i;
+            }
+        }
+        return tm->number_of_column();
+    };
+    std::vector<std::vector<int>> rows_arr;
+    for (size_t i = 0; i < cols.size(); ++i)
+    {
+        size_t index = get_index(cols[i]->ref_.column_name);
+        if ((1 << index) & tm->table_header().flag_index)
+        {
+            // this col is an index
+            unsigned int page_id = tm->table_header().index_root_page[index];
+            auto index_btr = std::make_shared<IndexBTree>(tm->pg(), page_id, tm->column_length(index) + 5, 
+                                                    IndexManager::GetIndexComparer(tm->column_type(index)));
+            const char *key = nullptr;
+            switch (tm->column_type(index))
+            {
+            case Col_Type::COL_TYPE_INT:
+                key = reinterpret_cast<const char*>(&vals[i]->ival_);
+                break;
+            case Col_Type::COL_TYPE_DOUBLE:
+                key = reinterpret_cast<const char*>(&vals[i]->dval_);
+                break;
+            case Col_Type::COL_TYPE_BOOL:
+                key = reinterpret_cast<const char*>(&vals[i]->bval_);
+                break;
+            case Col_Type::COL_TYPE_DATE:
+                key = reinterpret_cast<const char*>(&vals[i]->dval_);
+                break;
+            case Col_Type::COL_TYPE_CHAR:
+            case Col_Type::COL_TYPE_VARCHAR:
+                key = vals[i]->sval_.c_str();
+                break;
+            default:
+                break;
+            }
+            auto rows = index_btr->find_rows(key);
+            if (!rows.empty())
+            {
+                rows_arr.push_back(rows);
+            }
+        }
+    }
+    // Get intersection of rows
+    auto get_intersection = [&](std::vector<int> &vec1, std::vector<int> &vec2) {
+        std::unordered_set<int> s1(vec1.begin(), vec1.end());
+        std::unordered_set<int> s2(vec2.begin(), vec2.end());
+        std::vector<int> res;
+        for (const auto &item : s1)
+        {
+            if (s2.find(item) != s2.end())
+            {
+                res.push_back(item);
+            }
+        }
+        return res;
+    };
+    if (rows_arr.empty())
+    {
+        // no rows satisfy the where condition
+        return;
+    }
+    auto arr = rows_arr[0];
+    for (int i = 1; i < rows_arr.size(); ++i)
+    {
+        arr = get_intersection(arr, rows_arr[i]);
+    }
+
+    // Construct btree iterator and record manager
+    BTreeIterator<VariantPage> btit{arr, tm->btr()};
+    RecordManager rm{tm->pg()};
+
+    std::unordered_map<std::string, std::shared_ptr<TermExpr>> column2term;
+    // Print rows
+    // The cartesian product
+    while (true)
+    {
+        // Update column2term;
+        update_column2term(tm, btit, rm, column2term);
+        // Check condition
+        if (condition != nullptr)
+        {
+            Expression expression{condition, column2term};
+            if (!expression.term_.bval_) 
+            { 
+                btit.next();
+                // Loop over
+                if (btit.IsEnd()) { break; }
+                continue; 
+            }
+        }
+        // Print
+        for (size_t i = 0; i < columns.size(); ++i)
+        {
+            if (i != 0) { std::cout << "\t"; }
+            std::cout << *column2term[columns[i].all_name()];
+        }
+        std::cout << std::endl;
+
+        btit.next();
+        // Loop over
+        if (btit.IsEnd()) { break; }
+    }
+}
+
+void DatabaseManager::iterate_many_table(const std::vector<std::shared_ptr<TableManager>> &tms, std::vector<ColumnRef> &columns, ExprNode *condition,
+                                         std::vector<std::shared_ptr<TermExpr>> cols, std::vector<std::shared_ptr<TermExpr>> vals)
+{
+
 }

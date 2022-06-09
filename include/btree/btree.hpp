@@ -14,6 +14,7 @@
 template <typename KeyType, typename Comparer, typename Copier>
 class BTree
 {
+protected:
     std::shared_ptr<Pager> pg_;
     int root_page_id_;
     int field_size_;
@@ -32,6 +33,7 @@ public:
     void Insert(KeyType key, const char *data, int data_size);
     bool Erase(KeyType key);
     int root_page_id() { return root_page_id_; }
+    std::shared_ptr<Pager> pg() { return pg_; }
     search_result upper_bound(int now_page_id, KeyType key);
 
 private:
@@ -308,6 +310,24 @@ public:
     bool Erase(const char *key)
     {
         return BTree::Erase(key);
+    }
+    std::vector<int> find_rows(const char *key)
+    {
+        std::vector<int> rows;
+        auto pos = upper_bound(root_page_id(), key);
+        char *now_addr = pg_->Read(pos.first);
+        leaf_page page{now_addr, pg_};
+        while (comparer_(page.get_key(pos.second), key) == 0)
+        {
+            rows.push_back(*reinterpret_cast<const int *>(page.get_key(pos.second)));
+            pos.second++;
+            if (pos.second == page.size() && page.next_page() != 0)
+            {
+                pos.first = page.next_page();
+                pos.second = 0;
+            }
+        }
+        return rows;
     }
 };
 

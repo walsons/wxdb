@@ -115,6 +115,27 @@ TEST_CASE( "TC-Select", "[insert row test]" )
         DBMS::GetInstance().CloseDatabase();
     }
 
+    SECTION("select one table using index")
+    {
+        std::string statement = "SELECT id, name, sign_up FROM users WHERE id = 2;";
+        auto tokenizer = std::make_shared<Tokenizer>(statement);
+        TableParser table_parser(tokenizer);
+        auto select_info = table_parser.SelectTable();
+        REQUIRE(select_info != nullptr);
+        // columns
+        CHECK(select_info->columns[0].table_name.empty());
+        CHECK(select_info->columns[0].column_name == "id");
+        CHECK(select_info->columns[1].column_name == "name");
+        CHECK(select_info->columns[2].column_name == "sign_up");
+        // tables
+        CHECK(select_info->tables[0] == "users");
+        // where
+        CHECK(select_info->where != nullptr);
+
+        DBMS::GetInstance().SelectTable(select_info);
+        DBMS::GetInstance().CloseDatabase();
+    }
+
     SECTION("select many tables")
     {
         std::string statement = "SELECT comments.id, users.name, comments.time, comments.contents \
