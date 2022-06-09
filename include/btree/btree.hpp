@@ -321,10 +321,17 @@ public:
         {
             rows.push_back(*reinterpret_cast<const int *>(page.get_key(pos.second)));
             pos.second++;
-            if (pos.second == page.size() && page.next_page() != 0)
+            if (pos.second == page.size())
             {
-                pos.first = page.next_page();
-                pos.second = 0;
+                if (page.next_page() != 0)
+                {
+                    pos.first = page.next_page();
+                    pos.second = 0;
+                }
+                else
+                {
+                    break;
+                }
             }
         }
         return rows;

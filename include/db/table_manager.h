@@ -54,6 +54,7 @@ public:
     unsigned column_offset(int index) const { return table_header_.column_offset[index]; }
     std::shared_ptr<Pager> pg() { return pg_; }
     std::shared_ptr<IntBTree> btr() { return btr_; }
+    std::shared_ptr<IndexManager> indices(int index) { return indices_[index]; }
 };
 
 #endif

@@ -260,10 +260,10 @@ void DatabaseManager::SelectTable(const std::shared_ptr<SelectInfo> select_info)
         if ((*it)->operator_type_ == Operator_Type::EQ)
         {
             // TODO: check condtion such as col = -3
-            auto prev = --it;
-            auto pprev = --prev;
-            auto next = ++it;
-            auto nnext = ++next;
+            auto prev = it; --prev;
+            auto pprev = prev; --pprev;
+            auto next = it; ++next;
+            auto nnext = next; nnext++;
             if (
                 ((*prev)->operator_type_ == Operator_Type::NONE && (*prev)->term_->term_type_  == Term_Type::TERM_COL_REF) &&
                 (pprev == ls.end() || (*pprev)->operator_type_ == Operator_Type::AND) &&
@@ -271,15 +271,11 @@ void DatabaseManager::SelectTable(const std::shared_ptr<SelectInfo> select_info)
                 (nnext == ls.end() || (*nnext)->operator_type_ == Operator_Type::AND)
                 )
             {
-                cols.emplace_back(std::make_shared<TermExpr>(*prev));
-                vals.emplace_back(std::make_shared<TermExpr>(*next));
-                break;
+                cols.emplace_back(std::make_shared<TermExpr>(*(*prev)->term_));
+                vals.emplace_back(std::make_shared<TermExpr>(*(*next)->term_));
             }
         }
-        else
-        {
-            ++it;
-        }
+        ++it;
     }
     // free
     expr = header;
@@ -292,142 +288,11 @@ void DatabaseManager::SelectTable(const std::shared_ptr<SelectInfo> select_info)
     // Iterator records
     if (tms.size() == 1)
     {
-        iterate_one_table(tms[0], columns, condition);
+        iterate_one_table(tms[0], columns, condition, cols, vals);
     }
     else
     {
-        iterate_many_table(tms, columns, condition);
-    }
-
-
-
-
-
-
-
-    // Parse condition whether use index: if expression only use "and"(not "or") to connect and has "Col = value"
-    std::shared_ptr<TermExpr> term1;  // for column
-    std::shared_ptr<TermExpr> term2;  // for value
-    // Converse reserve polish notation to normal then store in a list
-    if (condition != nullptr)
-    {
-        auto p = condition, q = p->next_expr_;
-        std::stack<ExprNode *> expr_stack;
-        while (p != nullptr)
-        {
-            q = p->next_expr_;
-            auto node = new ExprNode(p->operator_type_, p->term_, nullptr);
-            if (node->operator_type_ == Operator_Type::NONE)
-            {
-                expr_stack.push(node);
-            }
-            else
-            {
-                // unary
-                if (node->operator_type_ > Operator_Type::UNARY_DELIMETER)
-                {
-                    auto expr = expr_stack.top();
-                    expr_stack.pop();
-                    node->next_expr_ = expr;
-                    expr_stack.push(node);
-                }
-                // binary
-                else
-                {
-                    auto expr1 = expr_stack.top();
-                    expr_stack.pop();
-                    auto expr2 = expr_stack.top();
-                    expr_stack.pop();
-                    expr1->next_expr_ = node;
-                    node->next_expr_ = expr2;
-                    expr_stack.push(expr1);
-                }
-            }
-            p = q;
-        }
-        auto header = expr_stack.top();
-        expr_stack.pop();
-        std::list<ExprNode *> ls;
-        auto expr = header;
-        while (expr != nullptr)
-        {
-            ls.push_back(expr);
-            expr = expr->next_expr_;
-        }
-        bool use_index = true;
-        // 1. check "or" doesn't exist
-        for (auto it = ls.begin(); it != ls.end(); ++it)
-        {
-            if ((*it)->operator_type_ == Operator_Type::OR)
-            {
-                use_index = false;
-                break;
-            }
-        }
-        // 2. find expression start(or and) -> Col -> = -> (+-) -> value -> end( or and) 
-        if (use_index)
-        {
-            auto it = ls.begin();
-            while (it != ls.end())
-            {
-                if ((*it)->operator_type_ == Operator_Type::EQ)
-                {
-                    // TODO: check condtion such as col = -3
-                    auto prev = --it;
-                    auto pprev = --prev;
-                    auto next = ++it;
-                    auto nnext = ++next;
-                    if (
-                        ((*prev)->operator_type_ == Operator_Type::NONE && (*prev)->term_->term_type_  == Term_Type::TERM_COL_REF) &&
-                        (pprev == ls.end() || (*pprev)->operator_type_ == Operator_Type::AND) &&
-                        ((*next)->operator_type_ == Operator_Type::NONE && (*next)->term_->term_type_ != Term_Type::TERM_COL_REF && (*next)->term_->term_type_ != Term_Type::TERM_NULL) &&
-                        (nnext == ls.end() || (*nnext)->operator_type_ == Operator_Type::AND)
-                       )
-                    {
-                        term1 = std::make_shared<TermExpr>(*prev);
-                        term2 = std::make_shared<TermExpr>(*next);
-                        break;
-                    }
-                }
-                else
-                {
-                    ++it;
-                }
-            }
-        }
-
-        // free
-        expr = header;
-        while (expr != nullptr)
-        {
-            auto tmp = expr;
-            expr = expr->next_expr_;
-            delete tmp;
-        }
-    }
-    // Don't use index
-    if (term1 == nullptr && term2 == nullptr)
-    {
-        // Iterator records
-        if (tms.size() == 1)
-        {
-            // iterate_one_table(table_map, columns, condition);
-            iterate_one_table(tms[0], columns, condition);
-        }
-        else
-        {
-            iterate_many_table(tms, columns, condition);
-        }
-    }
-    // Use index
-    else
-    {
-        if (table_map.size() == 1)
-        {
-        }
-        else
-        {
-        }
+        iterate_many_table(tms, columns, condition, cols, vals);
     }
 }
 
@@ -808,7 +673,7 @@ void DatabaseManager::iterate_one_table(const std::shared_ptr<TableManager> &tm,
         if ((1 << index) & tm->table_header().flag_index)
         {
             // this col is an index
-            unsigned int page_id = tm->table_header().index_root_page[index];
+            unsigned int page_id = tm->indices(index)->root_page_id();
             auto index_btr = std::make_shared<IndexBTree>(tm->pg(), page_id, tm->column_length(index) + 5, 
                                                     IndexManager::GetIndexComparer(tm->column_type(index)));
             const char *key = nullptr;

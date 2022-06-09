@@ -40,7 +40,13 @@ public:
     BTreeIterator(std::shared_ptr<Pager> pg, value_t value)
         : BTreeIterator(pg, value.first, value.second) {}
     BTreeIterator(std::vector<int> rows, std::shared_ptr<IntBTree> btr) 
-        : rows_(rows), rows_counter_(0), btr_(btr) {}
+        : rows_(rows), rows_counter_(0), btr_(btr) 
+    {
+        auto page_pos = btr_->upper_bound(btr_->root_page_id(), rows_[rows_counter_]);
+        page_id_ = page_pos.first;
+        pos_ = page_pos.second;
+
+    }
     std::shared_ptr<Pager> GetPager() 
     { 
         // via rowid
