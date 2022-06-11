@@ -42,7 +42,7 @@ IndexManager::comparer IndexManager::GetIndexComparer(Col_Type type)
     : buf_(new char[sizeof(int) + 1 + size]), size_(size), pg_(pg)
     , btr_(std::make_shared<IndexBTree>(pg_, root_page_id, sizeof(int) + 1 + size, 
         [compare](const char *a, const char *b) -> int {
-            // One of a and b is null
+            // One of a and b is null, null < any value
             if (a[4] != b[4])
             {
                 return a[4] ? -1 : 1;

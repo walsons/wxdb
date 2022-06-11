@@ -441,12 +441,6 @@ void DatabaseManager::update_column2term(const std::vector<std::shared_ptr<Table
 void DatabaseManager::iterate_one_table(const std::shared_ptr<TableManager> &tm,
                                         std::vector<ColumnRef> &columns, ExprNode *condition)
 {
-    // Construct btree iterator and record manager
-    int row_id = 1;
-    auto pos = tm->GetRowPosition(row_id);
-    BTreeIterator<VariantPage> btit{tm->pg(), pos};
-    RecordManager rm{tm->pg()};
-            
     // Check whether the columns is empty or have column doesn't exist
     if (columns.empty())
     {
@@ -481,6 +475,12 @@ void DatabaseManager::iterate_one_table(const std::shared_ptr<TableManager> &tm,
     }
     std::cout << std::endl;
 
+    // Construct btree iterator and record manager
+    int row_id = 1;
+    auto pos = tm->GetRowPosition(row_id);
+    BTreeIterator<VariantPage> btit{tm->pg(), pos};
+    RecordManager rm{tm->pg()};
+            
     std::unordered_map<std::string, std::shared_ptr<TermExpr>> column2term;
     // Print rows
     // The cartesian product
@@ -655,6 +655,10 @@ void DatabaseManager::iterate_one_table(const std::shared_ptr<TableManager> &tm,
     }
     std::cout << std::endl;
 
+    // Construct btree iterator and record manager
+    BTreeIterator<VariantPage> btit;  // Waiting for being assigned
+    RecordManager rm{tm->pg()};
+
     // find row_id if where statement can use index
     auto get_index = [&](const std::string &name) -> size_t {
         for (size_t i = 0; i < tm->number_of_column(); ++i)
@@ -719,20 +723,22 @@ void DatabaseManager::iterate_one_table(const std::shared_ptr<TableManager> &tm,
         }
         return res;
     };
+
     if (rows_arr.empty())
     {
         // no rows satisfy the where condition
-        return;
+        auto pos = tm->GetRowPosition(1);
+        btit = BTreeIterator<VariantPage>{tm->pg(), pos};
     }
-    auto arr = rows_arr[0];
-    for (int i = 1; i < rows_arr.size(); ++i)
+    else
     {
-        arr = get_intersection(arr, rows_arr[i]);
+        auto arr = rows_arr[0];
+        for (int i = 1; i < rows_arr.size(); ++i)
+        {
+            arr = get_intersection(arr, rows_arr[i]);
+        }
+        btit = BTreeIterator<VariantPage>{arr, tm->btr()};
     }
-
-    // Construct btree iterator and record manager
-    BTreeIterator<VariantPage> btit{arr, tm->btr()};
-    RecordManager rm{tm->pg()};
 
     std::unordered_map<std::string, std::shared_ptr<TermExpr>> column2term;
     // Print rows
@@ -770,5 +776,194 @@ void DatabaseManager::iterate_one_table(const std::shared_ptr<TableManager> &tm,
 void DatabaseManager::iterate_many_table(const std::vector<std::shared_ptr<TableManager>> &tms, std::vector<ColumnRef> &columns, ExprNode *condition,
                                          std::vector<std::shared_ptr<TermExpr>> cols, std::vector<std::shared_ptr<TermExpr>> vals)
 {
+    // Check whether the columns is empty or have column doesn't exist
+    if (columns.empty())
+    {
+        for (auto &tm : tms)
+        {
+            for (size_t i = 0; i < tm->number_of_column() - 1; ++i)  // No need to add __rowid__
+            {
+                columns.emplace_back(tm->table_name() + "." + tm->column_name(i));
+            }
+        }
+    }
+    else
+    {
+        std::unordered_set<std::string> col_s;
+        for (auto &tm : tms)
+        {
+            for (size_t i = 0; i < tm->number_of_column() - 1; ++i)  // No need to validate __rowid__ exists
+            {
+                col_s.insert(tm->table_name() + "." + tm->column_name(i));
+            }
+        }
+        for (auto it = columns.begin(); it != columns.end(); ++it)
+        {
+            if (col_s.find(it->all_name()) == col_s.end()) 
+            { 
+                std::cout << "Error: no column named \"" << *it << "\"!" << std::endl;
+                return;
+            }
+        }
+    }
 
+    // Print header
+    for (auto it = columns.begin(); it != columns.end(); ++it)
+    {
+        if (it != columns.begin()) { std::cout << "\t"; }
+        std::cout << it->all_name();
+    }
+    std::cout << std::endl;
+
+    // Divide cols and vals by table
+    std::vector<std::vector<std::shared_ptr<TermExpr>>> tcols;
+    tcols.resize(tms.size());
+    std::vector<std::vector<std::shared_ptr<TermExpr>>> tvals;
+    tvals.resize(tms.size());
+    for (size_t i = 0; i < cols.size(); ++i)
+    {
+        for (size_t j = 0; j < tms.size(); ++j)
+        {
+            if (cols[i]->ref_.table_name == tms[j]->table_name())
+            {
+                tcols[j].push_back(cols[i]);
+                tvals[j].push_back(vals[i]);
+            }
+        }
+    }
+
+    // Construct btree iterator vector and record manager vector
+    std::vector<BTreeIterator<VariantPage>> btits;
+    std::vector<RecordManager> rms;
+
+    // find row_id if where statement can use index
+    for (int tmi = 0; tmi < tms.size(); ++tmi)
+    {
+        auto tm = tms[tmi];
+        auto get_index = [&](const std::string &name) -> size_t {
+            for (size_t i = 0; i < tm->number_of_column(); ++i)
+            {
+                if (name == tm->table_name() + "." + tm->column_name(i))
+                {
+                    return i;
+                }
+            }
+            return tm->number_of_column();
+        };
+        std::vector<std::vector<int>> rows_arr;
+        for (size_t i = 0; i < tcols[tmi].size(); ++i)
+        {
+            size_t index = get_index(tcols[tmi][i]->ref_.all_name());
+            if ((1 << index) & tm->table_header().flag_index)
+            {
+                // this col is an index
+                auto index_btr = tm->indices(index)->btr();
+                const char *key = nullptr;
+                switch (tm->column_type(index))
+                {
+                case Col_Type::COL_TYPE_INT:
+                    key = reinterpret_cast<const char*>(&vals[i]->ival_);
+                    break;
+                case Col_Type::COL_TYPE_DOUBLE:
+                    key = reinterpret_cast<const char*>(&vals[i]->dval_);
+                    break;
+                case Col_Type::COL_TYPE_BOOL:
+                    key = reinterpret_cast<const char*>(&vals[i]->bval_);
+                    break;
+                case Col_Type::COL_TYPE_DATE:
+                    key = reinterpret_cast<const char*>(&vals[i]->dval_);
+                    break;
+                case Col_Type::COL_TYPE_CHAR:
+                case Col_Type::COL_TYPE_VARCHAR:
+                    key = vals[i]->sval_.c_str();
+                    break;
+                default:
+                    break;
+                }
+                auto rows = index_btr->find_rows(key);
+                if (!rows.empty())
+                {
+                    rows_arr.push_back(rows);
+                }
+            }
+        }
+        // Get intersection of rows
+        auto get_intersection = [&](std::vector<int> &vec1, std::vector<int> &vec2) {
+            std::unordered_set<int> s1(vec1.begin(), vec1.end());
+            std::unordered_set<int> s2(vec2.begin(), vec2.end());
+            std::vector<int> res;
+            for (const auto &item : s1)
+            {
+                if (s2.find(item) != s2.end())
+                {
+                    res.push_back(item);
+                }
+            }
+            return res;
+        };
+        if (rows_arr.empty())
+        {
+            // no rows satisfy the where condition
+            auto pos = tm->GetRowPosition(1);
+            btits.emplace_back(tm->pg(), pos);
+            rms.emplace_back(tm->pg());
+            continue;
+        }
+        auto arr = rows_arr[0];
+        for (int i = 1; i < rows_arr.size(); ++i)
+        {
+            arr = get_intersection(arr, rows_arr[i]);
+        }
+        btits.emplace_back(arr, tm->btr());
+        rms.emplace_back(tm->pg());
+    }
+
+    std::unordered_map<std::string, std::shared_ptr<TermExpr>> column2term;
+    // Iterate btree iterator function
+    auto iterate_btree_iterator = [&]() -> std::vector<BTreeIterator<VariantPage>>::reverse_iterator {
+        auto it = btits.rbegin();
+        for (; it != btits.rend(); ++it)
+        {
+            it->next();
+            if (it->IsEnd())
+            {
+                it->Reset();
+            }
+            else
+            {
+                break;
+            }
+        }
+        return it;
+    };
+    // Print rows
+    // The cartesian product
+    while (true)
+    {
+        // Update column2term;
+        update_column2term(tms, btits, rms, column2term);
+        // Check condition
+        if (condition != nullptr)
+        {
+            Expression expression{condition, column2term};
+            if (!expression.term_.bval_) 
+            { 
+                auto it = iterate_btree_iterator();
+                // Loop over
+                if (it == btits.rend()) { break; }
+                continue; 
+            }
+        }
+        // Print
+        for (size_t i = 0; i < columns.size(); ++i)
+        {
+            if (i != 0) { std::cout << "\t"; }
+            std::cout << *column2term[columns[i].all_name()];
+        }
+        std::cout << std::endl;
+
+        auto it = iterate_btree_iterator();
+        // Loop over
+        if (it == btits.rend()) { break; }
+    }
 }

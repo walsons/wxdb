@@ -61,6 +61,8 @@ TEST_CASE( "TC-Select", "[insert row test]" )
                                     VALUES (1, \"Walson\", \"walsons@163.com\", 18, 180, \"China\", \"2020-01-03\");");
         statements.emplace_back("INSERT INTO users (id, name, email, age, height, country, sign_up) \
                                     VALUES (2, \"John\", \"John123@163.com\", 20, 175, \"China\", \"2020-03-12\");");
+        statements.emplace_back("INSERT INTO users (id, name, email, age, height, country, sign_up) \
+                                    VALUES (3, \"caler\", \"caler2000@gmail.com\", 22, 173, \"Canada\", \"2020-01-23\");");
         // comments
         statements.emplace_back("INSERT INTO comments (id, user_id, time, contents) \
                                     VALUES (1, 1, \"2021-06-03\", \"Yes!\");");
@@ -167,6 +169,27 @@ TEST_CASE( "TC-Select", "[insert row test]" )
         std::string statement = "SELECT * \
                                  FROM users, comments \
                                  WHERE users.id = comments.user_id;";
+        auto tokenizer = std::make_shared<Tokenizer>(statement);
+        TableParser table_parser(tokenizer);
+        auto select_info = table_parser.SelectTable();
+        REQUIRE(select_info != nullptr);
+        // columns
+        CHECK(select_info->columns.empty());
+        // tables
+        CHECK(select_info->tables[0] == "users");
+        CHECK(select_info->tables[1] == "comments");
+        // where
+        CHECK(select_info->where != nullptr);
+
+        DBMS::GetInstance().SelectTable(select_info);
+        DBMS::GetInstance().CloseDatabase();
+    }
+
+    SECTION("select many tables using index")
+    {
+        std::string statement = "SELECT * \
+                                 FROM users, comments \
+                                 WHERE users.email = \"walsons@163.com\" AND comments.user_id = 1;";
         auto tokenizer = std::make_shared<Tokenizer>(statement);
         TableParser table_parser(tokenizer);
         auto select_info = table_parser.SelectTable();

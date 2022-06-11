@@ -88,9 +88,13 @@ public:
 private:
     void destory_class_member();
 };
-
 std::ostream &operator<<(std::ostream &os, const TermExpr &term);
-
+bool operator==(const TermExpr &term1, const TermExpr &term2);
+bool operator>(const TermExpr &term1, const TermExpr &term2);
+bool operator<(const TermExpr &term1, const TermExpr &term2);
+bool operator>=(const TermExpr &term1, const TermExpr &term2);
+bool operator<=(const TermExpr &term1, const TermExpr &term2);
+bool operator!=(const TermExpr &term1, const TermExpr &term2);
 
 class ExprNode
 {
