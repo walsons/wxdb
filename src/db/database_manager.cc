@@ -655,6 +655,10 @@ void DatabaseManager::iterate_one_table(const std::shared_ptr<TableManager> &tm,
     }
     std::cout << std::endl;
 
+    // Construct btree iterator and record manager
+    BTreeIterator<VariantPage> btit;  // Waiting for being assigned
+    RecordManager rm{tm->pg()};
+
     // find row_id if where statement can use index
     auto get_index = [&](const std::string &name) -> size_t {
         for (size_t i = 0; i < tm->number_of_column(); ++i)
@@ -719,20 +723,22 @@ void DatabaseManager::iterate_one_table(const std::shared_ptr<TableManager> &tm,
         }
         return res;
     };
+
     if (rows_arr.empty())
     {
         // no rows satisfy the where condition
-        return;
+        auto pos = tm->GetRowPosition(1);
+        btit = BTreeIterator<VariantPage>{tm->pg(), pos};
     }
-    auto arr = rows_arr[0];
-    for (int i = 1; i < rows_arr.size(); ++i)
+    else
     {
-        arr = get_intersection(arr, rows_arr[i]);
+        auto arr = rows_arr[0];
+        for (int i = 1; i < rows_arr.size(); ++i)
+        {
+            arr = get_intersection(arr, rows_arr[i]);
+        }
+        btit = BTreeIterator<VariantPage>{arr, tm->btr()};
     }
-
-    // Construct btree iterator and record manager
-    BTreeIterator<VariantPage> btit{arr, tm->btr()};
-    RecordManager rm{tm->pg()};
 
     std::unordered_map<std::string, std::shared_ptr<TermExpr>> column2term;
     // Print rows
@@ -837,7 +843,7 @@ void DatabaseManager::iterate_many_table(const std::vector<std::shared_ptr<Table
         auto get_index = [&](const std::string &name) -> size_t {
             for (size_t i = 0; i < tm->number_of_column(); ++i)
             {
-                if (name == tm->column_name(i))
+                if (name == tm->table_name() + "." + tm->column_name(i))
                 {
                     return i;
                 }
@@ -847,13 +853,11 @@ void DatabaseManager::iterate_many_table(const std::vector<std::shared_ptr<Table
         std::vector<std::vector<int>> rows_arr;
         for (size_t i = 0; i < tcols[tmi].size(); ++i)
         {
-            size_t index = get_index(tcols[tmi][i]->ref_.column_name);
+            size_t index = get_index(tcols[tmi][i]->ref_.all_name());
             if ((1 << index) & tm->table_header().flag_index)
             {
                 // this col is an index
-                unsigned int page_id = tm->indices(index)->root_page_id();
-                auto index_btr = std::make_shared<IndexBTree>(tm->pg(), page_id, tm->column_length(index) + 5, 
-                                                        IndexManager::GetIndexComparer(tm->column_type(index)));
+                auto index_btr = tm->indices(index)->btr();
                 const char *key = nullptr;
                 switch (tm->column_type(index))
                 {
@@ -900,6 +904,9 @@ void DatabaseManager::iterate_many_table(const std::vector<std::shared_ptr<Table
         if (rows_arr.empty())
         {
             // no rows satisfy the where condition
+            auto pos = tm->GetRowPosition(1);
+            btits.emplace_back(tm->pg(), pos);
+            rms.emplace_back(tm->pg());
             continue;
         }
         auto arr = rows_arr[0];

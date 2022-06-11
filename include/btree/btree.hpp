@@ -314,10 +314,14 @@ public:
     std::vector<int> find_rows(const char *key)
     {
         std::vector<int> rows;
-        auto pos = upper_bound(root_page_id(), key);
+        char target_key[5 + strlen(key) + 1];
+        *reinterpret_cast<int *>(target_key) = 1;
+        target_key[4] = 0;
+        std::memcpy(target_key + 5, key, strlen(key) + 1);
+        auto pos = upper_bound(root_page_id(), target_key);
         char *now_addr = pg_->Read(pos.first);
         leaf_page page{now_addr, pg_};
-        while (comparer_(page.get_key(pos.second), key) == 0)
+        while (strcmp(page.get_key(pos.second) + 5, target_key + 5) == 0)
         {
             rows.push_back(*reinterpret_cast<const int *>(page.get_key(pos.second)));
             pos.second++;

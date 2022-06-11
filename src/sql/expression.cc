@@ -212,6 +212,258 @@ std::ostream &operator<<(std::ostream &os, const TermExpr &term)
     return os;
 }
 
+bool operator==(const TermExpr &term1, const TermExpr &term2)
+{
+    // Type of double and int compatible cases
+    if (term1.term_type_ == Term_Type::TERM_INT && term2.term_type_ == Term_Type::TERM_DOUBLE)
+    {
+        if (static_cast<double>(term1.ival_) == term2.dval_) { return true; }
+        return false;
+    }
+    else if (term1.term_type_ == Term_Type::TERM_DOUBLE && term2.term_type_ == Term_Type::TERM_INT)
+    {
+        if (term1.dval_ == static_cast<double>(term2.ival_)) { return true; }
+        return false;
+    }
+    // Other type cases
+    if (term1.term_type_ != term2.term_type_) { return false; }  // exception case
+    switch (term1.term_type_)
+    {
+    case Term_Type::TERM_INT:
+        return term1.ival_ == term2.ival_;
+        break;
+    case Term_Type::TERM_DOUBLE:
+        return term1.dval_ == term2.dval_;
+        break;
+    case Term_Type::TERM_NULL:
+        return true;
+        break;
+    case Term_Type::TERM_BOOL:
+        return term1.bval_ == term2.bval_;
+        break;
+    case Term_Type::TERM_DATE:
+        return term1.tval_.timestamp == term2.tval_.timestamp;
+        break;
+    case Term_Type::TERM_STRING:
+        return term1.sval_ == term2.sval_;
+        break;
+    case Term_Type::TERM_COL_REF:  // exception case
+        return false;
+        break;
+    }
+    return false;
+}
+
+bool operator>(const TermExpr &term1, const TermExpr &term2)
+{
+    // Type of double and int compatible cases
+    if (term1.term_type_ == Term_Type::TERM_INT && term2.term_type_ == Term_Type::TERM_DOUBLE)
+    {
+        if (static_cast<double>(term1.ival_) > term2.dval_) { return true; }
+        return false;
+    }
+    else if (term1.term_type_ == Term_Type::TERM_DOUBLE && term2.term_type_ == Term_Type::TERM_INT)
+    {
+        if (term1.dval_ > static_cast<double>(term2.ival_)) { return true; }
+        return false;
+    }
+    // Other type cases
+    if (term1.term_type_ != term2.term_type_) { return false; }  // exception case
+    switch (term1.term_type_)
+    {
+    case Term_Type::TERM_INT:
+        return term1.ival_ > term2.ival_;
+        break;
+    case Term_Type::TERM_DOUBLE:
+        return term1.dval_ > term2.dval_;
+        break;
+    case Term_Type::TERM_NULL:
+        return false;
+        break;
+    case Term_Type::TERM_BOOL:
+        return false;  // exception case
+        break;
+    case Term_Type::TERM_DATE:
+        return term1.tval_.timestamp > term2.tval_.timestamp;
+        break;
+    case Term_Type::TERM_STRING:
+        return term1.sval_ > term2.sval_;
+        break;
+    case Term_Type::TERM_COL_REF:  // exception case
+        return false;
+        break;
+    }
+    return false;
+}
+
+bool operator<(const TermExpr &term1, const TermExpr &term2)
+{
+    // Type of double and int compatible cases
+    if (term1.term_type_ == Term_Type::TERM_INT && term2.term_type_ == Term_Type::TERM_DOUBLE)
+    {
+        if (static_cast<double>(term1.ival_) < term2.dval_) { return true; }
+        return false;
+    }
+    else if (term1.term_type_ == Term_Type::TERM_DOUBLE && term2.term_type_ == Term_Type::TERM_INT)
+    {
+        if (term1.dval_ < static_cast<double>(term2.ival_)) { return true; }
+        return false;
+    }
+    // Other type cases
+    if (term1.term_type_ != term2.term_type_) { return false; }  // exception case
+    switch (term1.term_type_)
+    {
+    case Term_Type::TERM_INT:
+        return term1.ival_ < term2.ival_;
+        break;
+    case Term_Type::TERM_DOUBLE:
+        return term1.dval_ < term2.dval_;
+        break;
+    case Term_Type::TERM_NULL:
+        return false;
+        break;
+    case Term_Type::TERM_BOOL:
+        return false;  // exception case
+        break;
+    case Term_Type::TERM_DATE:
+        return term1.tval_.timestamp < term2.tval_.timestamp;
+        break;
+    case Term_Type::TERM_STRING:
+        return term1.sval_ < term2.sval_;
+        break;
+    case Term_Type::TERM_COL_REF:  // exception case
+        return false;
+        break;
+    }
+    return false;
+}
+
+bool operator>=(const TermExpr &term1, const TermExpr &term2)
+{
+    // Type of double and int compatible cases
+    if (term1.term_type_ == Term_Type::TERM_INT && term2.term_type_ == Term_Type::TERM_DOUBLE)
+    {
+        if (static_cast<double>(term1.ival_) >= term2.dval_) { return true; }
+        return false;
+    }
+    else if (term1.term_type_ == Term_Type::TERM_DOUBLE && term2.term_type_ == Term_Type::TERM_INT)
+    {
+        if (term1.dval_ >= static_cast<double>(term2.ival_)) { return true; }
+        return false;
+    }
+    // Other type cases
+    if (term1.term_type_ != term2.term_type_) { return false; }  // exception case
+    switch (term1.term_type_)
+    {
+    case Term_Type::TERM_INT:
+        return term1.ival_ >= term2.ival_;
+        break;
+    case Term_Type::TERM_DOUBLE:
+        return term1.dval_ >= term2.dval_;
+        break;
+    case Term_Type::TERM_NULL:
+        return false;
+        break;
+    case Term_Type::TERM_BOOL:
+        return false;  // exception case
+        break;
+    case Term_Type::TERM_DATE:
+        return term1.tval_.timestamp >= term2.tval_.timestamp;
+        break;
+    case Term_Type::TERM_STRING:
+        return term1.sval_ >= term2.sval_;
+        break;
+    case Term_Type::TERM_COL_REF:  // exception case
+        return false;
+        break;
+    }
+    return false;
+}
+
+bool operator<=(const TermExpr &term1, const TermExpr &term2)
+{
+    // Type of double and int compatible cases
+    if (term1.term_type_ == Term_Type::TERM_INT && term2.term_type_ == Term_Type::TERM_DOUBLE)
+    {
+        if (static_cast<double>(term1.ival_) <= term2.dval_) { return true; }
+        return false;
+    }
+    else if (term1.term_type_ == Term_Type::TERM_DOUBLE && term2.term_type_ == Term_Type::TERM_INT)
+    {
+        if (term1.dval_ <= static_cast<double>(term2.ival_)) { return true; }
+        return false;
+    }
+    // Other type cases
+    if (term1.term_type_ != term2.term_type_) { return false; }  // exception case
+    switch (term1.term_type_)
+    {
+    case Term_Type::TERM_INT:
+        return term1.ival_ <= term2.ival_;
+        break;
+    case Term_Type::TERM_DOUBLE:
+        return term1.dval_ <= term2.dval_;
+        break;
+    case Term_Type::TERM_NULL:
+        return false;
+        break;
+    case Term_Type::TERM_BOOL:
+        return false;  // exception case
+        break;
+    case Term_Type::TERM_DATE:
+        return term1.tval_.timestamp <= term2.tval_.timestamp;
+        break;
+    case Term_Type::TERM_STRING:
+        return term1.sval_ <= term2.sval_;
+        break;
+    case Term_Type::TERM_COL_REF:  // exception case
+        return false;
+        break;
+    }
+    return false;
+}
+
+bool operator!=(const TermExpr &term1, const TermExpr &term2)
+{
+    // Type of double and int compatible cases
+    if (term1.term_type_ == Term_Type::TERM_INT && term2.term_type_ == Term_Type::TERM_DOUBLE)
+    {
+        if (static_cast<double>(term1.ival_) != term2.dval_) { return true; }
+        return false;
+    }
+    else if (term1.term_type_ == Term_Type::TERM_DOUBLE && term2.term_type_ == Term_Type::TERM_INT)
+    {
+        if (term1.dval_ != static_cast<double>(term2.ival_)) { return true; }
+        return false;
+    }
+    // Other type cases
+    if (term1.term_type_ != term2.term_type_) { return false; }  // exception case
+    switch (term1.term_type_)
+    {
+    case Term_Type::TERM_INT:
+        return term1.ival_ != term2.ival_;
+        break;
+    case Term_Type::TERM_DOUBLE:
+        return term1.dval_ != term2.dval_;
+        break;
+    case Term_Type::TERM_NULL:
+        return false;
+        break;
+    case Term_Type::TERM_BOOL:
+        return term1.bval_ != term2.bval_;
+        break;
+    case Term_Type::TERM_DATE:
+        return term1.tval_.timestamp != term2.tval_.timestamp;
+        break;
+    case Term_Type::TERM_STRING:
+        return term1.sval_ != term2.sval_;
+        break;
+    case Term_Type::TERM_COL_REF:  // exception case
+        return false;
+        break;
+    }
+    return false;
+}
+
 Expression::Expression(ExprNode *expr, std::unordered_map<std::string, std::shared_ptr<TermExpr>> col_real_term)
 {
     Eval(expr, col_real_term);
@@ -446,22 +698,22 @@ std::shared_ptr<TermExpr> Expression::EvalOperator(ExprNode *op, std::shared_ptr
         res = std::make_shared<TermExpr>(term1->bval_ && term2->bval_);
         break;
     case Operator_Type::EQ:
-        res = std::make_shared<TermExpr>(term1->bval_ == term2->bval_);
+        res = std::make_shared<TermExpr>(*term1 == *term2);
         break;
     case Operator_Type::NOT_EQ:
-        res = std::make_shared<TermExpr>(term1->bval_ != term2->bval_);
+        res = std::make_shared<TermExpr>(*term1 != *term2);
         break;
     case Operator_Type::GE:
-        res = std::make_shared<TermExpr>(term1->bval_ >= term2->bval_);
+        res = std::make_shared<TermExpr>(*term1 >= *term2);
         break;
     case Operator_Type::LE:
-        res = std::make_shared<TermExpr>(term1->bval_ <= term2->bval_);
+        res = std::make_shared<TermExpr>(*term1 <= *term2);
         break;
     case Operator_Type::GT:
-        res = std::make_shared<TermExpr>(term1->bval_ > term2->bval_);
+        res = std::make_shared<TermExpr>(*term1 > *term2);
         break;
     case Operator_Type::LT:
-        res = std::make_shared<TermExpr>(term1->bval_ < term2->bval_);
+        res = std::make_shared<TermExpr>(*term1 < *term2);
         break;
     case Operator_Type::PLUS:
         if (term1->term_type_ == Term_Type::TERM_INT || term2->term_type_ == Term_Type::TERM_INT)
