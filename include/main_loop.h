@@ -27,7 +27,18 @@ void main_loop(bool &exit)
     std::istringstream in(one_sql);
     std::string tmp;
     in >> tmp;
-    if (tolower(tmp) == ".exit") { exit = true; }
+    if (tolower(tmp) == ".exit") 
+    { 
+        DBMS::GetInstance().CloseDatabase();
+        exit = true; 
+    }
+    else if (tolower(tmp) == "use")
+    {
+        in >> tmp;
+        auto index = tmp.find(";");
+        tmp = tolower(tmp.substr(0, index));
+        DBMS::GetInstance().UseDatabase(tmp);
+    }
     else if (tolower(tmp) == "create")
     {
         in >> tmp;

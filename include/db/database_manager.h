@@ -17,12 +17,12 @@ class DatabaseManager
 public:
     DatabaseManager();
     ~DatabaseManager() = default;
-    void CreateDatabase(const std::string &db_name);
-    void Open(const std::string &db_name);
-    void Close();
-    void CreateTable(const std::shared_ptr<TableHeader> table_header);
+    bool CreateDatabase(const std::string &db_name);
+    bool Open(const std::string &db_name);
+    bool CreateTable(const std::shared_ptr<TableHeader> table_header);
     void InsertRow(const std::shared_ptr<InsertInfo> insert_info);
     void SelectTable(const std::shared_ptr<SelectInfo> select_info);
+    void Close();
 
 private:
     void update_column2term(const std::shared_ptr<TableManager> &tm,
