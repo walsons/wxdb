@@ -17,12 +17,13 @@ class DatabaseManager
 public:
     DatabaseManager();
     ~DatabaseManager() = default;
+    void CloseDatabase();
+
     bool CreateDatabase(const std::string &db_name);
     bool OpenDatabase(const std::string &db_name);
     bool CreateTable(const std::shared_ptr<TableHeader> table_header);
     void InsertRow(const std::shared_ptr<InsertInfo> insert_info);
     void SelectTable(const std::shared_ptr<SelectInfo> select_info);
-    void CloseDatabase();
 
 private:
     void update_column2term(const std::shared_ptr<TableManager> &tm,
@@ -53,9 +54,9 @@ private:
     };
     Info info_;
     std::vector<std::shared_ptr<TableManager>> table_manager_;
+    
 private:
     bool is_open_;
-
 };
 
 inline DatabaseManager::DatabaseManager() : is_open_(false)

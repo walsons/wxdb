@@ -28,6 +28,7 @@ public:
     bool OpenTable(const std::string &table_name);
     void DropTable();
     void CloseTable();
+    
     std::shared_ptr<TableManager> Mirror(const std::string &alias);
 
     int InsertRecord();

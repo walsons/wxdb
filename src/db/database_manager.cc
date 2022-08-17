@@ -11,6 +11,18 @@
 #include "../../include/db/record_manager.h"
 #include "../../include/page/index_leaf_page.hpp"
 
+void DatabaseManager::CloseDatabase()
+{
+    std::ofstream ofs(DB_DIR + info_.db_name + ".db", std::ios::out | std::ios::binary);
+    ofs.write(reinterpret_cast<const char *>(&info_), sizeof(info_));
+    is_open_ = false;
+    // Close table
+    for (size_t i = 0; i < info_.num_table; ++i)
+    {
+        table_manager_[i]->CloseTable();
+    }
+}
+
 bool DatabaseManager::CreateDatabase(const std::string &db_name)
 {
     std::ifstream ifs(DB_DIR + db_name + ".db", std::ios::in | std::ios::binary);
@@ -27,17 +39,20 @@ bool DatabaseManager::CreateDatabase(const std::string &db_name)
 
 bool DatabaseManager::OpenDatabase(const std::string &db_name)
 {
-    if (std::strcmp(db_name.c_str(), info_.db_name) == 0) 
+    // Check database is opened or not, or whether the current database is we want to open
+    if (is_open_ == false || std::strcmp(db_name.c_str(), info_.db_name) == 0) 
     { 
         is_open_ = true;
         std::cout << "Database \"" << db_name << "\" is using" << std::endl; 
         return false; 
     }
+    // Save other database before open the one we want
     if (is_open_)
     {
         CloseDatabase();
         is_open_ = false;
     }
+    // Open database
     std::ifstream ifs(DB_DIR + db_name + ".db", std::ios::in | std::ios::binary);
     if (!ifs.is_open()) 
     { 
@@ -51,18 +66,6 @@ bool DatabaseManager::OpenDatabase(const std::string &db_name)
         table_manager_.push_back(std::make_shared<TableManager>(info_.table_name[i]));
     }
     return true;
-}
-
-void DatabaseManager::CloseDatabase()
-{
-    std::ofstream ofs(DB_DIR + info_.db_name + ".db", std::ios::out | std::ios::binary);
-    ofs.write(reinterpret_cast<const char *>(&info_), sizeof(info_));
-    is_open_ = false;
-    // Close table
-    for (size_t i = 0; i < info_.num_table; ++i)
-    {
-        table_manager_[i]->CloseTable();
-    }
 }
 
 bool DatabaseManager::CreateTable(const std::shared_ptr<TableHeader> table_header)
@@ -83,6 +86,7 @@ bool DatabaseManager::CreateTable(const std::shared_ptr<TableHeader> table_heade
     std::strncpy(info_.table_name[info_.num_table], table_header->table_name, MAX_LENGTH_NAME);
     ++info_.num_table;
     table_manager_.emplace_back(std::make_shared<TableManager>());
+    // Let table_manager_ to create table
     table_manager_.back()->CreateTable(table_header);
     return true;
 }

@@ -10,20 +10,13 @@ CREATE DATABASE mydb;
 ```
 
 ```sql
-DROP DATABASE database_name;
-
-# example
-DROP DATABASE mydb;
-```
-
-```sql
 USE database_name;
 
 # example
 USE mydb;
 ```
 
-Support constraint type: **not null**, **unique**, **primary key**, **foreigh key**, **check** 
+Support constraint type: **not null**, **unique**, **primary key**, **check** 
 
 these constraint must write in a single line except **not null**.
 
@@ -56,7 +49,6 @@ CREATE TABLE comments (
     time        DATE       NOT NULL,
     contents    VARCHAR(255),
     PRIMARY KEY (id),
-    FOREIGN KEY (user_id) REFERENCES users (id)
 );
 ```
 
