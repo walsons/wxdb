@@ -1,9 +1,10 @@
-#include "include/db/hello_interface.h"
+#include <iostream>
 #include "include/main_loop.h"
 
 int main()
 {
-    HelloInterface();
+    std::cout << "wxdb version 1.0" << std::endl;
+    std::cout << "Enter \".help\" for usage hints." << std::endl;
 
     bool exit = false;
     while (!exit)
