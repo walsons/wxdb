@@ -74,7 +74,7 @@ bool DatabaseManager::CreateTable(const std::shared_ptr<TableHeader> table_heade
     }
     for (size_t i = 0; i < info_.num_table; ++i)
     {
-        if (std::strcpy(info_.table_name[i], table_header->table_name) == 0)
+        if (std::strcmp(info_.table_name[i], table_header->table_name) == 0)
         {
             std::cout << "Table \"" << table_header->table_name << "\" has exist!" << std::endl;
             return false;
