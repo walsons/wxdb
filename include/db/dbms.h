@@ -68,7 +68,7 @@ inline void DBMS::CreateDatabase(const std::string &db_name)
 
 inline void DBMS::UseDatabase(const std::string &db_name)
 {
-    if (database_manager_->Open(db_name))
+    if (database_manager_->OpenDatabase(db_name))
         std::cout << "Database changed to \"" << db_name << "\"" << std::endl;
 }
 
@@ -91,7 +91,7 @@ inline void DBMS::SelectTable(const std::shared_ptr<SelectInfo> select_info)
 
 inline void DBMS::CloseDatabase()
 {
-    database_manager_->Close();
+    database_manager_->CloseDatabase();
 }
 
 #endif

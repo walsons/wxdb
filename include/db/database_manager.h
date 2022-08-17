@@ -18,11 +18,11 @@ public:
     DatabaseManager();
     ~DatabaseManager() = default;
     bool CreateDatabase(const std::string &db_name);
-    bool Open(const std::string &db_name);
+    bool OpenDatabase(const std::string &db_name);
     bool CreateTable(const std::shared_ptr<TableHeader> table_header);
     void InsertRow(const std::shared_ptr<InsertInfo> insert_info);
     void SelectTable(const std::shared_ptr<SelectInfo> select_info);
-    void Close();
+    void CloseDatabase();
 
 private:
     void update_column2term(const std::shared_ptr<TableManager> &tm,
