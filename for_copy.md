@@ -12,11 +12,9 @@ CREATE TABLE comments ( id INT, user_id INT NOT NULL, time DATE NOT NULL, conten
 
 ---
 
-INSERT INTO users (id, name, email, age, height, country, sign_up)
-VALUES (1, "Walson", "[walsons@163.com](mailto:walsons@163.com)", 18, 180, "China", "2020-01-03");
+INSERT INTO users (id, name, email, age, height, country, sign_up) VALUES (1, "Walson", "[walsons@163.com](mailto:walsons@163.com)", 18, 180, "China", "2020-01-03");
 
-INSERT INTO users
-VALUES (1, "Walson", "[walsons@163.com](mailto:walsons@163.com)", 18, 180, "China", "2020-01-03");
+INSERT INTO users VALUES (1, "Walson", "[walsons@163.com](mailto:walsons@163.com)", 18, 180, "China", "2020-01-03");
 
 ---
 

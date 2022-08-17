@@ -73,7 +73,7 @@ VALUES (value1, value2, value3, ...);
 
 #example
 INSERT INTO users
-VALUES (1, "Walson", "walsons@163.com", "18", "180", "China", "2020-01-03");
+VALUES (1, "Walson", "walsons@163.com", 18, 180, "China", "2020-01-03");
 ```
 
 ```sql

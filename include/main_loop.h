@@ -11,62 +11,69 @@
 #include "sql/table_parser.h"
 #include "db/table_header.h"
 
-std::string tolower(const std::string &str)
+std::string &ToLower(std::string &str)
 {
-    std::string res;
-    std::for_each(str.begin(), str.end(), [&](char c) { res.push_back(std::tolower(c)); });
-    return res;
-}
+    std::for_each(str.begin(), str.end(), [](char &c) { 
+        c = std::tolower(c); 
+    });
+    return str;
+};
 
 void main_loop(bool &exit)
 {
     std::string one_sql;
     std::getline(std::cin, one_sql);
-    auto t = std::make_shared<Tokenizer>(one_sql);
+    auto tokenizer = std::make_shared<Tokenizer>(one_sql);
 
     std::istringstream in(one_sql);
-    std::string tmp;
-    in >> tmp;
-    if (tolower(tmp) == ".exit") 
+    std::string word;
+    in >> word;
+    ToLower(word);
+    if (word == ".exit") 
     { 
         DBMS::GetInstance().CloseDatabase();
         exit = true; 
     }
-    else if (tolower(tmp) == "use")
+    else if (word == "use")
     {
-        in >> tmp;
-        auto index = tmp.find(";");
-        tmp = tolower(tmp.substr(0, index));
-        DBMS::GetInstance().UseDatabase(tmp);
+        in >> word;
+        auto index = word.find(";");
+        word = word.substr(0, index);
+        DBMS::GetInstance().UseDatabase(word);
     }
-    else if (tolower(tmp) == "create")
+    else if (word == "create")
     {
-        in >> tmp;
-        tmp = tolower(tmp);
-        if (tmp == "database") 
+        in >> word;
+        ToLower(word);
+        if (word == "database") 
         {
-            auto parser = std::make_shared<DatabaseParser>(t);
+            auto parser = std::make_shared<DatabaseParser>(tokenizer);
             auto info = parser->CreateDatabase();
             DBMS::GetInstance().CreateDatabase(info->database_name);
         }
-        else if (tmp == "table")
+        else if (word == "table")
         {
-            auto parser = std::make_shared<TableParser>(t);
+            auto parser = std::make_shared<TableParser>(tokenizer);
             auto info = parser->CreateTable();
             auto table_header = std::make_shared<TableHeader>();
             fill_table_header(table_header, *info);               
             DBMS::GetInstance().CreateTable(table_header);
         }
     }
-    else if (tolower(tmp) == "insert")
+    else if (word == "insert")
     {
-        in >> tmp;
-        if (tolower(tmp) == "into")
+        in >> word;
+        ToLower(word);
+        if (word == "into")
         {
-            auto parser = std::make_shared<TableParser>(t);
+            auto parser = std::make_shared<TableParser>(tokenizer);
             auto info = parser->InsertTable();
             DBMS::GetInstance().InsertRow(info);
         }
+    }
+    else 
+    {
+        std::cerr << "Unknown command" << std::endl;
     }
 }
 

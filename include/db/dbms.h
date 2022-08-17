@@ -9,6 +9,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #endif
+#include <iostream>
 #include <string>
 #include <memory>
 #include <cassert>
@@ -31,10 +32,10 @@ public:
     void CloseDatabase();
 
 private:
-    std::shared_ptr<DatabaseManager> db_manager_;
+    std::shared_ptr<DatabaseManager> database_manager_;
 };
 
-inline DBMS::DBMS() : db_manager_(std::make_shared<DatabaseManager>())
+inline DBMS::DBMS() : database_manager_(std::make_shared<DatabaseManager>())
 {
 #ifdef _WIN32
     int exists = access(DB_DIR.c_str(), F_OK);
@@ -57,6 +58,40 @@ inline DBMS &DBMS::GetInstance()
 {
     static DBMS dbms;
     return dbms;
+}
+
+inline void DBMS::CreateDatabase(const std::string &db_name)
+{
+    if (database_manager_->CreateDatabase(db_name))
+        std::cout << "Create database \"" << db_name << "\" successfully" << std::endl;
+}
+
+inline void DBMS::UseDatabase(const std::string &db_name)
+{
+    if (database_manager_->OpenDatabase(db_name))
+        std::cout << "Database changed to \"" << db_name << "\"" << std::endl;
+}
+
+inline void DBMS::CreateTable(const std::shared_ptr<TableHeader> table_header)
+{
+    if (database_manager_->CreateTable(table_header))
+        std::cout << "Create database \"" << table_header->table_name << "\" successfully" << std::endl;
+}
+
+inline void DBMS::InsertRow(const std::shared_ptr<InsertInfo> insert_info)
+{
+    database_manager_->InsertRow(insert_info);
+    std::cout << "Insert successfully" << std::endl;
+}
+
+inline void DBMS::SelectTable(const std::shared_ptr<SelectInfo> select_info)
+{
+    database_manager_->SelectTable(select_info);
+}
+
+inline void DBMS::CloseDatabase()
+{
+    database_manager_->CloseDatabase();
 }
 
 #endif

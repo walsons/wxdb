@@ -21,11 +21,11 @@ bool DatabaseManager::CreateDatabase(const std::string &db_name)
     }
     std::strncpy(info_.db_name, db_name.c_str(), MAX_LENGTH_NAME);
     info_.num_table = 0;
-    Close();
+    CloseDatabase();
     return true;
 }
 
-bool DatabaseManager::Open(const std::string &db_name)
+bool DatabaseManager::OpenDatabase(const std::string &db_name)
 {
     if (std::strcmp(db_name.c_str(), info_.db_name) == 0) 
     { 
@@ -35,7 +35,7 @@ bool DatabaseManager::Open(const std::string &db_name)
     }
     if (is_open_)
     {
-        Close();
+        CloseDatabase();
         is_open_ = false;
     }
     std::ifstream ifs(DB_DIR + db_name + ".db", std::ios::in | std::ios::binary);
@@ -53,7 +53,7 @@ bool DatabaseManager::Open(const std::string &db_name)
     return true;
 }
 
-void DatabaseManager::Close()
+void DatabaseManager::CloseDatabase()
 {
     std::ofstream ofs(DB_DIR + info_.db_name + ".db", std::ios::out | std::ios::binary);
     ofs.write(reinterpret_cast<const char *>(&info_), sizeof(info_));
@@ -74,7 +74,7 @@ bool DatabaseManager::CreateTable(const std::shared_ptr<TableHeader> table_heade
     }
     for (size_t i = 0; i < info_.num_table; ++i)
     {
-        if (std::strcpy(info_.table_name[i], table_header->table_name) == 0)
+        if (std::strcmp(info_.table_name[i], table_header->table_name) == 0)
         {
             std::cout << "Table \"" << table_header->table_name << "\" has exist!" << std::endl;
             return false;
