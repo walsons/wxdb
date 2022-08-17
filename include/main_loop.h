@@ -71,6 +71,10 @@ void main_loop(bool &exit)
             DBMS::GetInstance().InsertRow(info);
         }
     }
+    else 
+    {
+        std::cerr << "Unknown command" << std::endl;
+    }
 }
 
 #endif
