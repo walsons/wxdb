@@ -21,8 +21,18 @@ public:
     template <typename T>
     T ParseError(const std::string &message)
     {
-        std::cout << message << std::endl;
+        error_message_ = message;
         return nullptr;
+    }
+    bool PrintError()
+    {
+        if (!error_message_.empty())
+        {
+            std::cout << error_message_ << std::endl;
+            error_message_.clear();
+            return true;
+        }
+        return false;
     }
     bool MatchToken(Token_Type type);
     bool MatchToken(Token_Type type, const std::string &text);
@@ -44,6 +54,7 @@ public:
 public:
     std::shared_ptr<Tokenizer> tokenizer_;
     std::shared_ptr<Token> curr_token_;
+    std::string error_message_;
 
 private:
     ExprNode *concatenate_expr_node(ExprNode *expr1, ExprNode *expr2);
