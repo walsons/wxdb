@@ -14,7 +14,7 @@ Parser::~Parser() = default;
 std::shared_ptr<Token> Parser::ParseNextToken()
 {
     if (parser_state_type_ == Parser_State_Type::PARSER_WRONG) { return nullptr; }
-    if (curr_token_ == NULL) 
+    if (curr_token_ == nullptr) 
     {
         curr_token_ = tokenizer_->GetNextToken();
     }

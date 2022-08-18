@@ -73,7 +73,7 @@ enum class Token_Type
 class Token
 {
 public:
-    Token(std::string text, Token_Type type)
+    Token(const std::string &text, Token_Type type)
         : text_(text), type_(type) 
     {
         // If it's string, need to remove single quotation marks

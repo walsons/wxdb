@@ -40,9 +40,8 @@ bool DatabaseManager::CreateDatabase(const std::string &db_name)
 bool DatabaseManager::OpenDatabase(const std::string &db_name)
 {
     // Check database is opened or not, or whether the current database is we want to open
-    if (is_open_ == false || std::strcmp(db_name.c_str(), info_.db_name) == 0) 
+    if (is_open_ == true && std::strcmp(db_name.c_str(), info_.db_name) == 0) 
     { 
-        is_open_ = true;
         std::cout << "Database \"" << db_name << "\" is using" << std::endl; 
         return false; 
     }
@@ -56,7 +55,7 @@ bool DatabaseManager::OpenDatabase(const std::string &db_name)
     std::ifstream ifs(DB_DIR + db_name + ".db", std::ios::in | std::ios::binary);
     if (!ifs.is_open()) 
     { 
-        std::cout << "Database \"" << db_name << "\" doesn't exist!"; 
+        std::cout << "Database \"" << db_name << "\" doesn't exist!" << std::endl;
         return false;
     }
     ifs.read(reinterpret_cast<char *>(&info_), sizeof(info_));
