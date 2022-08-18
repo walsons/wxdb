@@ -9,13 +9,7 @@
 #include "expression.h"
 #include <string>
 #include <memory>
-
-enum class Parser_State_Type
-{
-    PARSER_WRONG,
-    PARSER_CORRECT,
-    PARSER_RESERVED_WORD
-};
+#include <iostream>
 
 class Parser
 {
@@ -24,7 +18,13 @@ public:
     virtual ~Parser();
     std::shared_ptr<Token> ParseNextToken();
     std::shared_ptr<Token> ParseEatAndNextToken();
-    void ParseError(const std::string &message);
+    template <typename T>
+    T ParseError(const std::string &message)
+    {
+        std::cout << message << std::endl;
+        return nullptr;
+    }
+    bool MatchToken(Token_Type type);
     bool MatchToken(Token_Type type, const std::string &text);
 
     // Parsing expression by using recursive descent approach
@@ -44,8 +44,6 @@ public:
 public:
     std::shared_ptr<Tokenizer> tokenizer_;
     std::shared_ptr<Token> curr_token_;
-    Parser_State_Type parser_state_type_;
-    std::string parser_message_;
 
 private:
     ExprNode *concatenate_expr_node(ExprNode *expr1, ExprNode *expr2);

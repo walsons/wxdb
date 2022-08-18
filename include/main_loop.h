@@ -29,18 +29,18 @@ void main_loop(bool &exit)
     std::string word;
     in >> word;
     ToLower(word);
-    if (word == ".exit") 
+    if (word == "") {}
+    else if (word == ".exit") 
     { 
         DBMS::GetInstance().CloseDatabase();
         exit = true; 
     }
     else if (word == "use")
     {
-        in >> word;
-        ToLower(word);
         auto parser = std::make_shared<DatabaseParser>(tokenizer);
-        auto database_name = parser->UseDatabase();
-        DBMS::GetInstance().UseDatabase(database_name);
+        auto database_info = parser->UseDatabase();
+        if (database_info)
+            DBMS::GetInstance().UseDatabase(database_info->database_name);
     }
     else if (word == "create")
     {
@@ -49,16 +49,20 @@ void main_loop(bool &exit)
         if (word == "database") 
         {
             auto parser = std::make_shared<DatabaseParser>(tokenizer);
-            auto database_name = parser->CreateDatabase();
-            DBMS::GetInstance().CreateDatabase(database_name);
+            auto database_info = parser->CreateDatabase();
+            if (database_info)
+                DBMS::GetInstance().CreateDatabase(database_info->database_name);
         }
         else if (word == "table")
         {
             auto parser = std::make_shared<TableParser>(tokenizer);
             auto info = parser->CreateTable();
-            auto table_header = std::make_shared<TableHeader>();
-            fill_table_header(table_header, *info);               
-            DBMS::GetInstance().CreateTable(table_header);
+            if (info)
+            {
+                auto table_header = std::make_shared<TableHeader>();
+                fill_table_header(table_header, *info);               
+                DBMS::GetInstance().CreateTable(table_header);
+            }
         }
     }
     else if (word == "insert")
@@ -69,12 +73,13 @@ void main_loop(bool &exit)
         {
             auto parser = std::make_shared<TableParser>(tokenizer);
             auto info = parser->InsertTable();
-            DBMS::GetInstance().InsertRow(info);
+            if (info)
+                DBMS::GetInstance().InsertRow(info);
         }
     }
     else 
     {
-        std::cerr << "Unknown command" << std::endl;
+        std::cout << "Unknown command" << std::endl;
     }
 }
 

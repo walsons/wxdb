@@ -3,7 +3,7 @@
 #include <memory>
 #include "../../include/sql/table_info.h"
 
-bool fill_table_header(std::shared_ptr<TableHeader> header, const TableInfo &table_info)
+void fill_table_header(std::shared_ptr<TableHeader> header, const TableInfo &table_info)
 {
     std::memset(header.get(), 0, sizeof(TableHeader));
     std::strncpy(header->table_name, table_info.table_name.c_str(), MAX_LENGTH_NAME);
@@ -93,6 +93,4 @@ bool fill_table_header(std::shared_ptr<TableHeader> header, const TableInfo &tab
 
     // __rowid__ starts from 1
     header->auto_inc = 1;
-    
-    return true;
 }
