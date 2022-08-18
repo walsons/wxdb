@@ -31,20 +31,6 @@ Tokenizer::Tokenizer(std::string statement)
 
 Tokenizer::~Tokenizer() = default;
 
-inline
-std::shared_ptr<Token> Tokenizer::MakeToken(Token_Type token_type)
-{
-    if (token_type == Token_Type::TOKEN_RESERVED_WORD || 
-        token_type == Token_Type::TOKEN_AND ||
-        token_type == Token_Type::TOKEN_OR ||
-        token_type == Token_Type::TOKEN_NOT ||
-        token_type == Token_Type::TOKEN_NULL)
-    {
-        std::for_each(token_buffer_.begin(), token_buffer_.end(), [&](char &c){c = tolower(c); });
-    }
-    return std::make_shared<Token>(token_buffer_, token_type);
-}
-
 std::shared_ptr<Token> Tokenizer::GetNextToken()
 {
     // If reach end of statement, return nullptr
@@ -79,6 +65,20 @@ std::shared_ptr<Token> Tokenizer::GetNextToken()
     else if (c == '>') { return gt(); }
     else if (c == '^') { return power(); }
     return invalid();
+}
+
+inline
+std::shared_ptr<Token> Tokenizer::MakeToken(Token_Type token_type)
+{
+    if (token_type == Token_Type::TOKEN_RESERVED_WORD || 
+        token_type == Token_Type::TOKEN_AND ||
+        token_type == Token_Type::TOKEN_OR ||
+        token_type == Token_Type::TOKEN_NOT ||
+        token_type == Token_Type::TOKEN_NULL)
+    {
+        std::for_each(token_buffer_.begin(), token_buffer_.end(), [](char &c){ c = tolower(c); });
+    }
+    return std::make_shared<Token>(token_buffer_, token_type);
 }
 
 bool Tokenizer::NextChar()

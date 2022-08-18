@@ -15,7 +15,7 @@ std::shared_ptr<TableInfo> TableParser::CreateTable()
         ParseError("invalid SQL: missing table name!");
         return nullptr;
     }
-    ParseEatToken();
+    ParseEatAndNextToken();
     // ( 
     if (!MatchToken(Token_Type::TOKEN_OPEN_PARENTHESIS, "("))
     {
@@ -192,7 +192,7 @@ std::shared_ptr<ConstraintInfo> TableParser::parse_constraint_expr()
         {
             constraint_info->type = Constraint_Type::CONS_UNIQUE;
             constraint_info->col_ref.column_name = token->text_;
-            ParseEatToken();
+            ParseEatAndNextToken();
         }
         else
         {
@@ -223,7 +223,7 @@ std::shared_ptr<ConstraintInfo> TableParser::parse_constraint_expr()
         {
             constraint_info->type = Constraint_Type::CONS_PRIMARY_KEY;
             constraint_info->col_ref.column_name = token->text_;
-            ParseEatToken();
+            ParseEatAndNextToken();
         }
         else
         {
@@ -254,7 +254,7 @@ std::shared_ptr<ConstraintInfo> TableParser::parse_constraint_expr()
         {
             constraint_info->type = Constraint_Type::CONS_FOREIGN_KEY;
             constraint_info->col_ref.column_name = token->text_;
-            ParseEatToken();
+            ParseEatAndNextToken();
         }
         else
         {
@@ -275,7 +275,7 @@ std::shared_ptr<ConstraintInfo> TableParser::parse_constraint_expr()
         if (token->type_ == Token_Type::TOKEN_WORD)
         {
             constraint_info->fk_ref.table_name = token->text_;
-            ParseEatToken();
+            ParseEatAndNextToken();
             if (!MatchToken(Token_Type::TOKEN_OPEN_PARENTHESIS, "("))
             {
                 ParseError("invalid SQL: missing \"(\"!");
@@ -285,7 +285,7 @@ std::shared_ptr<ConstraintInfo> TableParser::parse_constraint_expr()
             if (token->type_ == Token_Type::TOKEN_WORD)
             {
                 constraint_info->fk_ref.column_name = token->text_;
-                ParseEatToken();
+                ParseEatAndNextToken();
             }
             else 
             {
@@ -442,7 +442,7 @@ std::shared_ptr<std::vector<ColVal>> TableParser::parse_value_expr()
                 ColVal data_value();
                 value->push_back(data_value);
             }
-            token = ParseEatToken();
+            ParseEatAndNextToken();
             // TODO: support other type
             if (!MatchToken(Token_Type::TOKEN_COMMA, ","))
             {
@@ -492,7 +492,7 @@ std::shared_ptr<SelectInfo> TableParser::SelectTable()
             {
                 ref.column_name = col_name;
             }
-            ParseEatToken();
+            ParseEatAndNextToken();
             select_info->columns.push_back(ref);
             if (!MatchToken(Token_Type::TOKEN_COMMA, ","))
             {

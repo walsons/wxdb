@@ -23,7 +23,6 @@ public:
     Parser(std::shared_ptr<Tokenizer> tokenizer);
     virtual ~Parser();
     std::shared_ptr<Token> ParseNextToken();
-    std::shared_ptr<Token> ParseEatToken();
     std::shared_ptr<Token> ParseEatAndNextToken();
     void ParseError(const std::string &message);
     bool MatchToken(Token_Type type, const std::string &text);

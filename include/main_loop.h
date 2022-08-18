@@ -37,9 +37,10 @@ void main_loop(bool &exit)
     else if (word == "use")
     {
         in >> word;
-        auto index = word.find(";");
-        word = word.substr(0, index);
-        DBMS::GetInstance().UseDatabase(word);
+        ToLower(word);
+        auto parser = std::make_shared<DatabaseParser>(tokenizer);
+        auto database_name = parser->UseDatabase();
+        DBMS::GetInstance().UseDatabase(database_name);
     }
     else if (word == "create")
     {
@@ -48,8 +49,8 @@ void main_loop(bool &exit)
         if (word == "database") 
         {
             auto parser = std::make_shared<DatabaseParser>(tokenizer);
-            auto info = parser->CreateDatabase();
-            DBMS::GetInstance().CreateDatabase(info->database_name);
+            auto database_name = parser->CreateDatabase();
+            DBMS::GetInstance().CreateDatabase(database_name);
         }
         else if (word == "table")
         {

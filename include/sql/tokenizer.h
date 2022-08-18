@@ -16,7 +16,6 @@ public:
     Tokenizer(std::string statement);
     ~Tokenizer();
 
-    std::shared_ptr<Token> MakeToken(Token_Type token_type);
     std::shared_ptr<Token> GetNextToken();
 
 private:
@@ -28,6 +27,7 @@ private:
     std::unordered_map<std::string, bool> reserved_word_;
 
 private:
+    std::shared_ptr<Token> MakeToken(Token_Type token_type);
     bool NextChar();
     void ClearBuffer();
     bool IsReservedWord(std::string word);

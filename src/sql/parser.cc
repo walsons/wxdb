@@ -1,5 +1,6 @@
 #include "../../include/sql/parser.h"
 #include <memory>
+#include <iostream>
 
 Parser::Parser(std::shared_ptr<Tokenizer> tokenizer)
     : tokenizer_(tokenizer)
@@ -13,26 +14,26 @@ Parser::~Parser() = default;
 // Get next token, if current token doesn't be eat, return current token
 std::shared_ptr<Token> Parser::ParseNextToken()
 {
-    if (parser_state_type_ == Parser_State_Type::PARSER_WRONG) { return nullptr; }
-    if (curr_token_ == NULL) 
+    if (parser_state_type_ == Parser_State_Type::PARSER_WRONG) 
+    { 
+        std::cout << parser_message_ << std::endl;
+        return nullptr; 
+    }
+    if (curr_token_ == nullptr) 
     {
         curr_token_ = tokenizer_->GetNextToken();
     }
     return curr_token_;
 }
 
-// Eat current token
-std::shared_ptr<Token> Parser::ParseEatToken()
-{
-    if (parser_state_type_ == Parser_State_Type::PARSER_WRONG) { return nullptr; }
-    curr_token_ = nullptr;
-    return nullptr;
-}
-
 // Eat current token then return next token
 std::shared_ptr<Token> Parser::ParseEatAndNextToken()
 {
-    if (parser_state_type_ == Parser_State_Type::PARSER_WRONG) { return nullptr; }
+    if (parser_state_type_ == Parser_State_Type::PARSER_WRONG)
+    { 
+        std::cout << parser_message_ << std::endl;
+        return nullptr; 
+    }
     curr_token_ = tokenizer_->GetNextToken();
     return curr_token_;
 }
@@ -85,7 +86,7 @@ ExprNode *Parser::ParseReadBooleanOr()
     token = ParseNextToken();
     while (token != nullptr && token->type_ == Token_Type::TOKEN_OR)
     {
-        ParseEatToken();
+        ParseEatAndNextToken();
         expr2 = ParseReadBooleanAnd();
         expr1 = concatenate_expr_node(expr1, expr2);
         expr_op = new ExprNode(Operator_Type::OR);
@@ -103,7 +104,7 @@ ExprNode *Parser::ParseReadBooleanAnd()
     token = ParseNextToken();
     while (token != nullptr && token->type_ == Token_Type::TOKEN_AND)
     {
-        ParseEatToken();
+        ParseEatAndNextToken();
         expr2 = ParseReadBooleanEquality();
         expr1 = concatenate_expr_node(expr1, expr2);
         expr_op = new ExprNode(Operator_Type::AND);
@@ -122,7 +123,7 @@ ExprNode *Parser::ParseReadBooleanEquality()
     if (token != nullptr && (token->type_ == Token_Type::TOKEN_EQ ||
                              token->type_ == Token_Type::TOKEN_NOT_EQ))
     {
-        ParseEatToken();
+        ParseEatAndNextToken();
         expr2 = ParseReadBooleanComparison();
         expr1 = concatenate_expr_node(expr1, expr2);
         switch (token->type_)
@@ -151,7 +152,7 @@ ExprNode *Parser::ParseReadBooleanComparison()
                              token->type_ == Token_Type::TOKEN_LT ||
                              token->type_ == Token_Type::TOKEN_LE))
     {
-        ParseEatToken();
+        ParseEatAndNextToken();
         expr2 = ParseReadExpr();
         expr1 = concatenate_expr_node(expr1, expr2);
         switch (token->type_)
@@ -184,7 +185,7 @@ ExprNode *Parser::ParseReadExpr()
     while (token != nullptr && (token->type_ == Token_Type::TOKEN_PLUS ||
                                 token->type_ == Token_Type::TOKEN_MINUS))
     {
-        ParseEatToken();
+        ParseEatAndNextToken();
         expr2 = ParseReadTerm();
         expr1 = concatenate_expr_node(expr1, expr2);
         switch (token->type_)
@@ -211,7 +212,7 @@ ExprNode *Parser::ParseReadTerm()
     while (token != nullptr && (token->type_ == Token_Type::TOKEN_MULTIPLY ||
                                 token->type_ == Token_Type::TOKEN_DIVIDE))
     {
-        ParseEatToken();
+        ParseEatAndNextToken();
         expr2 = ParseReadPower();
         expr1 = concatenate_expr_node(expr1, expr2);
         switch (token->type_)
@@ -237,7 +238,7 @@ ExprNode *Parser::ParseReadPower()
     token = ParseNextToken();
     while (token != nullptr && (token->type_ == Token_Type::TOKEN_POWER))
     {
-        ParseEatToken();
+        ParseEatAndNextToken();
         expr2 = ParseReadUnary();
         expr1 = concatenate_expr_node(expr1, expr2);
         expr_op = new ExprNode(Operator_Type::POWER);
@@ -260,7 +261,7 @@ ExprNode *Parser::ParseReadUnary()
                              token->type_ == Token_Type::TOKEN_PLUS ||
                              token->type_ == Token_Type::TOKEN_MINUS))
     {
-        ParseEatToken();
+        ParseEatAndNextToken();
         expr = ParseReadParen();
         switch (token->type_)
         {
@@ -295,7 +296,7 @@ ExprNode *Parser::ParseReadParen()
     }
     if (token != nullptr && (token->type_ == Token_Type::TOKEN_OPEN_PARENTHESIS))
     {
-        ParseEatToken();
+        ParseEatAndNextToken();
         expr = ParseReadBooleanOr();
         token = ParseNextToken();
         if (token == nullptr || (token->type_ != Token_Type::TOKEN_CLOSE_PARENTHESIS))
@@ -303,7 +304,7 @@ ExprNode *Parser::ParseReadParen()
             ParseError("Syntax error: missing \")\"!");
             return nullptr;
         }
-        else { ParseEatToken(); }
+        else { ParseEatAndNextToken(); }
     }
     else
     {
@@ -378,7 +379,7 @@ ExprNode *Parser::ParseReadLiteral()
     {
         auto term = std::make_shared<TermExpr>(stoi(token->text_));
         expr = new ExprNode(Operator_Type::NONE, term);
-        ParseEatToken();
+        ParseEatAndNextToken();
         return expr;
     }
     else if (token->type_ == Token_Type::TOKEN_FLOAT ||
@@ -386,14 +387,14 @@ ExprNode *Parser::ParseReadLiteral()
     {
         auto term = std::make_shared<TermExpr>(stod(token->text_));
         expr = new ExprNode(Operator_Type::NONE, term);
-        ParseEatToken();
+        ParseEatAndNextToken();
         return expr;
     }
     else if (token->type_ == Token_Type::TOKEN_STRING)
     {
         auto term = std::make_shared<TermExpr>(token->text_);
         expr = new ExprNode(Operator_Type::NONE, term);
-        ParseEatToken();
+        ParseEatAndNextToken();
         return expr;
     }
     ParseError("Syntax error: unenabled data type: " + token->text_ + "!");
