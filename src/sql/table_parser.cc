@@ -11,11 +11,11 @@ std::shared_ptr<TableInfo> TableParser::CreateTable()
     std::shared_ptr<Token> token = ParseNextToken();
     if (token->type_ == Token_Type::TOKEN_WORD) { table_info->table_name = token->text_; }
     else
-        return ParseError<std::shared_ptr<TableInfo>>("invalid SQL: missing table name!");
+        return ParseError<std::shared_ptr<TableInfo>>("invalid SQL: missing table name");
     ParseEatAndNextToken();
     // ( 
     if (!MatchToken(Token_Type::TOKEN_OPEN_PARENTHESIS, "("))
-        return ParseError<std::shared_ptr<TableInfo>>("invalid SQL: missing \"(\"!");
+        return ParseError<std::shared_ptr<TableInfo>>("invalid SQL: missing \"(\"");
     // (contents)
     while (true)
     {
@@ -37,7 +37,7 @@ std::shared_ptr<TableInfo> TableParser::CreateTable()
             break;
         }
         default:
-            return ParseError<std::shared_ptr<TableInfo>>("invalid SQL: missing field name or constraint!");
+            return ParseError<std::shared_ptr<TableInfo>>("invalid SQL: missing field name or constraint");
             break;
         }
         token = ParseNextToken();
@@ -46,10 +46,10 @@ std::shared_ptr<TableInfo> TableParser::CreateTable()
     // )
     token = this->ParseNextToken();
     if (!MatchToken(Token_Type::TOKEN_CLOSE_PARENTHESIS, ")"))
-        return ParseError<std::shared_ptr<TableInfo>>("invalid SQL: missing \")\"!");
+        return ParseError<std::shared_ptr<TableInfo>>("invalid SQL: missing \")\"");
     // ;
     if (!MatchToken(Token_Type::TOKEN_SEMICOLON, ";"))
-        return ParseError<std::shared_ptr<TableInfo>>("invalid SQL: missing \";\"!");
+        return ParseError<std::shared_ptr<TableInfo>>("invalid SQL: missing \";\"");
     return table_info;
 }
 
@@ -108,16 +108,16 @@ std::shared_ptr<FieldInfo> TableParser::parse_field_expr()
                         token = ParseNextToken();
                     }
                     else
-                        return ParseError<std::shared_ptr<FieldInfo>>("invalid SQL: missing \")\"!");
+                        return ParseError<std::shared_ptr<FieldInfo>>("invalid SQL: missing \")\"");
                 }
                 else
-                    return ParseError<std::shared_ptr<FieldInfo>>("invalid SQL: missing char length!");
+                    return ParseError<std::shared_ptr<FieldInfo>>("invalid SQL: missing char length");
             }
             else
-                return ParseError<std::shared_ptr<FieldInfo>>("invalid SQL: missing \"(\"!");
+                return ParseError<std::shared_ptr<FieldInfo>>("invalid SQL: missing \"(\"");
         }
         else
-            return ParseError<std::shared_ptr<FieldInfo>>("invalid SQL: wrong data type: " + token->text_ + "!");
+            return ParseError<std::shared_ptr<FieldInfo>>("invalid SQL: wrong data type: " + token->text_ + "");
         // not null, default
         token = ParseNextToken();
         if (token->type_ == Token_Type::TOKEN_COMMA || token->type_ == Token_Type::TOKEN_CLOSE_PARENTHESIS) {  }  // line end, Nothing to do
@@ -126,7 +126,7 @@ std::shared_ptr<FieldInfo> TableParser::parse_field_expr()
             if (MatchToken(Token_Type::TOKEN_NULL, "null"))
                 field_info->is_not_null = true;
             else
-                return ParseError<std::shared_ptr<FieldInfo>>("invalid SQL: wrong constraint!");
+                return ParseError<std::shared_ptr<FieldInfo>>("invalid SQL: wrong constraint");
         }
         else if (MatchToken(Token_Type::TOKEN_RESERVED_WORD, "default"))
         {
@@ -134,10 +134,10 @@ std::shared_ptr<FieldInfo> TableParser::parse_field_expr()
             field_info->expr = ParseExpressionRD();
         }
         else 
-            return ParseError<std::shared_ptr<FieldInfo>>("invalid SQL: wrong constraint!");
+            return ParseError<std::shared_ptr<FieldInfo>>("invalid SQL: wrong constraint");
     }
     else
-        return ParseError<std::shared_ptr<FieldInfo>>("invalid SQL: missing field type!");
+        return ParseError<std::shared_ptr<FieldInfo>>("invalid SQL: missing field type");
     return field_info;
 }
 
@@ -149,7 +149,7 @@ std::shared_ptr<ConstraintInfo> TableParser::parse_constraint_expr()
     if (MatchToken(Token_Type::TOKEN_RESERVED_WORD, "unique"))
     {
         if (!MatchToken(Token_Type::TOKEN_OPEN_PARENTHESIS, "("))
-            return ParseError<std::shared_ptr<ConstraintInfo>>("invalid SQL: missing \"(\"!");
+            return ParseError<std::shared_ptr<ConstraintInfo>>("invalid SQL: missing \"(\"");
         token = ParseNextToken();
         if (token->type_ == Token_Type::TOKEN_WORD)
         {
@@ -158,17 +158,17 @@ std::shared_ptr<ConstraintInfo> TableParser::parse_constraint_expr()
             ParseEatAndNextToken();
         }
         else
-            return ParseError<std::shared_ptr<ConstraintInfo>>("invalid SQL: expect a column name!");
+            return ParseError<std::shared_ptr<ConstraintInfo>>("invalid SQL: expect a column name");
         if (!MatchToken(Token_Type::TOKEN_CLOSE_PARENTHESIS, ")"))
-            return ParseError<std::shared_ptr<ConstraintInfo>>("invalid SQL: missing \")\"!");
+            return ParseError<std::shared_ptr<ConstraintInfo>>("invalid SQL: missing \")\"");
     }
     // primary 
     else if (MatchToken(Token_Type::TOKEN_RESERVED_WORD, "primary"))
     {
         if (!MatchToken(Token_Type::TOKEN_RESERVED_WORD, "key"))
-            return ParseError<std::shared_ptr<ConstraintInfo>>("invalid SQL: missing \"key\"!");
+            return ParseError<std::shared_ptr<ConstraintInfo>>("invalid SQL: missing \"key\"");
         if (!MatchToken(Token_Type::TOKEN_OPEN_PARENTHESIS, "("))
-            return ParseError<std::shared_ptr<ConstraintInfo>>("invalid SQL: missing \"(\"!");
+            return ParseError<std::shared_ptr<ConstraintInfo>>("invalid SQL: missing \"(\"");
         token = ParseNextToken();
         if (token->type_ == Token_Type::TOKEN_WORD)
         {
@@ -177,17 +177,17 @@ std::shared_ptr<ConstraintInfo> TableParser::parse_constraint_expr()
             ParseEatAndNextToken();
         }
         else
-            return ParseError<std::shared_ptr<ConstraintInfo>>("invalid SQL: expect a column name!");
+            return ParseError<std::shared_ptr<ConstraintInfo>>("invalid SQL: expect a column name");
         if (!MatchToken(Token_Type::TOKEN_CLOSE_PARENTHESIS, ")"))
-            return ParseError<std::shared_ptr<ConstraintInfo>>("invalid SQL: missing \")\"!");
+            return ParseError<std::shared_ptr<ConstraintInfo>>("invalid SQL: missing \")\"");
     }
     // foreign key
     else if (MatchToken(Token_Type::TOKEN_RESERVED_WORD, "foreign"))
     {
         if (!MatchToken(Token_Type::TOKEN_RESERVED_WORD, "key"))
-            return ParseError<std::shared_ptr<ConstraintInfo>>("invalid SQL: missing \"key\"!");
+            return ParseError<std::shared_ptr<ConstraintInfo>>("invalid SQL: missing \"key\"");
         if (!MatchToken(Token_Type::TOKEN_OPEN_PARENTHESIS, "("))
-            return ParseError<std::shared_ptr<ConstraintInfo>>("invalid SQL: missing \"(\"!");
+            return ParseError<std::shared_ptr<ConstraintInfo>>("invalid SQL: missing \"(\"");
         token = ParseNextToken();
         if (token->type_ == Token_Type::TOKEN_WORD)
         {
@@ -196,18 +196,18 @@ std::shared_ptr<ConstraintInfo> TableParser::parse_constraint_expr()
             ParseEatAndNextToken();
         }
         else
-            return ParseError<std::shared_ptr<ConstraintInfo>>("invalid SQL: missing a column name!");
+            return ParseError<std::shared_ptr<ConstraintInfo>>("invalid SQL: missing a column name");
         if (!MatchToken(Token_Type::TOKEN_CLOSE_PARENTHESIS, ")"))
-            return ParseError<std::shared_ptr<ConstraintInfo>>("invalid SQL: missing \")\"!");
+            return ParseError<std::shared_ptr<ConstraintInfo>>("invalid SQL: missing \")\"");
         if (!MatchToken(Token_Type::TOKEN_RESERVED_WORD, "references"))
-            return ParseError<std::shared_ptr<ConstraintInfo>>("invalid SQL: missing \"references\"!");
+            return ParseError<std::shared_ptr<ConstraintInfo>>("invalid SQL: missing \"references\"");
         token = ParseNextToken();
         if (token->type_ == Token_Type::TOKEN_WORD)
         {
             constraint_info->fk_ref.table_name = token->text_;
             ParseEatAndNextToken();
             if (!MatchToken(Token_Type::TOKEN_OPEN_PARENTHESIS, "("))
-                return ParseError<std::shared_ptr<ConstraintInfo>>("invalid SQL: missing \"(\"!");
+                return ParseError<std::shared_ptr<ConstraintInfo>>("invalid SQL: missing \"(\"");
             token = ParseNextToken();
             if (token->type_ == Token_Type::TOKEN_WORD)
             {
@@ -215,22 +215,22 @@ std::shared_ptr<ConstraintInfo> TableParser::parse_constraint_expr()
                 ParseEatAndNextToken();
             }
             else 
-                return ParseError<std::shared_ptr<ConstraintInfo>>("invalid SQL: missing a column name!");
+                return ParseError<std::shared_ptr<ConstraintInfo>>("invalid SQL: missing a column name");
             if (!MatchToken(Token_Type::TOKEN_CLOSE_PARENTHESIS, ")"))
-                return ParseError<std::shared_ptr<ConstraintInfo>>("invalid SQL: missing \")\"!");
+                return ParseError<std::shared_ptr<ConstraintInfo>>("invalid SQL: missing \")\"");
         }
         else 
-            return ParseError<std::shared_ptr<ConstraintInfo>>("invalid SQL: missing a table name!");
+            return ParseError<std::shared_ptr<ConstraintInfo>>("invalid SQL: missing a table name");
     }
     // check
     else if (MatchToken(Token_Type::TOKEN_RESERVED_WORD, "check"))
     {
         if (!MatchToken(Token_Type::TOKEN_OPEN_PARENTHESIS, "("))
-            return ParseError<std::shared_ptr<ConstraintInfo>>("invalid SQL: missing \"(\"!");
+            return ParseError<std::shared_ptr<ConstraintInfo>>("invalid SQL: missing \"(\"");
         constraint_info->type = Constraint_Type::CONS_CHECK;
         constraint_info->expr = ParseExpressionRD();
         if (!MatchToken(Token_Type::TOKEN_CLOSE_PARENTHESIS, ")"))
-            return ParseError<std::shared_ptr<ConstraintInfo>>("invalid SQL: missing \")\"!");
+            return ParseError<std::shared_ptr<ConstraintInfo>>("invalid SQL: missing \")\"");
     }
     return constraint_info;
 }
@@ -242,12 +242,12 @@ std::shared_ptr<InsertInfo> TableParser::InsertTable()
     if (!MatchToken(Token_Type::TOKEN_RESERVED_WORD, "insert")) { return nullptr; }
     // into 
     if (!MatchToken(Token_Type::TOKEN_RESERVED_WORD, "into")) 
-        return ParseError<std::shared_ptr<InsertInfo>>("invalid SQL: should be \"into\"!");
+        return ParseError<std::shared_ptr<InsertInfo>>("invalid SQL: should be \"into\"");
     // table name
     auto token = ParseNextToken();
     if (token->type_ == Token_Type::TOKEN_WORD) { insert_info->table_name = token->text_; }
     else
-        return ParseError<std::shared_ptr<InsertInfo>>("invalid SQL: missing table name!");
+        return ParseError<std::shared_ptr<InsertInfo>>("invalid SQL: missing table name");
     // column
     token = ParseEatAndNextToken();
     if (MatchToken(Token_Type::TOKEN_OPEN_PARENTHESIS, "("))
@@ -267,9 +267,9 @@ std::shared_ptr<InsertInfo> TableParser::InsertTable()
             }
         }
         else
-            return ParseError<std::shared_ptr<InsertInfo>>("invalid SQL: missing field name!");
+            return ParseError<std::shared_ptr<InsertInfo>>("invalid SQL: missing field name");
         if (!MatchToken(Token_Type::TOKEN_CLOSE_PARENTHESIS, ")"))
-            return ParseError<std::shared_ptr<InsertInfo>>("invalid SQL: missing \")\"!");
+            return ParseError<std::shared_ptr<InsertInfo>>("invalid SQL: missing \")\"");
         if (MatchToken(Token_Type::TOKEN_RESERVED_WORD, "values"))
         {
             auto value = parse_value_expr();
@@ -285,9 +285,9 @@ std::shared_ptr<InsertInfo> TableParser::InsertTable()
         insert_info->col_val = std::move(*value);
     }
     else
-        return ParseError<std::shared_ptr<InsertInfo>>("invalid SQL: missing \"values\"!");
+        return ParseError<std::shared_ptr<InsertInfo>>("invalid SQL: missing \"values\"");
     if (!MatchToken(Token_Type::TOKEN_SEMICOLON, ";"))
-        return ParseError<std::shared_ptr<InsertInfo>>("invalid SQL: missing \";\"!");
+        return ParseError<std::shared_ptr<InsertInfo>>("invalid SQL: missing \";\"");
     // If field_name is empty, which means must provide all field with values respectively
     return insert_info;
 }
@@ -296,7 +296,7 @@ std::shared_ptr<std::vector<ColVal>> TableParser::parse_value_expr()
 {
     auto value = std::make_shared<std::vector<ColVal>>();
     if (!MatchToken(Token_Type::TOKEN_OPEN_PARENTHESIS, "("))   
-        return ParseError<std::shared_ptr<std::vector<ColVal>>>("invalid SQL: missing \"(\"!");
+        return ParseError<std::shared_ptr<std::vector<ColVal>>>("invalid SQL: missing \"(\"");
     auto token = ParseNextToken();
     if (token->type_ == Token_Type::TOKEN_STRING ||
         token->type_ == Token_Type::TOKEN_DECIMAL ||
@@ -343,9 +343,9 @@ std::shared_ptr<std::vector<ColVal>> TableParser::parse_value_expr()
         }
     }
     else
-        return ParseError<std::shared_ptr<std::vector<ColVal>>>("invalid SQL: missing a value!");
+        return ParseError<std::shared_ptr<std::vector<ColVal>>>("invalid SQL: missing a value");
     if (!MatchToken(Token_Type::TOKEN_CLOSE_PARENTHESIS, ")"))
-        return ParseError<std::shared_ptr<std::vector<ColVal>>>("invalid SQL: missing \")\"!");
+        return ParseError<std::shared_ptr<std::vector<ColVal>>>("invalid SQL: missing \")\"");
     return value;
 }
 
@@ -387,10 +387,10 @@ std::shared_ptr<SelectInfo> TableParser::SelectTable()
         }
     }
     else 
-        return ParseError<std::shared_ptr<SelectInfo>>("Invalid SQL: should be column name!");
+        return ParseError<std::shared_ptr<SelectInfo>>("Invalid SQL: should be column name");
     // from
     if (!MatchToken(Token_Type::TOKEN_RESERVED_WORD, "from")) 
-        return ParseError<std::shared_ptr<SelectInfo>>("Invalid SQL: should be \"from\"!");
+        return ParseError<std::shared_ptr<SelectInfo>>("Invalid SQL: should be \"from\"");
     // table name
     token = ParseNextToken();
     if (token->type_ == Token_Type::TOKEN_WORD)
@@ -407,7 +407,7 @@ std::shared_ptr<SelectInfo> TableParser::SelectTable()
         }
     }
     else 
-        return ParseError<std::shared_ptr<SelectInfo>>("Invalid SQL: should be table name!");
+        return ParseError<std::shared_ptr<SelectInfo>>("Invalid SQL: should be table name");
     if (MatchToken(Token_Type::TOKEN_SEMICOLON, ";")) 
     {
         return select_info;
@@ -419,8 +419,8 @@ std::shared_ptr<SelectInfo> TableParser::SelectTable()
         select_info->where = node;
     }
     else
-        return ParseError<std::shared_ptr<SelectInfo>>("Invalid SQL: wrong statement!");
+        return ParseError<std::shared_ptr<SelectInfo>>("Invalid SQL: wrong statement");
     if (!MatchToken(Token_Type::TOKEN_SEMICOLON, ";")) 
-        return ParseError<std::shared_ptr<SelectInfo>>("Invalid SQL: should \";\"!");
+        return ParseError<std::shared_ptr<SelectInfo>>("Invalid SQL: should \";\"");
     return select_info;
 }
