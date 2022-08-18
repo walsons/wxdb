@@ -46,6 +46,6 @@ struct TableHeader
     char check_constraint[MAX_NUM_CHECK_CONSTRAINT][MAX_LENGTH_CHECK_CONSTRAINT];
 };
 
-bool fill_table_header(std::shared_ptr<TableHeader> header, const TableInfo &table_info);
+void fill_table_header(std::shared_ptr<TableHeader> header, const TableInfo &table_info);
 
 #endif

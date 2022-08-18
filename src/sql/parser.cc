@@ -1,11 +1,9 @@
 #include "../../include/sql/parser.h"
 #include <memory>
-#include <iostream>
 
 Parser::Parser(std::shared_ptr<Tokenizer> tokenizer)
     : tokenizer_(tokenizer)
     , curr_token_(nullptr)
-    , parser_state_type_(Parser_State_Type::PARSER_CORRECT)
 {
 }
 
@@ -14,34 +12,28 @@ Parser::~Parser() = default;
 // Get next token, if current token doesn't be eat, return current token
 std::shared_ptr<Token> Parser::ParseNextToken()
 {
-    if (parser_state_type_ == Parser_State_Type::PARSER_WRONG) 
-    { 
-        std::cout << parser_message_ << std::endl;
-        return nullptr; 
-    }
-    if (curr_token_ == nullptr) 
-    {
+    // Beginning state of curr_token_ is nullptr
+    if (curr_token_ == nullptr)
         curr_token_ = tokenizer_->GetNextToken();
-    }
     return curr_token_;
 }
 
 // Eat current token then return next token
 std::shared_ptr<Token> Parser::ParseEatAndNextToken()
 {
-    if (parser_state_type_ == Parser_State_Type::PARSER_WRONG)
-    { 
-        std::cout << parser_message_ << std::endl;
-        return nullptr; 
-    }
     curr_token_ = tokenizer_->GetNextToken();
     return curr_token_;
 }
 
-void Parser::ParseError(const std::string &message)
+bool Parser::MatchToken(Token_Type type)
 {
-    parser_state_type_ = Parser_State_Type::PARSER_WRONG;
-    parser_message_ = message;
+    std::shared_ptr<Token> token = ParseNextToken();
+    if (token && token->type_ == type)
+    {
+        ParseEatAndNextToken();
+        return true;
+    }
+    return false;
 }
 
 bool Parser::MatchToken(Token_Type type, const std::string &text)
@@ -253,10 +245,7 @@ ExprNode *Parser::ParseReadUnary()
     ExprNode *expr = nullptr, *expr_op = nullptr;
     auto token = ParseNextToken();
     if (token == nullptr)
-    {
-        ParseError("Syntax error!");
-        return nullptr;
-    }
+        return ParseError<ExprNode *>("Syntax error!");
     if (token != nullptr && (token->type_ == Token_Type::TOKEN_NOT ||
                              token->type_ == Token_Type::TOKEN_PLUS ||
                              token->type_ == Token_Type::TOKEN_MINUS))
@@ -290,20 +279,14 @@ ExprNode *Parser::ParseReadParen()
     ExprNode *expr = nullptr;
     auto token = ParseNextToken();
     if (token == nullptr)
-    {
-        ParseError("Syntax error!");
-        return nullptr;
-    }
+        return ParseError<ExprNode *>("Syntax error!");
     if (token != nullptr && (token->type_ == Token_Type::TOKEN_OPEN_PARENTHESIS))
     {
         ParseEatAndNextToken();
         expr = ParseReadBooleanOr();
         token = ParseNextToken();
         if (token == nullptr || (token->type_ != Token_Type::TOKEN_CLOSE_PARENTHESIS))
-        {
-            ParseError("Syntax error: missing \")\"!");
-            return nullptr;
-        }
+            return ParseError<ExprNode *>("Syntax error: missing \")\"!");
         else { ParseEatAndNextToken(); }
     }
     else
@@ -318,10 +301,7 @@ ExprNode *Parser::ParseReadBuiltin()
     ExprNode *expr = nullptr;
     auto token = ParseNextToken();
     if (token == nullptr)
-    {
-        ParseError("Syntax error!");
-        return nullptr;
-    }
+        return ParseError<ExprNode *>("Syntax error!");
     // The difference between string and column ref is that string has ""
     // Currently word in expression must be column ref
     if (token->type_ == Token_Type::TOKEN_WORD)
@@ -370,10 +350,7 @@ ExprNode *Parser::ParseReadLiteral()
     ExprNode *expr = nullptr;
     auto token = ParseNextToken();
     if (token == nullptr)
-    {
-        ParseError("Syntax error: missing number!");
-        return nullptr;
-    }
+        return ParseError<ExprNode *>("Syntax error: missing number!");
     if (token->type_ == Token_Type::TOKEN_DECIMAL ||
         token->type_ == Token_Type::TOKEN_ZERO)
     {
@@ -397,8 +374,7 @@ ExprNode *Parser::ParseReadLiteral()
         ParseEatAndNextToken();
         return expr;
     }
-    ParseError("Syntax error: unenabled data type: " + token->text_ + "!");
-    return nullptr;
+    return ParseError<ExprNode *>("Syntax error: unenabled data type: " + token->text_ + "!");
 }
 
 ExprNode *Parser::concatenate_expr_node(ExprNode *expr1, ExprNode *expr2)
