@@ -28,6 +28,7 @@ public:
     void CreateTable(const std::shared_ptr<TableHeader> table_header);
     void InsertRow(const std::shared_ptr<InsertInfo> insert_info);
     void SelectTable(const std::shared_ptr<SelectInfo> select_info);
+    void DeleteTable(const std::shared_ptr<DeleteInfo> delete_info);
     // call when exit
     void CloseDatabase();
 
@@ -87,6 +88,11 @@ inline void DBMS::InsertRow(const std::shared_ptr<InsertInfo> insert_info)
 inline void DBMS::SelectTable(const std::shared_ptr<SelectInfo> select_info)
 {
     database_manager_->SelectTable(select_info);
+}
+
+inline void DBMS::DeleteTable(const std::shared_ptr<DeleteInfo> delete_info)
+{
+    database_manager_->DeleteTable(delete_info);
 }
 
 inline void DBMS::CloseDatabase()

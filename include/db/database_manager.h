@@ -24,6 +24,7 @@ public:
     bool CreateTable(const std::shared_ptr<TableHeader> table_header);
     void InsertRow(const std::shared_ptr<InsertInfo> insert_info);
     void SelectTable(const std::shared_ptr<SelectInfo> select_info);
+    void DeleteTable(const std::shared_ptr<DeleteInfo> delete_info);
 
 private:
     void update_column2term(const std::shared_ptr<TableManager> &tm,

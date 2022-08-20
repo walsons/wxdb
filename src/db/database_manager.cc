@@ -690,7 +690,7 @@ void DatabaseManager::iterate_one_table(const std::shared_ptr<TableManager> &tm,
         {
             // this col is an index
             unsigned int page_id = tm->indices(index)->root_page_id();
-            auto index_btr = std::make_shared<IndexBTree>(tm->pg(), page_id, tm->column_length(index) + 5, 
+            auto index_btr = std::make_shared<IndexBTree>(tm->pg(), page_id, tm->column_length(index) + 5,  // row_id(4) and not null(1)
                                                     IndexManager::GetIndexComparer(tm->column_type(index)));
             const char *key = nullptr;
             switch (tm->column_type(index))
@@ -979,3 +979,183 @@ void DatabaseManager::iterate_many_table(const std::vector<std::shared_ptr<Table
         if (it == btits.rend()) { break; }
     }
 }
+
+void DatabaseManager::DeleteTable(const std::shared_ptr<DeleteInfo> delete_info)
+{
+
+}
+// void DatabaseManager::DeleteTable(const std::shared_ptr<DeleteInfo> delete_info)
+// {
+//     std::shared_ptr<TableManager> tm;
+//     for (size_t i = 0; i < table_manager_.size(); ++i)
+//     {
+//         if (table_manager_[i]->table_name() == delete_info->table_name)
+//             tm = table_manager_[i];
+//     }
+//     if (tm == nullptr)
+//     {
+//         std::cout << "Error: no table named \"" << delete_info->table_name << "\"" << std::endl;
+//         return;
+//     }
+//     auto condition = delete_info->where;
+//     if (condition == nullptr)
+//     {
+//         // TODO: delete all rows
+//     }
+//     else
+//     {
+//         // Same logic to select, use index to accelerate finding if it could
+//         // 1. converse reserve polish notation to normal then store in a list
+//         auto p = condition, q = p->next_expr_;
+//         std::stack<ExprNode *> expr_stack;
+//         while (p != nullptr)
+//         {
+//             q = p->next_expr_;
+//             auto node = new ExprNode(p->operator_type_, p->term_, nullptr);
+//             if (node->operator_type_ == Operator_Type::NONE)
+//             {
+//                 expr_stack.push(node);
+//             }
+//             else
+//             {
+//                 // unary
+//                 if (node->operator_type_ > Operator_Type::UNARY_DELIMETER)
+//                 {
+//                     auto expr = expr_stack.top();
+//                     expr_stack.pop();
+//                     node->next_expr_ = expr;
+//                     expr_stack.push(node);
+//                 }
+//                 // binary
+//                 else
+//                 {
+//                     auto expr2 = expr_stack.top();
+//                     expr_stack.pop();
+//                     auto expr1 = expr_stack.top();
+//                     expr_stack.pop();
+//                     auto p = expr1;
+//                     while (p->next_expr_ != nullptr) { p = p->next_expr_; }
+//                     p->next_expr_ = node;
+//                     node->next_expr_ = expr2;
+//                     expr_stack.push(expr1);
+//                 }
+//             }
+//             p = q;
+//         }
+//         auto header = expr_stack.top();
+//         expr_stack.pop();
+//         std::list<ExprNode *> ls;
+//         auto expr = header;
+//         while (expr != nullptr)
+//         {
+//             ls.push_back(expr);
+//             expr = expr->next_expr_;
+//         }
+//         // 2. find expression start(or and) -> Col -> = -> (+-) -> value -> end( or and) 
+//         std::vector<std::shared_ptr<TermExpr>> cols;
+//         std::vector<std::shared_ptr<TermExpr>> vals;
+//         auto it = ls.begin();
+//         while (it != ls.end())
+//         {
+//             if ((*it)->operator_type_ == Operator_Type::EQ)
+//             {
+//                 // TODO: check condtion such as col = -3
+//                 auto prev = it; --prev;
+//                 auto pprev = prev; --pprev;
+//                 auto next = it; ++next;
+//                 auto nnext = next; nnext++;
+//                 if (
+//                     ((*prev)->operator_type_ == Operator_Type::NONE && (*prev)->term_->term_type_  == Term_Type::TERM_COL_REF) &&
+//                     (pprev == ls.end() || (*pprev)->operator_type_ == Operator_Type::AND) &&
+//                     ((*next)->operator_type_ == Operator_Type::NONE && (*next)->term_->term_type_ != Term_Type::TERM_COL_REF && (*next)->term_->term_type_ != Term_Type::TERM_NULL) &&
+//                     (nnext == ls.end() || (*nnext)->operator_type_ == Operator_Type::AND)
+//                     )
+//                 {
+//                     cols.emplace_back(std::make_shared<TermExpr>(*(*prev)->term_));
+//                     vals.emplace_back(std::make_shared<TermExpr>(*(*next)->term_));
+//                 }
+//             }
+//             ++it;
+//         }
+//         // free
+//         expr = header;
+//         while (expr != nullptr)
+//         {
+//             auto tmp = expr;
+//             expr = expr->next_expr_;
+//             delete tmp;
+//         }
+//         // Delete the row that meet the condition
+//         // Construct btree iterator and record manager
+//         BTreeIterator<VariantPage> btit;  // Waiting for being assigned
+//         RecordManager rm{tm->pg()};
+
+//         // find row_id if where statement can use index
+//         auto get_index = [&](const std::string &name) -> size_t {
+//             for (size_t i = 0; i < tm->number_of_column(); ++i)
+//             {
+//                 if (name == tm->column_name(i))
+//                 {
+//                     return i;
+//                 }
+//             }
+//             return tm->number_of_column();
+//         };
+//         std::vector<std::vector<int>> rows_arr;
+//         for (size_t i = 0; i < cols.size(); ++i)
+//         {
+//             size_t index = get_index(cols[i]->ref_.column_name);
+//             if ((1 << index) & tm->table_header().flag_index)
+//             {
+//                 // this col is an index
+//                 unsigned int page_id = tm->indices(index)->root_page_id();
+//                 auto index_btr = std::make_shared<IndexBTree>(tm->pg(), page_id, tm->column_length(index) + 5,  // row_id(4) and not null(1)
+//                                                         IndexManager::GetIndexComparer(tm->column_type(index)));
+//                 const char *key = nullptr;
+//                 switch (tm->column_type(index))
+//                 {
+//                 case Col_Type::COL_TYPE_INT:
+//                     key = reinterpret_cast<const char*>(&vals[i]->ival_);
+//                     break;
+//                 case Col_Type::COL_TYPE_DOUBLE:
+//                     key = reinterpret_cast<const char*>(&vals[i]->dval_);
+//                     break;
+//                 case Col_Type::COL_TYPE_BOOL:
+//                     key = reinterpret_cast<const char*>(&vals[i]->bval_);
+//                     break;
+//                 case Col_Type::COL_TYPE_DATE:
+//                     key = reinterpret_cast<const char*>(&vals[i]->dval_);
+//                     break;
+//                 case Col_Type::COL_TYPE_CHAR:
+//                 case Col_Type::COL_TYPE_VARCHAR:
+//                     key = vals[i]->sval_.c_str();
+//                     break;
+//                 default:
+//                     break;
+//                 }
+//                 auto rows = index_btr->find_rows(key);
+//                 if (!rows.empty())
+//                 {
+//                     rows_arr.push_back(rows);
+//                 }
+//             }
+//         }
+
+//         // Get intersection of rows
+//         auto get_intersection = [&](std::vector<int> &vec1, std::vector<int> &vec2) {
+//             std::unordered_set<int> s1(vec1.begin(), vec1.end());
+//             std::unordered_set<int> s2(vec2.begin(), vec2.end());
+//             std::vector<int> res;
+//             for (const auto &item : s1)
+//             {
+//                 if (s2.find(item) != s2.end())
+//                 {
+//                     res.push_back(item);
+//                 }
+//             }
+//             return res;
+//         };
+
+
+//     }
+// }

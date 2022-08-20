@@ -419,8 +419,41 @@ std::shared_ptr<SelectInfo> TableParser::SelectTable()
         select_info->where = node;
     }
     else
-        return ParseError<std::shared_ptr<SelectInfo>>("Invalid SQL: wrong statement");
+        return ParseError<std::shared_ptr<SelectInfo>>("Invalid SQL: missing \";\" or syntax error");
     if (!MatchToken(Token_Type::TOKEN_SEMICOLON, ";")) 
-        return ParseError<std::shared_ptr<SelectInfo>>("Invalid SQL: should \";\"");
+        return ParseError<std::shared_ptr<SelectInfo>>("Invalid SQL: missing \";\"");
     return select_info;
+}
+
+std::shared_ptr<DeleteInfo> TableParser::DeleteTable()
+{
+    auto delete_info = std::make_shared<DeleteInfo>();
+    delete_info->where = nullptr;
+    // delete
+    if (!MatchToken(Token_Type::TOKEN_RESERVED_WORD, "delete"))
+        return nullptr;
+    // from
+    if (!MatchToken(Token_Type::TOKEN_RESERVED_WORD))
+        return ParseError<std::shared_ptr<DeleteInfo>>("invalid SQL: should be \"FROM\"");
+    // table name
+    auto token = ParseNextToken();
+    if (token && token->type_ == Token_Type::TOKEN_WORD)
+        delete_info->table_name = token->text_;
+    else
+        return ParseError<std::shared_ptr<DeleteInfo>>("invalid SQL: missing table name");
+    // ;
+    if (MatchToken(Token_Type::TOKEN_SEMICOLON))
+        return delete_info;
+    // where if has
+    if (MatchToken(Token_Type::TOKEN_RESERVED_WORD, "where"))
+    {
+        ExprNode *node = ParseExpressionRD();
+        delete_info->where = node;
+    }
+    else if ((token = ParseEatAndNextToken()) != nullptr)
+        return ParseError<std::shared_ptr<DeleteInfo>>("invalid SQL: missing \";\" or syntax error");
+    // ;
+    if (!MatchToken(Token_Type::TOKEN_SEMICOLON))
+        return ParseError<std::shared_ptr<DeleteInfo>>("invalid SQL: missing \";\"");
+    return delete_info;
 }

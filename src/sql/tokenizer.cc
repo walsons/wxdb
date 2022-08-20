@@ -31,6 +31,14 @@ Tokenizer::Tokenizer(std::string statement)
 
 Tokenizer::~Tokenizer() = default;
 
+void Tokenizer::Reset()
+{
+    input_iter_ = 0;
+    token_buffer_.clear();
+    buffer_iter_ = 0;
+    curr_token_type_ = Token_Type::TOKEN_INVALID;
+}
+
 std::shared_ptr<Token> Tokenizer::GetNextToken()
 {
     // If reach end of statement, return nullptr

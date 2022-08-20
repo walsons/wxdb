@@ -9,6 +9,12 @@ Parser::Parser(std::shared_ptr<Tokenizer> tokenizer)
 
 Parser::~Parser() = default;
 
+void Parser::Reset()
+{
+    tokenizer_->Reset();
+    curr_token_ = nullptr;
+}
+
 // Get next token, if current token doesn't be eat, return current token
 std::shared_ptr<Token> Parser::ParseNextToken()
 {

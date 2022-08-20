@@ -17,6 +17,7 @@ public:
     ~Tokenizer();
 
     std::shared_ptr<Token> GetNextToken();
+    void Reset();
 
 private:
     std::string input_stream_;

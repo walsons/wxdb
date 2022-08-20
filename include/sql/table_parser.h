@@ -13,6 +13,7 @@ public:
     std::shared_ptr<TableInfo> CreateTable();
     std::shared_ptr<InsertInfo> InsertTable();
     std::shared_ptr<SelectInfo> SelectTable();
+    std::shared_ptr<DeleteInfo> DeleteTable();
 private:
     std::shared_ptr<FieldInfo> parse_field_expr();
     std::shared_ptr<ConstraintInfo> parse_constraint_expr();
