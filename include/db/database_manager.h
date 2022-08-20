@@ -27,6 +27,7 @@ public:
     void DeleteTable(const std::shared_ptr<DeleteInfo> delete_info);
 
 private:
+    void find_rows(const std::shared_ptr<SelectInfo> select_info);
     void update_column2term(const std::shared_ptr<TableManager> &tm,
                             BTreeIterator<VariantPage> &btit, 
                             RecordManager &rm,
@@ -55,6 +56,9 @@ private:
     };
     Info info_;
     std::vector<std::shared_ptr<TableManager>> table_manager_;
+    // Used to store rowids for delete and update via select
+    std::vector<int> rowids_;
+    bool print_flag_;
     
 private:
     bool is_open_;

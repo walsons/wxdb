@@ -151,6 +151,12 @@ void DatabaseManager::InsertRow(const std::shared_ptr<InsertInfo> insert_info)
 
 void DatabaseManager::SelectTable(const std::shared_ptr<SelectInfo> select_info)
 {
+    print_flag_ = true;
+    find_rows(select_info);
+}
+
+void DatabaseManager::find_rows(const std::shared_ptr<SelectInfo> select_info)
+{
     // Construct a table map for founding table that does not exist quickly
     std::unordered_map<std::string, std::shared_ptr<TableManager>> table_map;
     for (const auto &item : select_info->tables)
@@ -178,6 +184,7 @@ void DatabaseManager::SelectTable(const std::shared_ptr<SelectInfo> select_info)
     tms.reserve(select_info->tables.size());
     for (const auto &item : select_info->tables)
     {
+        table_map[item]->OpenTable(item);
         tms.push_back(table_map[item]);
     }
     // Get columns
@@ -465,7 +472,7 @@ void DatabaseManager::iterate_one_table(const std::shared_ptr<TableManager> &tm,
     else
     {
         std::unordered_set<std::string> col_s;
-        for (size_t i = 0; i < tm->number_of_column() - 1; ++i)  // No need to validate __rowid__ exists
+        for (size_t i = 0; i < tm->number_of_column(); ++i)
         {
             col_s.insert(tm->column_name(i));
         }
@@ -479,13 +486,16 @@ void DatabaseManager::iterate_one_table(const std::shared_ptr<TableManager> &tm,
         }
     }
 
-    // Print header
-    for (auto it = columns.begin(); it != columns.end(); ++it)
+    if (print_flag_)
     {
-        if (it != columns.begin()) { std::cout << "\t"; }
-        std::cout << it->all_name();
+        // Print header
+        for (auto it = columns.begin(); it != columns.end(); ++it)
+        {
+            if (it != columns.begin()) { std::cout << "\t"; }
+            std::cout << it->all_name();
+        }
+        std::cout << std::endl;
     }
-    std::cout << std::endl;
 
     // Construct btree iterator and record manager
     int row_id = 1;
@@ -494,6 +504,7 @@ void DatabaseManager::iterate_one_table(const std::shared_ptr<TableManager> &tm,
     RecordManager rm{tm->pg()};
             
     std::unordered_map<std::string, std::shared_ptr<TermExpr>> column2term;
+    rowids_.clear();  // if just want to store rowid
     // Print rows
     // The cartesian product
     while (true)
@@ -512,13 +523,20 @@ void DatabaseManager::iterate_one_table(const std::shared_ptr<TableManager> &tm,
                 continue; 
             }
         }
-        // Print
-        for (size_t i = 0; i < columns.size(); ++i)
+        if (print_flag_)
         {
-            if (i != 0) { std::cout << "\t"; }
-            std::cout << *column2term[columns[i].all_name()];
+            // Print
+            for (size_t i = 0; i < columns.size(); ++i)
+            {
+                if (i != 0) { std::cout << "\t"; }
+                std::cout << *column2term[columns[i].all_name()];
+            }
+            std::cout << std::endl;
         }
-        std::cout << std::endl;
+        else
+        {
+            rowids_.push_back(column2term["__rowid__"]->ival_);
+        }
 
         btit.next();
         // Loop over
@@ -659,13 +677,16 @@ void DatabaseManager::iterate_one_table(const std::shared_ptr<TableManager> &tm,
         }
     }
 
-    // Print header
-    for (auto it = columns.begin(); it != columns.end(); ++it)
+    if (print_flag_)
     {
-        if (it != columns.begin()) { std::cout << "\t"; }
-        std::cout << it->all_name();
+        // Print header
+        for (auto it = columns.begin(); it != columns.end(); ++it)
+        {
+            if (it != columns.begin()) { std::cout << "\t"; }
+            std::cout << it->all_name();
+        }
+        std::cout << std::endl;
     }
-    std::cout << std::endl;
 
     // Construct btree iterator and record manager
     BTreeIterator<VariantPage> btit;  // Waiting for being assigned
@@ -753,6 +774,7 @@ void DatabaseManager::iterate_one_table(const std::shared_ptr<TableManager> &tm,
     }
 
     std::unordered_map<std::string, std::shared_ptr<TermExpr>> column2term;
+    rowids_.clear();  // if just want to store rowid
     // Print rows
     // The cartesian product
     while (true)
@@ -771,13 +793,20 @@ void DatabaseManager::iterate_one_table(const std::shared_ptr<TableManager> &tm,
                 continue; 
             }
         }
-        // Print
-        for (size_t i = 0; i < columns.size(); ++i)
+        if (print_flag_)
         {
-            if (i != 0) { std::cout << "\t"; }
-            std::cout << *column2term[columns[i].all_name()];
+            // Print
+            for (size_t i = 0; i < columns.size(); ++i)
+            {
+                if (i != 0) { std::cout << "\t"; }
+                std::cout << *column2term[columns[i].all_name()];
+            }
+            std::cout << std::endl;
         }
-        std::cout << std::endl;
+        else
+        {
+            rowids_.push_back(column2term["__rowid__"]->ival_);
+        }
 
         btit.next();
         // Loop over
@@ -982,7 +1011,17 @@ void DatabaseManager::iterate_many_table(const std::vector<std::shared_ptr<Table
 
 void DatabaseManager::DeleteTable(const std::shared_ptr<DeleteInfo> delete_info)
 {
-
+    std::shared_ptr<SelectInfo> select_info = std::make_shared<SelectInfo>();
+    select_info->columns.emplace_back("__rowid__");
+    select_info->tables.push_back(delete_info->table_name);
+    select_info->where = select_info->where;
+    print_flag_ = false;
+    find_rows(select_info);
+    for (auto &c: rowids_)
+    {
+        std::cout << c << " ";
+    }
+    std::cout << std::endl;
 }
 // void DatabaseManager::DeleteTable(const std::shared_ptr<DeleteInfo> delete_info)
 // {

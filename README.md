@@ -101,5 +101,13 @@ FROM users, comments
 WHERE users.id = comments.user_id;
 ```
 
+```sql
+DELETE FROM table_name 
+WHERE expresssion
+
+#example
+DELETE FROM users WHERE id < 10;
+```
+
 ## Unit Test
 Because of the static local object, the unit test should be run individually by SECTION.

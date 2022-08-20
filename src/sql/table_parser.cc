@@ -438,7 +438,10 @@ std::shared_ptr<DeleteInfo> TableParser::DeleteTable()
     // table name
     auto token = ParseNextToken();
     if (token && token->type_ == Token_Type::TOKEN_WORD)
+    {
         delete_info->table_name = token->text_;
+        ParseEatAndNextToken();
+    }
     else
         return ParseError<std::shared_ptr<DeleteInfo>>("invalid SQL: missing table name");
     // ;
