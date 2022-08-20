@@ -14,7 +14,7 @@ class BTreeIterator
     int original_page_id_, original_pos_;
     std::shared_ptr<Pager> pg_;
     int cur_size_, prev_page_id_, next_page_id_;
-    // another way to iterate via rowid
+    // another way to iterate via row_id
     std::vector<int> rows_;
     int rows_counter_;
     std::shared_ptr<IntBTree> btr_;

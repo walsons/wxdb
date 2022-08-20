@@ -16,6 +16,7 @@ class Parser
 public:
     Parser(std::shared_ptr<Tokenizer> tokenizer);
     virtual ~Parser();
+    void Reset();
     std::shared_ptr<Token> ParseNextToken();
     std::shared_ptr<Token> ParseEatAndNextToken();
     template <typename T>

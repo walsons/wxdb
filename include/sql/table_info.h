@@ -65,4 +65,10 @@ struct SelectInfo
     ExprNode *where;
 };
 
+struct DeleteInfo
+{
+    std::string table_name;
+    ExprNode *where;
+};
+
 #endif

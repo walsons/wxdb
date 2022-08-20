@@ -23,6 +23,7 @@ void main_loop(bool &exit)
 {
     std::string one_sql;
     std::getline(std::cin, one_sql);
+    auto tokenizer = std::make_shared<Tokenizer>(one_sql);
 
     std::istringstream in(one_sql);
     std::string word;
@@ -35,13 +36,11 @@ void main_loop(bool &exit)
     }
     else
     {
-        std::shared_ptr<Tokenizer> tokenizer;
         /**********          Database          **********/
-        std::shared_ptr<DatabaseParser> database_parser;
+        auto database_parser = std::make_shared<DatabaseParser>(tokenizer);
         std::shared_ptr<DatabaseInfo> database_info;
         // CREATE DATABASE
-        tokenizer = std::make_shared<Tokenizer>(one_sql);
-        database_parser = std::make_shared<DatabaseParser>(tokenizer);
+        database_parser->Reset();
         database_info = database_parser->CreateDatabase();
         if (database_info)
         {
@@ -51,8 +50,7 @@ void main_loop(bool &exit)
         if (database_parser->PrintError())
             return;
         // USE [database]
-        tokenizer = std::make_shared<Tokenizer>(one_sql);
-        database_parser = std::make_shared<DatabaseParser>(tokenizer);
+        database_parser->Reset();
         database_info = database_parser->UseDatabase();
         if (database_info)
         {
@@ -63,10 +61,9 @@ void main_loop(bool &exit)
             return;
 
         /**********           Table            **********/
-        std::shared_ptr<TableParser> table_parser;
+        auto table_parser = std::make_shared<TableParser>(tokenizer);
         // CREATE TABLE
-        tokenizer = std::make_shared<Tokenizer>(one_sql);
-        table_parser = std::make_shared<TableParser>(tokenizer);
+        table_parser->Reset();
         auto table_info = table_parser->CreateTable();
         if (table_info)
         {
@@ -78,8 +75,7 @@ void main_loop(bool &exit)
         if (table_parser->PrintError())
             return;
         // INSERT INTO 
-        tokenizer = std::make_shared<Tokenizer>(one_sql);
-        table_parser = std::make_shared<TableParser>(tokenizer);
+        table_parser->Reset();
         auto insert_info = table_parser->InsertTable();
         if (insert_info)
         {
@@ -89,8 +85,7 @@ void main_loop(bool &exit)
         if (table_parser->PrintError())
             return;
         // SELECT [column] FROM [table]
-        tokenizer = std::make_shared<Tokenizer>(one_sql);
-        table_parser = std::make_shared<TableParser>(tokenizer);
+        table_parser->Reset();
         auto select_info = table_parser->SelectTable();
         if (select_info)
         {
@@ -99,6 +94,12 @@ void main_loop(bool &exit)
         }
         if (table_parser->PrintError())
             return;
+        // DELETE FROM [table]
+        table_parser->Reset();
+        auto delete_info = table_parser->DeleteTable();
+        if (delete_info)
+        {
+        }
 
         /**********         Other case         **********/
         std::cout << "Unknown command" << std::endl;
