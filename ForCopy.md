@@ -21,3 +21,7 @@ INSERT INTO users VALUES (1, "Walson", "[walsons@163.com](mailto:walsons@163.com
 SELECT * FROM table_name WHERE expression;
 
 SELECT id, name, sign_up FROM users WHERE id < 10;
+
+---
+
+DELETE FROM users WHERE id < 10;

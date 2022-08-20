@@ -99,7 +99,11 @@ void main_loop(bool &exit)
         auto delete_info = table_parser->DeleteTable();
         if (delete_info)
         {
+            DBMS::GetInstance().DeleteTable(delete_info);
+            return;
         }
+        if (table_parser->PrintError())
+            return;
 
         /**********         Other case         **********/
         std::cout << "Unknown command" << std::endl;
