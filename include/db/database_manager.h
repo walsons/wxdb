@@ -17,12 +17,13 @@ class DatabaseManager
 public:
     DatabaseManager();
     ~DatabaseManager() = default;
+    bool IsOpen();
     void CloseDatabase();
 
     bool CreateDatabase(const std::string &db_name);
     bool OpenDatabase(const std::string &db_name);
     bool CreateTable(const std::shared_ptr<TableHeader> table_header);
-    void InsertRow(const std::shared_ptr<InsertInfo> insert_info);
+    bool InsertRow(const std::shared_ptr<InsertInfo> insert_info);
     void SelectTable(const std::shared_ptr<SelectInfo> select_info);
     void DeleteTable(const std::shared_ptr<DeleteInfo> delete_info);
 
@@ -67,6 +68,11 @@ private:
 inline DatabaseManager::DatabaseManager() : is_open_(false)
 {
     std::memset(&info_, 0, sizeof(info_));
+}
+
+inline bool DatabaseManager::IsOpen()
+{
+    return is_open_;
 }
 
 #endif

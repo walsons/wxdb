@@ -36,9 +36,9 @@ public:
     void Init(int field_size);
     int Capacity();
     bool Full();
-    bool Empty() const;
-    bool Underflow() const;
-    bool UnderflowIfRemove() const;
+    bool Empty();
+    bool Underflow();
+    bool UnderflowIfRemove();
     bool Insert(int pos, const T &key, int child);
     bool Erase(int pos);
     // <page_id, page>
@@ -103,15 +103,15 @@ template <typename T> inline
 bool FixedPage<T>::Full() { return size() == Capacity(); }
 
 template <typename T> inline
-bool FixedPage<T>::Empty() const { return size() == 0; }
+bool FixedPage<T>::Empty() { return size() == 0; }
 
 // B+Tree must satisfied the condition that the number of children of each 
 // internal node(except root node) greater or equal to round up (m / 2)
 template <typename T> inline
-bool FixedPage<T>::Underflow() const { return size() < (Capacity() + 1) / 2; }
+bool FixedPage<T>::Underflow() { return size() < (Capacity() + 1) / 2; }
 
 template <typename T> inline
-bool FixedPage<T>::UnderflowIfRemove() const { return size() < (Capacity() + 1) / 2 + 1; }
+bool FixedPage<T>::UnderflowIfRemove() { return size() < (Capacity() + 1) / 2 + 1; }
 
 template <typename T> inline
 bool FixedPage<T>::Insert(int pos, const T &key, int child)

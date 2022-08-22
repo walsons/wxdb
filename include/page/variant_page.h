@@ -56,7 +56,7 @@ private:
 public:
     void Init(int = 0);
     bool Underflow();
-    bool UnderflowIfRemove(int pos);
+    bool UnderflowIfRemove();
     bool Insert(int pos, const char *data, int data_size);
     void Erase(int pos, bool erase_overflow_page = true);
     void MoveFrom(VariantPage src_page, int src_pos, int dest_pos);

@@ -34,6 +34,8 @@ public:
     int InsertRecord();
     bool SetTempRecord(int column_number, ColVal value);
 
+    int DeleteRecord(int row_id);
+
     std::pair<int, int> GetRowPosition(int row_id);
 
 private:

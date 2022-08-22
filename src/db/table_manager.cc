@@ -166,6 +166,11 @@ bool TableManager::SetTempRecord(int column_number, ColVal value)
     return true;
 }
 
+int TableManager::DeleteRecord(int row_id)
+{
+    btr_->Erase(row_id);
+}
+
 std::pair<int, int> TableManager::GetRowPosition(int row_id)
 {
     auto pos = btr_->upper_bound(btr_->root_page_id(), row_id);
