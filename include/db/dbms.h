@@ -63,35 +63,47 @@ inline DBMS &DBMS::GetInstance()
 
 inline void DBMS::CreateDatabase(const std::string &db_name)
 {
-    if (database_manager_->CreateDatabase(db_name))
+    if (database_manager_->IsOpen() == false)
+        std::cout << "Haven't choose a database" << std::endl;
+    else if (database_manager_->CreateDatabase(db_name))
         std::cout << "Create database \"" << db_name << "\" successfully" << std::endl;
 }
 
 inline void DBMS::UseDatabase(const std::string &db_name)
 {
-    if (database_manager_->OpenDatabase(db_name))
+    if (database_manager_->IsOpen() == false)
+        std::cout << "Haven't choose a database" << std::endl;
+    else if (database_manager_->OpenDatabase(db_name))
         std::cout << "Database changed to \"" << db_name << "\"" << std::endl;
 }
 
 inline void DBMS::CreateTable(const std::shared_ptr<TableHeader> table_header)
 {
-    if (database_manager_->CreateTable(table_header))
+    if (database_manager_->IsOpen() == false)
+        std::cout << "Haven't choose a database" << std::endl;
+    else if (database_manager_->CreateTable(table_header))
         std::cout << "Create database \"" << table_header->table_name << "\" successfully" << std::endl;
 }
 
 inline void DBMS::InsertRow(const std::shared_ptr<InsertInfo> insert_info)
 {
-    database_manager_->InsertRow(insert_info);
-    std::cout << "Insert successfully" << std::endl;
+    if (database_manager_->IsOpen() == false)
+        std::cout << "Haven't choose a database" << std::endl;
+    else if (database_manager_->InsertRow(insert_info))
+        std::cout << "Insert successfully" << std::endl;
 }
 
 inline void DBMS::SelectTable(const std::shared_ptr<SelectInfo> select_info)
 {
+    if (database_manager_->IsOpen() == false)
+        std::cout << "Haven't choose a database" << std::endl;
     database_manager_->SelectTable(select_info);
 }
 
 inline void DBMS::DeleteTable(const std::shared_ptr<DeleteInfo> delete_info)
 {
+    if (database_manager_->IsOpen() == false)
+        std::cout << "Haven't choose a database" << std::endl;
     database_manager_->DeleteTable(delete_info);
 }
 

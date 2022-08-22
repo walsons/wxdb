@@ -116,6 +116,15 @@ void PageFileSystem::WriteBack(int file_id)
 
 int PageFileSystem::Allocate(int file_id)
 {
+    int &free_page_id = file_info_[file_id].free_page_id;
+    if (free_page_id != 0)
+    {
+        int page_id = free_page_id;
+        char* data = Read(file_id, free_page_id);
+        int next_page_id = *reinterpret_cast<int *>(data);
+        free_page_id = next_page_id;
+        return page_id;
+    }
     int page_id = ++file_info_[file_id].page_num;
     Read(file_id, page_id);
     return page_id;
@@ -123,9 +132,10 @@ int PageFileSystem::Allocate(int file_id)
 
 void PageFileSystem::Deallocate(int file_id, int page_id)
 {
-    // This will deallocate all pages whose page_id 
-    // greater or equal to page_id;
-    file_info_[file_id].page_num = page_id - 1;
+    int &free_page_id = file_info_[file_id].free_page_id;
+    char *data = Read(file_id, page_id);
+    *reinterpret_cast<int *>(data) = free_page_id; 
+    free_page_id = page_id;
     // TODO: reduce file size
 }
 

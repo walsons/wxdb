@@ -21,7 +21,6 @@ protected:
     Comparer comparer_;
     Copier copier_;
 public:
-    // using key_t = KeyType;
     using interior_page = FixedPage<KeyType>;
     using leaf_page = typename std::conditional<std::is_same<KeyType, const char *>::value,
                                                 IndexLeafPage<KeyType>,
@@ -45,7 +44,7 @@ private:
     };
     struct merge_ret
     {
-        bool merged_left, merged_right;
+        bool merged_prev, merged_next;
         int merged_page_id;
     };
     struct erase_ret
@@ -60,6 +59,9 @@ private:
     void insert_split_root(insert_ret ret);
     template <typename Page, typename ChildPage>
     insert_ret insert_post_process(int page_id, int child_page_id, int child_pos, insert_ret child_ret);
+    erase_ret erase(int page_id, KeyType key);
+    template <typename Page>
+    merge_ret erase_try_merge(int page_id, char *addr);
 };
 
 template <typename KeyType, typename Comparer, typename Copier>
@@ -103,8 +105,21 @@ void BTree<KeyType, Comparer, Copier>::Insert(KeyType key, const char *data, int
 template <typename KeyType, typename Comparer, typename Copier>
 bool BTree<KeyType, Comparer, Copier>::Erase(KeyType key)
 {
-    // TODO
-    return true;
+    erase_ret ret = erase(root_page_id(), key);
+    // If B+ tree just have one data_page, free the interior node
+    char *addr = pg_->ReadForWrite(root_page_id());
+    Page_Type page_type = GeneralPage::GetPageType(addr);
+    if (page_type == Page_Type::FIXED_PAGE)
+    {
+        interior_page page{addr, pg_};
+        if (page.size() == 1 && page.children(0))
+        {
+            int child_page_id = page.children(0);
+            pg_->FreePage(root_page_id());
+            root_page_id_ = child_page_id;
+        }
+    }
+    return ret.found;
 }
 
 template <typename KeyType, typename Comparer, typename Copier>
@@ -255,6 +270,114 @@ BTree<KeyType, Comparer, Copier>::upper_bound(int now_page_id, KeyType key)
     });
     if (pos == page.size()) { return {0, 0}; }
     return {now_page_id, pos};
+}
+
+template<typename KeyType, typename Comparer, typename Copyier>
+typename BTree<KeyType, Comparer, Copyier>::erase_ret 
+BTree<KeyType, Comparer, Copyier>::erase(int page_id, KeyType key)
+{
+    char *addr = pg_->ReadForWrite(page_id);
+    Page_Type page_type = GeneralPage::GetPageType(addr);
+    if (page_type == Page_Type::FIXED_PAGE)
+    {
+        interior_page page{addr, pg_};
+        int child_pos = Search::upper_bound(0, page.size(), [&](int id) -> bool {
+            return comparer_(page.get_key(id), key) >= 0;
+        });
+        if (child_pos == page.size())
+        {
+            erase_ret ret;
+            ret.found = false;
+            return ret;
+        }
+        erase_ret ret = erase(page.children(child_pos), key);
+        if (!ret.found)
+            return ret;
+        
+        if (ret.merge.merged_next)
+        {
+            page.Erase(child_pos + 1);
+            page.set_key(child_pos, ret.largest);
+            page.children(child_pos) = ret.merge.merged_page_id;
+        }
+        else if (ret.merge.merged_prev)
+        {
+            page.Erase(child_pos);
+            page.set_key(child_pos - 1, ret.largest);
+            page.children(child_pos - 1) = ret.merge.merged_page_id;
+        }
+        else
+        {
+            page.set_key(child_pos, ret.largest);
+        }
+        ret = erase_ret{true, erase_try_merge<interior_page>(page_id, addr), page.get_key(page.size() - 1)};
+        return ret;
+    }
+    else
+    {
+        leaf_page page{addr, pg_};
+        int pos = Search::upper_bound(0, page.size(), [&](int id) -> bool {
+            return comparer_(page.get_key(id), key) >= 0;
+        });
+        if (pos == page.size() || comparer_(page.get_key(pos), key) != 0)
+        {
+            erase_ret ret;
+            ret.found = false;
+            return ret;
+        }
+        page.Erase(pos);
+        merge_ret ret = erase_try_merge<leaf_page>(page_id, addr);
+        return erase_ret{true, ret, page.get_key(page.size() - 1)};
+    }
+}
+
+template<typename KeyType, typename Comparer, typename Copyier>
+template<typename Page>
+typename BTree<KeyType, Comparer, Copyier>::merge_ret
+BTree<KeyType, Comparer, Copyier>::erase_try_merge(int page_id, char *addr)
+{
+    Page page{addr, pg_};
+    if (page.Underflow())
+    {
+        char *next_addr = nullptr, *prev_addr = nullptr;
+        if (page.next_page())
+        {
+            next_addr = pg_->Read(page.next_page());
+            Page next_page{next_addr, pg_};
+            if (!next_page.UnderflowIfRemove())
+            {
+                pg_->MarkDirty(page.next_page());
+                page.MoveFrom(next_page, 0, page.size());
+                return merge_ret{false, false, 0};
+            }
+        }
+        if (page.prev_page())
+        {
+            prev_addr = pg_->Read(page.prev_page());
+            Page prev_page{prev_addr, pg_};
+            if (!prev_page.UnderflowIfRemove())
+            {
+                pg_->MarkDirty(page.prev_page());
+                page.MoveFrom(prev_page, prev_page.size() - 1, 0);
+                return merge_ret{false, false, 0};
+            }
+        }
+        if (next_addr)
+        {
+            page.Merge(Page(next_addr, pg_), page_id);
+            pg_->FreePage(page.next_page());
+            return merge_ret{false, true, page_id};
+        }
+        else if (prev_addr)
+        {
+            int prev_page_id = page.prev_page();
+            Page prev_page{prev_addr, pg_};
+            prev_page.Merge(page, prev_page_id);
+            pg_->FreePage(page_id);
+            return merge_ret{true, false, prev_page_id};
+        }
+    }
+    return merge_ret{false, false, 0};
 }
 
 

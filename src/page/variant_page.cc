@@ -28,8 +28,14 @@ constexpr int OVERFLOW_BLOCK_SIZE = 64;
  * y = PAGE_SIZE - header_size - x (y: free_size)
  * -----> y = PAGE_SIZE - header_size - (PAGE_SIZE - header_size - (BLOCK_MAX_SIZE + 2)) / 2
  * When a page which free_size > FREE_SIZE_IN_UNDERFLOW, meaning underflow
+ * ----------------------------------------------------------------------------------------------------
+ //  constexpr int FREE_SIZE_IN_UNDERFLOW = PAGE_SIZE - VariantPage::header_size() - (PAGE_SIZE - VariantPage::header_size() - (BLOCK_MAX_SIZE + 2)) / 2;
  */
-constexpr int FREE_SIZE_IN_UNDERFLOW = PAGE_SIZE - VariantPage::header_size() - (PAGE_SIZE - VariantPage::header_size() - (BLOCK_MAX_SIZE + 2)) / 2;
+
+// We can ensure after move or merge the page has at least two items, but we don't ensure it's not underflow, 
+// however, it doesn't matter(the ultimate aim is to make full use of btree space)
+constexpr int FREE_SIZE_IN_UNDERFLOW = PAGE_SIZE - VariantPage::header_size() - (BLOCK_MAX_SIZE + 2);
+
 
 char *VariantPage::allocate(int sz)
 {
@@ -135,10 +141,11 @@ bool VariantPage::Underflow()
     return free_size() > FREE_SIZE_IN_UNDERFLOW;
 }
 
-bool VariantPage::UnderflowIfRemove(int pos)
+bool VariantPage::UnderflowIfRemove()
 {
-    int free_size_if_remove = free_size() + GetBlock(pos).first.size + 2;
-    return free_size_if_remove > FREE_SIZE_IN_UNDERFLOW;
+    // int free_size_if_remove = free_size() + GetBlock(pos).first.size + 2;
+    // return free_size_if_remove > FREE_SIZE_IN_UNDERFLOW;
+    return free_size() > FREE_BLOCK_MIN_SIZE;
 }
 
 bool VariantPage::Insert(int pos, const char *data, int data_size)
@@ -241,7 +248,7 @@ std::pair<int, VariantPage> VariantPage::Split(int current_id)
     int lower_page_size = size();
     for (; i < lower_page_size - 2; ++i)
     {
-        if (UnderflowIfRemove(i)) { break; }
+        if (UnderflowIfRemove()) { break; }
         char *src_addr = buf_ + slots(i);
         BlockHeader *src_header = reinterpret_cast<BlockHeader *>(src_addr);
         dest_addr -= src_header->size;
@@ -264,27 +271,26 @@ std::pair<int, VariantPage> VariantPage::Split(int current_id)
     return {page_id, upper_page };
 }
 
-// Merge upper page, this can make lower page no need to move data
+// Merge lower(next) page
 bool VariantPage::Merge(VariantPage page, int current_id)
 {
     int required_size = PAGE_SIZE - page.free_size() - header_size();
     if (free_size() < required_size) { return false; }
-    if (page.prev_page())
+    if (page.next_page())
     {
-        VariantPage upper_page{pg_->ReadForWrite(page.prev_page()), pg_};
-        upper_page.next_page() = current_id;
-        prev_page() = page.prev_page();
+        VariantPage lower_page{pg_->ReadForWrite(page.next_page()), pg_};
+        lower_page.prev_page() = current_id;
+        next_page() = page.next_page();
     }
     defragment();
-    std::memmove(&slots(0) + page.size(), &slots(0), page.size() * 2);
     char *dest = buf_ + PAGE_SIZE - bottom_used();
-    for (int i = page.size() - 1; i >= 0; --i)
+    for (int i = 0; i < page.size(); ++i)
     {
-        slots(i) = page.slots(i);
         auto *header = &block_header(page.slots(i));
         dest -= header->size;
         std::memcpy(dest, header, header->size);
         bottom_used() += header->size;
+        slots(i + size()) = PAGE_SIZE - bottom_used();
     }
     size() += page.size();
     free_size() -= required_size;

@@ -17,6 +17,9 @@ constexpr unsigned PAGE_SIZE = 4096;
 struct PageFileHeader
 {
     int page_num;
+    // record page that be deallocated, if free_page_id == 0,
+    // means no free page. and free pages are stored via linked list.
+    int free_page_id;
 };
 
 

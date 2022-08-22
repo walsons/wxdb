@@ -1,6 +1,6 @@
 # wxdb
 
-This is a simple relational database aims to implement this sql statement(keywords is not case sensitive):
+This is a simple relational database aims to implement these SQL statements(keywords are not case sensitive):
 
 ```sql
 CREATE DATABASE database_name;
