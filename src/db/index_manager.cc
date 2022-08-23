@@ -78,5 +78,4 @@ void IndexManager::Erase(const char *key, int row_id)
 {
     fill_buf(key, row_id);
     bool res = btr_->Erase(buf_);
-    assert(res);
 }

@@ -7,7 +7,7 @@ bool TableManager::CreateTable(const std::shared_ptr<TableHeader> table_header)
     table_name_ = table_header->table_name;
     std::string data_path = DB_DIR + table_name_ + ".tdata";
     pg_ = std::make_shared<Pager>(data_path);
-    btr_ = std::make_shared<IntBTree>(pg_, table_header->index_root_page[table_header_.main_index]);
+    btr_ = std::make_shared<IntBTree>(pg_, table_header->index_root_page[table_header->main_index]);
 
     table_header_ = *table_header;
     table_header_.index_root_page[table_header_.main_index] = btr_->root_page_id();
@@ -17,6 +17,12 @@ bool TableManager::CreateTable(const std::shared_ptr<TableHeader> table_header)
     load_check_constraints();
     is_mirror_ = false;
     is_open_ = true;
+
+    // Save table header
+    std::string header_path = DB_DIR + table_name_ + ".thead";
+    std::ofstream ofs(header_path, std::ios::binary);
+    ofs.write(reinterpret_cast<const char *>(&table_header_), sizeof(table_header_));
+    
     return true;
 }
 
@@ -169,6 +175,25 @@ bool TableManager::SetTempRecord(int column_number, ColVal value)
 int TableManager::DeleteRecord(int row_id)
 {
     btr_->Erase(row_id);
+    // Update other indices
+    for (int i = 0; i < table_header_.num_column; ++i)
+    {
+        if (i != table_header_.main_index && ((1 << i) & table_header_.flag_index))
+        {
+            if (*tmp_null_mark_ & (1 << i))
+            {
+                indices_[i]->Erase(nullptr, row_id);
+            }
+            else
+            {
+                indices_[i]->Erase(tmp_record_ + table_header_.column_offset[i], row_id);
+            }
+        }
+    }
+    if (table_header_.is_main_index_auto_inc)
+    {
+        --table_header_.num_record;
+    }
 }
 
 std::pair<int, int> TableManager::GetRowPosition(int row_id)

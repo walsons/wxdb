@@ -58,6 +58,7 @@ public:
     std::shared_ptr<Pager> pg() { return pg_; }
     std::shared_ptr<IntBTree> btr() { return btr_; }
     std::shared_ptr<IndexManager> indices(int index) { return indices_[index]; }
+    int tmp_record_size() const { return tmp_record_size_; }
 };
 
 #endif

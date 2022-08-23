@@ -336,6 +336,8 @@ void DatabaseManager::update_column2term(const std::shared_ptr<TableManager> &tm
             rm.Read(&val, col_length);
             auto term = std::make_shared<TermExpr>(val);
             column2term.insert({tm->column_name(i), term});
+            // also update tmp_record for delete index
+            tm->SetTempRecord(i, ColVal(val));
             break;
         }
         case Col_Type::COL_TYPE_DOUBLE:
@@ -344,6 +346,8 @@ void DatabaseManager::update_column2term(const std::shared_ptr<TableManager> &tm
             rm.Read(&val, col_length);
             auto term = std::make_shared<TermExpr>(val);
             column2term.insert({tm->column_name(i), term});
+            // also update tmp_record for delete index
+            tm->SetTempRecord(i, ColVal(val));
             break;
         }
         case Col_Type::COL_TYPE_BOOL:
@@ -352,6 +356,8 @@ void DatabaseManager::update_column2term(const std::shared_ptr<TableManager> &tm
             rm.Read(&val, col_length);
             auto term = std::make_shared<TermExpr>(val);
             column2term.insert({tm->column_name(i), term});
+            // also update tmp_record for delete index
+            tm->SetTempRecord(i, ColVal(val));
             break;
         }
         case Col_Type::COL_TYPE_DATE:
@@ -360,6 +366,8 @@ void DatabaseManager::update_column2term(const std::shared_ptr<TableManager> &tm
             rm.Read(&val, col_length);
             auto term = std::make_shared<TermExpr>(val);
             column2term.insert({tm->column_name(i), term});
+            // also update tmp_record for delete index
+            tm->SetTempRecord(i, ColVal(val));
             break;
         }
         case Col_Type::COL_TYPE_CHAR:
@@ -370,6 +378,8 @@ void DatabaseManager::update_column2term(const std::shared_ptr<TableManager> &tm
             rm.Read(val, col_length);
             auto term = std::make_shared<TermExpr>(val);
             column2term.insert({tm->column_name(i), term});
+            // also update tmp_record for delete index
+            tm->SetTempRecord(i, ColVal(val));
             delete[] val;
             break;
         }
@@ -377,6 +387,8 @@ void DatabaseManager::update_column2term(const std::shared_ptr<TableManager> &tm
         {
             auto term = std::make_shared<TermExpr>();
             column2term.insert({tm->column_name(i), term});
+            // also update tmp_record for delete index
+            tm->SetTempRecord(i, ColVal());
         }
         default:
             break;
@@ -506,6 +518,11 @@ void DatabaseManager::iterate_one_table(const std::shared_ptr<TableManager> &tm,
             
     std::unordered_map<std::string, std::shared_ptr<TermExpr>> column2term;
     rowids_.clear();  // if just want to store rowid
+    for (auto it = tmp_records_.begin(); it != tmp_records_.end(); ++it)
+    {
+        delete[] *it;
+    }
+    tmp_records_.clear();
     // Print rows
     // The cartesian product
     while (true)
@@ -536,6 +553,7 @@ void DatabaseManager::iterate_one_table(const std::shared_ptr<TableManager> &tm,
         }
         else
         {
+            tmp_records_.push_back(new char[tm->tmp_record_size()]);
             rowids_.push_back(column2term["__rowid__"]->ival_);
         }
 
@@ -664,7 +682,7 @@ void DatabaseManager::iterate_one_table(const std::shared_ptr<TableManager> &tm,
     else
     {
         std::unordered_set<std::string> col_s;
-        for (size_t i = 0; i < tm->number_of_column() - 1; ++i)  // No need to validate __rowid__ exists
+        for (size_t i = 0; i < tm->number_of_column(); ++i)
         {
             col_s.insert(tm->column_name(i));
         }
@@ -714,29 +732,31 @@ void DatabaseManager::iterate_one_table(const std::shared_ptr<TableManager> &tm,
             unsigned int page_id = tm->indices(index)->root_page_id();
             auto index_btr = std::make_shared<IndexBTree>(tm->pg(), page_id, tm->column_length(index) + 5,  // row_id(4) and not null(1)
                                                     IndexManager::GetIndexComparer(tm->column_type(index)));
-            const char *key = nullptr;
+            char *key = new char[tm->column_length(index) + 1];
+            key[tm->column_length(index)] = 0;
             switch (tm->column_type(index))
             {
             case Col_Type::COL_TYPE_INT:
-                key = reinterpret_cast<const char*>(&vals[i]->ival_);
+                std::memcpy(key, &vals[i]->ival_, tm->column_length(index));
                 break;
             case Col_Type::COL_TYPE_DOUBLE:
-                key = reinterpret_cast<const char*>(&vals[i]->dval_);
+                std::memcpy(key, &vals[i]->dval_, tm->column_length(index));
                 break;
             case Col_Type::COL_TYPE_BOOL:
-                key = reinterpret_cast<const char*>(&vals[i]->bval_);
+                std::memcpy(key, &vals[i]->bval_, tm->column_length(index));
                 break;
             case Col_Type::COL_TYPE_DATE:
-                key = reinterpret_cast<const char*>(&vals[i]->dval_);
+                std::memcpy(key, &vals[i]->tval_, tm->column_length(index));
                 break;
             case Col_Type::COL_TYPE_CHAR:
             case Col_Type::COL_TYPE_VARCHAR:
-                key = vals[i]->sval_.c_str();
+                std::memcpy(key, vals[i]->sval_.c_str(), tm->column_length(index));
                 break;
             default:
                 break;
             }
             auto rows = index_btr->find_rows(key);
+            delete[] key;
             if (!rows.empty())
             {
                 rows_arr.push_back(rows);
@@ -776,6 +796,11 @@ void DatabaseManager::iterate_one_table(const std::shared_ptr<TableManager> &tm,
 
     std::unordered_map<std::string, std::shared_ptr<TermExpr>> column2term;
     rowids_.clear();  // if just want to store rowid
+    for (auto it = tmp_records_.begin(); it != tmp_records_.end(); ++it)
+    {
+        delete[] *it;
+    }
+    tmp_records_.clear();
     // Print rows
     // The cartesian product
     while (true)
@@ -806,6 +831,7 @@ void DatabaseManager::iterate_one_table(const std::shared_ptr<TableManager> &tm,
         }
         else
         {
+            tmp_records_.push_back(new char[tm->tmp_record_size()]);
             rowids_.push_back(column2term["__rowid__"]->ival_);
         }
 
@@ -1015,10 +1041,10 @@ void DatabaseManager::DeleteTable(const std::shared_ptr<DeleteInfo> delete_info)
     std::shared_ptr<SelectInfo> select_info = std::make_shared<SelectInfo>();
     select_info->columns.emplace_back("__rowid__");
     select_info->tables.push_back(delete_info->table_name);
-    select_info->where = select_info->where;
+    select_info->where = delete_info->where;
     print_flag_ = false;
     find_rows(select_info);
-    std::shared_ptr<TableManager> table;
+    std::shared_ptr<TableManager> table = std::make_shared<TableManager>();
     table->OpenTable(select_info->tables.front());
     for (auto &row_id: rowids_)
         table->DeleteRecord(row_id);

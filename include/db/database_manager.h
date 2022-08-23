@@ -16,7 +16,7 @@ class DatabaseManager
 {
 public:
     DatabaseManager();
-    ~DatabaseManager() = default;
+    ~DatabaseManager();
     bool IsOpen();
     void CloseDatabase();
 
@@ -59,6 +59,7 @@ private:
     std::vector<std::shared_ptr<TableManager>> table_manager_;
     // Used to store rowids for delete and update via select
     std::vector<int> rowids_;
+    std::vector<char*> tmp_records_;
     bool print_flag_;
     
 private:
@@ -68,6 +69,14 @@ private:
 inline DatabaseManager::DatabaseManager() : is_open_(false)
 {
     std::memset(&info_, 0, sizeof(info_));
+}
+
+inline DatabaseManager::~DatabaseManager()
+{
+    for (auto it = tmp_records_.begin(); it != tmp_records_.end(); ++it)
+    {
+        delete[] *it;
+    }
 }
 
 inline bool DatabaseManager::IsOpen()

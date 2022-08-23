@@ -72,6 +72,7 @@ int PageFileSystem::Open(const std::string &name)
     if (!file_exist)
     {
         header.page_num = 0;
+        header.free_page_id = 0;
         files_[file_id].seekp(0, std::ios::beg);
         assert(files_[file_id].good());
         files_[file_id].write(reinterpret_cast<const char *>(&header), sizeof(header));
