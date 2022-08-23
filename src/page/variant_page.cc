@@ -211,7 +211,8 @@ void VariantPage::Erase(int pos, bool erase_overflow_page)
         slots(i) = slots(i + 1);
     }
     BlockHeader *header = &block_header(offset);
-    if (erase_overflow_page && header->overflow_page) { pg_->FreeOverflowPage(header->overflow_page); }
+    if (erase_overflow_page && header->overflow_page) 
+        pg_->FreeOverflowPage(header->overflow_page);
     free_size() += (2 + header->size);
     --size();
     set_free_block(offset);
