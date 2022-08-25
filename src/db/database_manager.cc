@@ -1044,7 +1044,12 @@ void DatabaseManager::DeleteTable(const std::shared_ptr<DeleteInfo> delete_info)
     select_info->where = delete_info->where;
     print_flag_ = false;
     find_rows(select_info);
-    std::shared_ptr<TableManager> table = std::make_shared<TableManager>();
+    std::shared_ptr<TableManager> table;
+    for (auto it = table_manager_.begin(); it != table_manager_.end(); ++it)
+    {
+        if ((*it)->table_name() == select_info->tables.front());
+            table = *it;
+    }
     table->OpenTable(select_info->tables.front());
     for (auto &row_id: rowids_)
         table->DeleteRecord(row_id);
