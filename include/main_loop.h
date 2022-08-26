@@ -104,6 +104,16 @@ void main_loop(bool &exit)
         }
         if (table_parser->PrintError())
             return;
+        // UPDATE [table] SET [column=value] WHERE
+        table_parser->Reset();
+        auto update_info = table_parser->UpdateTable();
+        if (update_info)
+        {
+            DBMS::GetInstance().UpdateTable(update_info);
+            return;
+        }
+        if (table_parser->PrintError())
+            return;
 
         /**********         Other case         **********/
         std::cout << "Unknown command" << std::endl;

@@ -302,13 +302,15 @@ std::shared_ptr<std::vector<ColVal>> TableParser::parse_value_expr()
         token->type_ == Token_Type::TOKEN_DECIMAL ||
         token->type_ == Token_Type::TOKEN_ZERO ||
         token->type_ == Token_Type::TOKEN_FLOAT || 
-        token->type_ == Token_Type::TOKEN_NULL)
+        token->type_ == Token_Type::TOKEN_NULL ||
+        token->type_ == Token_Type::TOKEN_RESERVED_WORD)
     {
         while (token->type_ == Token_Type::TOKEN_STRING ||
                token->type_ == Token_Type::TOKEN_DECIMAL ||
                token->type_ == Token_Type::TOKEN_ZERO ||
                token->type_ == Token_Type::TOKEN_FLOAT || 
-               token->type_ == Token_Type::TOKEN_NULL)
+               token->type_ == Token_Type::TOKEN_NULL ||
+               token->type_ == Token_Type::TOKEN_RESERVED_WORD)
         {
             if (token->type_ == Token_Type::TOKEN_STRING)
             {
@@ -330,7 +332,18 @@ std::shared_ptr<std::vector<ColVal>> TableParser::parse_value_expr()
             }
             else if (token->type_ == Token_Type::TOKEN_NULL)
             {
-                ColVal data_value();
+                ColVal data_value;
+                value->push_back(data_value);
+            }
+            else if (token->type_ == Token_Type::TOKEN_RESERVED_WORD)
+            {
+                ColVal data_value;
+                if (token->text_ == "true")
+                    data_value = true;
+                else if (token->text_ == "false")
+                    data_value = false;
+                else
+                    return ParseError<std::shared_ptr<std::vector<ColVal>>>("invalid SQL: value is wrong");
                 value->push_back(data_value);
             }
             ParseEatAndNextToken();
@@ -459,4 +472,100 @@ std::shared_ptr<DeleteInfo> TableParser::DeleteTable()
     if (!MatchToken(Token_Type::TOKEN_SEMICOLON))
         return ParseError<std::shared_ptr<DeleteInfo>>("invalid SQL: missing \";\"");
     return delete_info;
+}
+
+std::shared_ptr<UpdateInfo> TableParser::UpdateTable()
+{
+    auto update_info = std::make_shared<UpdateInfo>();
+    update_info->where = nullptr;
+    // update
+    if (!MatchToken(Token_Type::TOKEN_RESERVED_WORD, "update"))
+        return nullptr;
+    // table name
+    auto token = ParseNextToken();
+    if (token && token->type_ == Token_Type::TOKEN_WORD)
+    {
+        update_info->table_name = token->text_;
+        ParseEatAndNextToken();
+    }
+    else
+        return ParseError<std::shared_ptr<UpdateInfo>>("invalid SQL: missing table name");
+    // set
+    if (!MatchToken(Token_Type::TOKEN_RESERVED_WORD, "set"))
+        return ParseError<std::shared_ptr<UpdateInfo>>("invalid SQL: expect \"SET\"");
+    // column=value
+    auto col2val = parse_set_expr();
+    if (col2val == nullptr)
+        return nullptr;
+    update_info->column_ref2value = std::move(*col2val);
+    // where
+    if (!MatchToken(Token_Type::TOKEN_RESERVED_WORD, "where"))
+        return ParseError<std::shared_ptr<UpdateInfo>>("invalid SQL: expect \"WHERE\"");
+    // expression
+    ExprNode *node = ParseExpressionRD();
+    if (node == nullptr)
+        return ParseError<std::shared_ptr<UpdateInfo>>("invalid SQL: condition expression syntax error");
+    update_info->where = node;
+    // ;
+    if (!MatchToken(Token_Type::TOKEN_SEMICOLON))
+        return ParseError<std::shared_ptr<UpdateInfo>>("invalid SQL: missing \";\"");
+    return update_info;
+}
+
+std::shared_ptr<std::unordered_map<std::string, ColVal>> TableParser::parse_set_expr()
+{
+    auto res = std::make_shared<std::unordered_map<std::string, ColVal>>();
+    std::unordered_map<std::string, ColVal> col2val;
+    auto token = ParseNextToken();
+    while (true)
+    {
+        auto token = ParseNextToken();
+        ColumnRef column_ref;
+        if (token && token->type_ == Token_Type::TOKEN_WORD) 
+            column_ref.column_name = token->text_;
+        else
+            return ParseError<std::shared_ptr<std::unordered_map<std::string, ColVal>>>("invalid SQL: missing column name");
+        ParseEatAndNextToken();
+        if (!MatchToken(Token_Type::TOKEN_EQ))
+            return ParseError<std::shared_ptr<std::unordered_map<std::string, ColVal>>>("invalid SQL: expect \"=\"");
+        token = ParseNextToken();
+        ColVal column_value;
+        if (token)
+        {
+            switch (token->type_)
+            {
+            case Token_Type::TOKEN_NULL:
+                break;
+            case Token_Type::TOKEN_ZERO:
+            case Token_Type::TOKEN_DECIMAL:
+                column_value = stoi(token->text_);
+                break;
+            case Token_Type::TOKEN_FLOAT:
+            case Token_Type::TOKEN_EXP_FLOAT:
+                column_value = stod(token->text_);
+                break;
+            case Token_Type::TOKEN_RESERVED_WORD:
+                if (token->text_ == "true")
+                    column_value = true;
+                else if (token->text_ == "false")
+                    column_value = false;
+                else
+                    return ParseError<std::shared_ptr<std::unordered_map<std::string, ColVal>>>("invalid SQL: value is wrong");
+                break;
+            case Token_Type::TOKEN_STRING:
+                column_value = token->text_;
+                break;
+            default:
+                return ParseError<std::shared_ptr<std::unordered_map<std::string, ColVal>>>("invalid SQL: value is wrong");
+                break;
+            }
+        }
+        else
+            return ParseError<std::shared_ptr<std::unordered_map<std::string, ColVal>>>("invalid SQL: syntax error");
+        ParseEatAndNextToken();
+        if (!MatchToken(Token_Type::TOKEN_COMMA))
+            break;
+    }
+    *res = std::move(col2val);
+    return res;
 }

@@ -71,4 +71,11 @@ struct DeleteInfo
     ExprNode *where;
 };
 
+struct UpdateInfo
+{
+    std::string table_name;
+    std::unordered_map<std::string, ColVal> column_ref2value;
+    ExprNode *where;
+};
+
 #endif

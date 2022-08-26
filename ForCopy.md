@@ -25,3 +25,7 @@ SELECT id, name, sign_up FROM users WHERE id < 10;
 ---
 
 DELETE FROM users WHERE id < 10;
+
+---
+
+UPDATE users SET name = "Tim", email = "Tim123@163.com" WHERE name = "Walson";

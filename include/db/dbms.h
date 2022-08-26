@@ -29,6 +29,7 @@ public:
     void InsertRow(const std::shared_ptr<InsertInfo> insert_info);
     void SelectTable(const std::shared_ptr<SelectInfo> select_info);
     void DeleteTable(const std::shared_ptr<DeleteInfo> delete_info);
+    void UpdateTable(const std::shared_ptr<UpdateInfo> update_info);
     // call when exit
     void CloseDatabase();
 
@@ -101,6 +102,13 @@ inline void DBMS::DeleteTable(const std::shared_ptr<DeleteInfo> delete_info)
     if (database_manager_->IsOpen() == false)
         std::cout << "Haven't choose a database" << std::endl;
     database_manager_->DeleteTable(delete_info);
+}
+
+inline void DBMS::UpdateTable(const std::shared_ptr<UpdateInfo> update_info)
+{
+    if (database_manager_->IsOpen() == false)
+        std::cout << "Haven't choose a database" << std::endl;
+    database_manager_->UpdateTable(update_info);
 }
 
 inline void DBMS::CloseDatabase()

@@ -1054,3 +1054,8 @@ void DatabaseManager::DeleteTable(const std::shared_ptr<DeleteInfo> delete_info)
     for (auto &row_id: rowids_)
         table->DeleteRecord(row_id);
 }
+
+void DatabaseManager::UpdateTable(const std::shared_ptr<UpdateInfo> update_info)
+{
+
+}

@@ -7,7 +7,7 @@
 /*
  * name          offset                                size          comment
  * page_type     0                                     2             page type
- * field_size    2                                     2             field size
+ * field_size    2                                     2             size of key for BTree
  * size          4                                     4             number of pairs of key and children
  * next_page     8                                     4             next page id
  * prev_page     12                                    4             previous page id

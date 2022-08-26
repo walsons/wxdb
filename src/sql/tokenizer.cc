@@ -21,7 +21,8 @@ Tokenizer::Tokenizer(std::string statement)
         "like", "in", "grant", "values", "insert", "into", "update", 
         "delete", "set", "on", "user", "view", "rule", "default", "check", "between", "trigger", "unique", "primary", 
         "key", "foreign", "check",
-        "int", "integer", "double", "char", "varchar", "date", "bool"
+        "int", "integer", "double", "char", "varchar", "date", "bool",
+        "true", "false"
     };
     for (const auto &word : reserved_word)
     {
