@@ -23,6 +23,7 @@ public:
     int root_page_id();
     void Insert(const char *key, int row_id);
     void Erase(const char *key, int row_id);
+    void Update(const char *key, int row_id);
     std::shared_ptr<IndexBTree> btr() { return btr_; }
 };
 

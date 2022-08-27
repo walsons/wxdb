@@ -520,9 +520,9 @@ std::shared_ptr<std::unordered_map<std::string, ColVal>> TableParser::parse_set_
     while (true)
     {
         auto token = ParseNextToken();
-        ColumnRef column_ref;
+        std::string column_name;
         if (token && token->type_ == Token_Type::TOKEN_WORD) 
-            column_ref.column_name = token->text_;
+            column_name = token->text_;
         else
             return ParseError<std::shared_ptr<std::unordered_map<std::string, ColVal>>>("invalid SQL: missing column name");
         ParseEatAndNextToken();
@@ -563,6 +563,7 @@ std::shared_ptr<std::unordered_map<std::string, ColVal>> TableParser::parse_set_
         else
             return ParseError<std::shared_ptr<std::unordered_map<std::string, ColVal>>>("invalid SQL: syntax error");
         ParseEatAndNextToken();
+        col2val.insert({column_name, column_value});
         if (!MatchToken(Token_Type::TOKEN_COMMA))
             break;
     }

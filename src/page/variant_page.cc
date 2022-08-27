@@ -218,6 +218,20 @@ void VariantPage::Erase(int pos, bool erase_overflow_page)
     set_free_block(offset);
 }
 
+bool VariantPage::Update(int pos, const char *data, int data_size)
+{
+    BlockHeader *header = &block_header(slots(pos));
+    if (data_size > header->size)
+    {
+        // XXXErase(pos);
+        // XXXInsert(pos, data, data_size);
+        // TODO: add excess data to overflow page to avoid spliting
+        return true;
+    }
+    std::memcpy(header + sizeof(BlockHeader), data, data_size);
+    return true;
+}
+
 void VariantPage::MoveFrom(VariantPage src_page, int src_pos, int dest_pos)
 {
     auto src_block = src_page.GetBlock(src_pos);

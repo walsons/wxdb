@@ -35,6 +35,8 @@ public:
     bool SetTempRecord(int column_number, ColVal value);
 
     int DeleteRecord(int row_id);
+    
+    int UpdateRecord(int row_id);
 
     std::pair<int, int> GetRowPosition(int row_id);
 
@@ -58,6 +60,7 @@ public:
     std::shared_ptr<Pager> pg() { return pg_; }
     std::shared_ptr<IntBTree> btr() { return btr_; }
     std::shared_ptr<IndexManager> indices(int index) { return indices_[index]; }
+    char *tmp_record() { return tmp_record_; }
     int tmp_record_size() const { return tmp_record_size_; }
 };
 
