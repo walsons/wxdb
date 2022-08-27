@@ -59,6 +59,7 @@ public:
     bool UnderflowIfRemove();
     bool Insert(int pos, const char *data, int data_size);
     void Erase(int pos, bool erase_overflow_page = true);
+    bool Update(int pos, const char *data, int data_size);
     void MoveFrom(VariantPage src_page, int src_pos, int dest_pos);
     // <page_id, page>
     std::pair<int, VariantPage> Split(int current_id);

@@ -41,6 +41,7 @@ public:
     bool UnderflowIfRemove();
     bool Insert(int pos, const T &key, int child);
     bool Erase(int pos);
+    bool Update(int pos, const T &key, int child);
     // <page_id, page>
     std::pair<int, FixedPage> Split(int current_id);
     bool Merge(FixedPage page, int current_id);
@@ -113,7 +114,7 @@ bool FixedPage<T>::Underflow() { return size() < (Capacity() + 1) / 2; }
 template <typename T> inline
 bool FixedPage<T>::UnderflowIfRemove() { return size() < (Capacity() + 1) / 2 + 1; }
 
-template <typename T> inline
+template <typename T>
 bool FixedPage<T>::Insert(int pos, const T &key, int child)
 {
     if (Full()) { return false; }
@@ -132,7 +133,7 @@ bool FixedPage<T>::Insert(int pos, const T &key, int child)
     return true;
 }
 
-template <typename T> inline
+template <typename T>
 bool FixedPage<T>::Erase(int pos)
 {
     if (Empty()) { return false; }
@@ -149,6 +150,13 @@ bool FixedPage<T>::Erase(int pos)
 }
 
 template <typename T> inline
+bool FixedPage<T>::Update(int pos, const T &key, int child)
+{
+    set_key(pos, key);
+    return true;
+}
+
+template <typename T>
 std::pair<int, FixedPage<T>> FixedPage<T>::Split(int current_id)
 {
     int page_id = pg_->NewPage();
@@ -183,7 +191,7 @@ std::pair<int, FixedPage<T>> FixedPage<T>::Split(int current_id)
     return {page_id, upper_page};
 }
 
-template <typename T> inline
+template <typename T>
 bool FixedPage<T>::Merge(FixedPage page, int current_id)
 {
     int merge_size = size() + page.size();

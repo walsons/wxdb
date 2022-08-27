@@ -1057,5 +1057,30 @@ void DatabaseManager::DeleteTable(const std::shared_ptr<DeleteInfo> delete_info)
 
 void DatabaseManager::UpdateTable(const std::shared_ptr<UpdateInfo> update_info)
 {
-
+    std::shared_ptr<SelectInfo> select_info = std::make_shared<SelectInfo>();
+    select_info->columns.emplace_back("__rowid__");
+    select_info->tables.push_back(update_info->table_name);
+    select_info->where = update_info->where;
+    print_flag_ = false;
+    find_rows(select_info);
+    std::shared_ptr<TableManager> table;
+    for (auto it = table_manager_.begin(); it != table_manager_.end(); ++it)
+    {
+        if ((*it)->table_name() == select_info->tables.front());
+            table = *it;
+    }
+    table->OpenTable(select_info->tables.front());
+    for (size_t row = 0; row < rowids_.size(); ++row)
+    {
+        std::memcpy(table->tmp_record(), tmp_records_[row], table->tmp_record_size());
+        auto column2val = update_info->column_ref2value;
+        for (size_t col = 0; col < table->number_of_column(); ++col)
+        {
+            if (column2val.find(table->column_name(col)) != column2val.end())
+            {
+                table->SetTempRecord(col, column2val[table->column_name(col)]);
+            }
+        }
+        table->UpdateRecord(rowids_[row]);
+    }
 }

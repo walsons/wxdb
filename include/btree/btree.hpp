@@ -31,6 +31,7 @@ public:
     virtual ~BTree() = default;
     void Insert(KeyType key, const char *data, int data_size);
     bool Erase(KeyType key);
+    void Update(KeyType key, const char *data, int data_size);
     int root_page_id() { return root_page_id_; }
     std::shared_ptr<Pager> pg() { return pg_; }
     search_result upper_bound(int now_page_id, KeyType key);
@@ -62,6 +63,8 @@ private:
     erase_ret erase(int page_id, KeyType key);
     template <typename Page>
     merge_ret erase_try_merge(int page_id, char *addr);
+    void update_interior(int now_page_id, char *now_addr, KeyType key, const char *data, int data_size);
+    void update_leaf(int now_page_id, char *now_addr, KeyType key, const char *data, int data_size);
 };
 
 template <typename KeyType, typename Comparer, typename Copier>
@@ -120,6 +123,48 @@ bool BTree<KeyType, Comparer, Copier>::Erase(KeyType key)
         }
     }
     return ret.found;
+}
+
+template <typename KeyType, typename Comparer, typename Copier>
+void BTree<KeyType, Comparer, Copier>::Update(KeyType key, const char *data, int data_size)
+{
+    char *addr = pg_->ReadForWrite(root_page_id());
+    Page_Type page_type = GeneralPage::GetPageType(addr);
+    if (page_type == Page_Type::FIXED_PAGE)
+        update_interior(root_page_id(), addr, key, data, data_size);
+    else
+        update_leaf(root_page_id(), addr, key, data, data_size);
+}
+
+template <typename KeyType, typename Comparer, typename Copier>
+void BTree<KeyType, Comparer, Copier>::update_interior(int now_page_id, char *now_addr, KeyType key, const char *data, int data_size)
+{
+    interior_page page{now_addr, pg_};
+    int child_pos = Search::upper_bound(0, page.size(), [&](int id) {
+        return comparer_(page.get_key(id), key) >= 0;
+    });
+    child_pos = std::min(page.size() - 1, child_pos);
+    int child_page_id = page.children(child_pos);
+    char *child_addr = pg_->ReadForWrite(child_page_id);
+    Page_Type child_page_type = GeneralPage::GetPageType(child_addr);
+    if (child_page_type == Page_Type::FIXED_PAGE)
+    {
+        update_interior(child_page_id, child_addr, key, data, data_size);
+    }
+    else
+    {
+        update_leaf(now_page_id, now_addr, key, data, data_size);
+    }
+}
+
+template <typename KeyType, typename Comparer, typename Copier>
+void BTree<KeyType, Comparer, Copier>::update_leaf(int now_page_id, char *now_addr, KeyType key, const char *data, int data_size)
+{
+    leaf_page page{now_addr, pg_};
+    int child_pos = Search::upper_bound(0, page.size(), [&](int id) {
+        return comparer_(page.get_key(id), key) >= 0;
+    });
+    page.Update(child_pos, data, data_size);
 }
 
 template <typename KeyType, typename Comparer, typename Copier>
@@ -433,6 +478,10 @@ public:
     bool Erase(const char *key)
     {
         return BTree::Erase(key);
+    }
+    void Update(const char *key, int row_id)
+    {
+        BTree::Update(key, key, row_id);
     }
     std::vector<int> find_rows(const char *key)
     {

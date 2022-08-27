@@ -195,6 +195,27 @@ int TableManager::DeleteRecord(int row_id)
         --table_header_.num_record;
     }
 }
+    
+int TableManager::UpdateRecord(int row_id)
+{
+    btr_->Update(row_id, tmp_record_, tmp_record_size_);  
+    // Update other indices
+    for (int i = 0; i < table_header_.num_column; ++i)
+    {
+        if (i != table_header_.main_index && ((1 << i) & table_header_.flag_index))
+        {
+            if (*tmp_null_mark_ & (1 << i))
+            {
+                indices_[i]->Update(nullptr, row_id);
+            }
+            else
+            {
+                indices_[i]->Update(tmp_record_ + table_header_.column_offset[i], row_id);
+            }
+        }
+    }
+    return row_id;
+}
 
 std::pair<int, int> TableManager::GetRowPosition(int row_id)
 {
