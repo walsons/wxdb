@@ -200,20 +200,20 @@ int TableManager::UpdateRecord(int row_id)
 {
     btr_->Update(row_id, tmp_record_, tmp_record_size_);  
     // Update other indices
-    for (int i = 0; i < table_header_.num_column; ++i)
-    {
-        if (i != table_header_.main_index && ((1 << i) & table_header_.flag_index))
-        {
-            if (*tmp_null_mark_ & (1 << i))
-            {
-                indices_[i]->Update(nullptr, row_id);
-            }
-            else
-            {
-                indices_[i]->Update(tmp_record_ + table_header_.column_offset[i], row_id);
-            }
-        }
-    }
+    // for (int i = 0; i < table_header_.num_column; ++i)
+    // {
+    //     if (i != table_header_.main_index && ((1 << i) & table_header_.flag_index))
+    //     {
+    //         if (*tmp_null_mark_ & (1 << i))
+    //         {
+    //             indices_[i]->Update(nullptr, row_id);
+    //         }
+    //         else
+    //         {
+    //             indices_[i]->Update(tmp_record_ + table_header_.column_offset[i], row_id);
+    //         }
+    //     }
+    // }
     return row_id;
 }
 
@@ -221,6 +221,11 @@ std::pair<int, int> TableManager::GetRowPosition(int row_id)
 {
     auto pos = btr_->upper_bound(btr_->root_page_id(), row_id);
     return pos;
+}
+
+void TableManager::PrintCurrentTmpRecord() 
+{
+    
 }
 
 void TableManager::allocate_temp_record()

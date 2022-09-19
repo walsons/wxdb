@@ -554,6 +554,7 @@ void DatabaseManager::iterate_one_table(const std::shared_ptr<TableManager> &tm,
         else
         {
             tmp_records_.push_back(new char[tm->tmp_record_size()]);
+            std::memcpy(tmp_records_.back(), tm->tmp_record(), tm->tmp_record_size());
             rowids_.push_back(column2term["__rowid__"]->ival_);
         }
 
@@ -832,6 +833,7 @@ void DatabaseManager::iterate_one_table(const std::shared_ptr<TableManager> &tm,
         else
         {
             tmp_records_.push_back(new char[tm->tmp_record_size()]);
+            std::memcpy(tmp_records_.back(), tm->tmp_record(), tm->tmp_record_size());
             rowids_.push_back(column2term["__rowid__"]->ival_);
         }
 
