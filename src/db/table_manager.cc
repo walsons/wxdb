@@ -223,6 +223,11 @@ std::pair<int, int> TableManager::GetRowPosition(int row_id)
     return pos;
 }
 
+void TableManager::PrintCurrentTmpRecord() 
+{
+
+}
+
 void TableManager::allocate_temp_record()
 {
     if (tmp_record_) { delete[] tmp_record_; }

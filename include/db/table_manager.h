@@ -40,6 +40,9 @@ public:
 
     std::pair<int, int> GetRowPosition(int row_id);
 
+    // Test function
+    void PrintCurrentTmpRecord();
+
 private:
     void allocate_temp_record();
     void load_indices();

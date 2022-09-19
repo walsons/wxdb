@@ -24,9 +24,9 @@ public:
     bool OpenDatabase(const std::string &db_name);
     bool CreateTable(const std::shared_ptr<TableHeader> table_header);
     bool InsertRow(const std::shared_ptr<InsertInfo> insert_info);
-    void SelectTable(const std::shared_ptr<SelectInfo> select_info);
-    void DeleteTable(const std::shared_ptr<DeleteInfo> delete_info);
-    void UpdateTable(const std::shared_ptr<UpdateInfo> update_info);
+    bool SelectTable(const std::shared_ptr<SelectInfo> select_info);
+    bool DeleteTable(const std::shared_ptr<DeleteInfo> delete_info);
+    bool UpdateTable(const std::shared_ptr<UpdateInfo> update_info);
 
 private:
     void find_rows(const std::shared_ptr<SelectInfo> select_info);

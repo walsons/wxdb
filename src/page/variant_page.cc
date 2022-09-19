@@ -228,7 +228,8 @@ bool VariantPage::Update(int pos, const char *data, int data_size)
         // TODO: add excess data to overflow page to avoid spliting
         return true;
     }
-    std::memcpy(header + sizeof(BlockHeader), data, data_size);
+    // std::memcpy(header + sizeof(BlockHeader), data, data_size);
+    std::memcpy(header + 1, data, data_size);
     return true;
 }
 

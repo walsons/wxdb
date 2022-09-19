@@ -94,6 +94,7 @@ inline void DBMS::SelectTable(const std::shared_ptr<SelectInfo> select_info)
 {
     if (database_manager_->IsOpen() == false)
         std::cout << "Haven't choose a database" << std::endl;
+    // select statement have output
     database_manager_->SelectTable(select_info);
 }
 
@@ -101,14 +102,16 @@ inline void DBMS::DeleteTable(const std::shared_ptr<DeleteInfo> delete_info)
 {
     if (database_manager_->IsOpen() == false)
         std::cout << "Haven't choose a database" << std::endl;
-    database_manager_->DeleteTable(delete_info);
+    else if (database_manager_->DeleteTable(delete_info))
+        std::cout << "Delete successfully" << std::endl;
 }
 
 inline void DBMS::UpdateTable(const std::shared_ptr<UpdateInfo> update_info)
 {
     if (database_manager_->IsOpen() == false)
         std::cout << "Haven't choose a database" << std::endl;
-    database_manager_->UpdateTable(update_info);
+    else if (database_manager_->UpdateTable(update_info))
+        std::cout << "Update successfully" << std::endl;
 }
 
 inline void DBMS::CloseDatabase()
