@@ -150,10 +150,11 @@ bool DatabaseManager::InsertRow(const std::shared_ptr<InsertInfo> insert_info)
     return true;
 }
 
-void DatabaseManager::SelectTable(const std::shared_ptr<SelectInfo> select_info)
+bool DatabaseManager::SelectTable(const std::shared_ptr<SelectInfo> select_info)
 {
     print_flag_ = true;
     find_rows(select_info);
+    return true;
 }
 
 void DatabaseManager::find_rows(const std::shared_ptr<SelectInfo> select_info)
@@ -1038,7 +1039,7 @@ void DatabaseManager::iterate_many_table(const std::vector<std::shared_ptr<Table
     }
 }
 
-void DatabaseManager::DeleteTable(const std::shared_ptr<DeleteInfo> delete_info)
+bool DatabaseManager::DeleteTable(const std::shared_ptr<DeleteInfo> delete_info)
 {
     std::shared_ptr<SelectInfo> select_info = std::make_shared<SelectInfo>();
     select_info->columns.emplace_back("__rowid__");
@@ -1055,9 +1056,10 @@ void DatabaseManager::DeleteTable(const std::shared_ptr<DeleteInfo> delete_info)
     table->OpenTable(select_info->tables.front());
     for (auto &row_id: rowids_)
         table->DeleteRecord(row_id);
+    return true;
 }
 
-void DatabaseManager::UpdateTable(const std::shared_ptr<UpdateInfo> update_info)
+bool DatabaseManager::UpdateTable(const std::shared_ptr<UpdateInfo> update_info)
 {
     std::shared_ptr<SelectInfo> select_info = std::make_shared<SelectInfo>();
     select_info->columns.emplace_back("__rowid__");
@@ -1085,4 +1087,5 @@ void DatabaseManager::UpdateTable(const std::shared_ptr<UpdateInfo> update_info)
         }
         table->UpdateRecord(rowids_[row]);
     }
+    return true;
 }
